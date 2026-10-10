@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Campus Life Simulator">
+  <rect width="64" height="64" rx="12" fill="#10140f"/>
+  <rect x="8" y="14" width="48" height="12" fill="#ce1126"/>
+  <rect x="8" y="26" width="48" height="12" fill="#fcd116"/>
+  <rect x="8" y="38" width="48" height="12" fill="#006b3f"/>
+  <path d="M32 26.5l2.2 6.6h6.9l-5.6 4.1 2.1 6.6-5.6-4.1-5.6 4.1 2.1-6.6-5.6-4.1h6.9z" fill="#10140f"/>
+</svg>

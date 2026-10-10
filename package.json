@@ -1,0 +1,30 @@
+{
+  "name": "ghanaian-campus-life-simulator",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Phase 1 prototype: a lightweight first-person 3D Ghanaian university campus built with Three.js, TypeScript and Vite.",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "test:smoke": "node scripts/smoke-test.mjs",
+    "verify": "npm run typecheck && npm run lint && vite build"
+  },
+  "dependencies": {
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/three": "^0.186.0",
+    "eslint": "^10.12.0",
+    "globals": "^17.13.0",
+    "typescript": "~5.9",
+    "typescript-eslint": "^8.71.1",
+    "vite": "^8.3.4"
+  }
+}

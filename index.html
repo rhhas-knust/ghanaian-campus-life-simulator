@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#1d2b1f" />
+    <!-- Relative href, so the icon resolves under the GitHub Pages sub-directory. -->
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <meta
+      name="description"
+      content="Phase 1 prototype of the Ghanaian Campus Life Simulator: a lightweight first-person 3D university campus you can walk around in the browser."
+    />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>Ghanaian Campus Life Simulator — Phase 1</title>
+  </head>
+  <body>
+    <!-- The WebGL canvas is created by the engine and appended here. -->
+    <div id="viewport" aria-hidden="true"></div>
+
+    <!-- ============================ HUD ============================ -->
+    <div id="hud" class="hud" hidden>
+      <div id="crosshair" class="crosshair" aria-hidden="true"></div>
+
+      <div id="hud-top" class="hud-top">
+        <p id="location-label" class="location-label">Campus Entrance</p>
+        <button id="pause-button" class="icon-button" type="button" aria-label="Pause game">
+          <span aria-hidden="true">❙❙</span>
+        </button>
+      </div>
+
+      <!-- Contextual "press to interact" prompt -->
+      <div id="interaction-prompt" class="interaction-prompt" role="status" aria-live="polite" hidden>
+        <span id="interaction-key" class="interaction-key">E</span>
+        <span id="interaction-text" class="interaction-text">Read sign</span>
+      </div>
+
+      <!-- Touch controls: injected/managed by src/ui/TouchControls.ts -->
+      <div id="touch-controls" class="touch-controls" hidden>
+        <div id="touch-joystick" class="touch-joystick" aria-hidden="true">
+          <div id="touch-joystick-knob" class="touch-joystick-knob"></div>
+        </div>
+        <div id="touch-look" class="touch-look" aria-hidden="true"></div>
+        <button id="touch-interact" class="touch-action-button" type="button" aria-label="Interact">
+          Interact
+        </button>
+      </div>
+    </div>
+
+    <!-- ========================= Overlays ========================= -->
+
+    <!-- Loading -->
+    <div id="loading-screen" class="overlay overlay--solid">
+      <div class="panel">
+        <p class="eyebrow">Phase 1 Prototype</p>
+        <h1 class="title">Ghanaian Campus Life Simulator</h1>
+        <p class="loading-text" id="loading-text">Building the campus…</p>
+        <div class="loading-bar"><div id="loading-bar-fill" class="loading-bar-fill"></div></div>
+      </div>
+    </div>
+
+    <!-- Start / click-to-play (also re-used to re-acquire pointer lock) -->
+    <div id="start-screen" class="overlay" hidden>
+      <div class="panel">
+        <p class="eyebrow">Phase 1 Prototype</p>
+        <h1 class="title">Ghanaian Campus Life Simulator</h1>
+        <p class="subtitle">
+          Walk the entrance, courtyard and lecture blocks of a Ghanaian university campus.
+        </p>
+
+        <button id="start-button" class="primary-button" type="button">Enter Campus</button>
+
+        <div class="controls-grid" id="controls-grid-start"></div>
+        <p class="footnote">
+          Placeholder geometry only — final buildings and the campus map will replace these shapes.
+        </p>
+      </div>
+    </div>
+
+    <!-- Pause menu -->
+    <div id="pause-screen" class="overlay" hidden>
+      <div class="panel">
+        <p class="eyebrow">Paused</p>
+        <h2 class="title title--small">Campus Life Simulator</h2>
+
+        <button id="resume-button" class="primary-button" type="button">Resume</button>
+
+        <div class="settings-row">
+          <label class="settings-label" for="quality-select">Graphics quality</label>
+          <select id="quality-select" class="settings-select">
+            <option value="low">Low — best for older phones</option>
+            <option value="medium">Medium</option>
+            <option value="high">High — desktop</option>
+          </select>
+        </div>
+
+        <div class="settings-row">
+          <label class="settings-label" for="sensitivity-range">Look sensitivity</label>
+          <input
+            id="sensitivity-range"
+            class="settings-range"
+            type="range"
+            min="0.3"
+            max="2.5"
+            step="0.1"
+            value="1"
+          />
+        </div>
+
+        <div class="controls-grid" id="controls-grid-pause"></div>
+      </div>
+    </div>
+
+    <!-- Interaction read-out (campus sign, building plaques) -->
+    <div id="info-screen" class="overlay" hidden>
+      <div class="panel panel--info">
+        <p class="eyebrow" id="info-eyebrow">Campus Sign</p>
+        <h2 class="title title--small" id="info-title">Welcome</h2>
+        <div class="info-body" id="info-body"></div>
+        <button id="info-close" class="primary-button" type="button">Close</button>
+      </div>
+    </div>
+
+    <noscript>
+      <div class="overlay overlay--solid">
+        <div class="panel">
+          <h1 class="title">JavaScript required</h1>
+          <p class="subtitle">This 3D campus prototype needs JavaScript and WebGL enabled.</p>
+        </div>
+      </div>
+    </noscript>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

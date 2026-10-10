@@ -1,0 +1,439 @@
+/*
+ * Ghanaian Campus Life Simulator — UI layer.
+ *
+ * The 3D scene is a single WebGL canvas; everything the player reads or taps is
+ * plain DOM stacked on top of it. Keeping the UI in HTML/CSS (instead of
+ * in-world sprites) keeps text crisp and costs the GPU nothing, which matters a
+ * lot on modest Android phones.
+ *
+ * Palette is drawn from Ghanaian kente / flag tones: red, gold, green and black.
+ */
+
+:root {
+  --colour-red: #ce1126;
+  --colour-gold: #fcd116;
+  --colour-green: #006b3f;
+  --colour-ink: #10140f;
+  --colour-ink-soft: rgba(16, 20, 15, 0.82);
+  --colour-sand: #f4ead6;
+  --colour-clay: #b4572d;
+
+  --font-display: 'Trebuchet MS', 'Segoe UI', Roboto, system-ui, sans-serif;
+  --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --radius: 14px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--colour-ink);
+  color: var(--colour-sand);
+  font-family: var(--font-body);
+  /* Stop Android from hijacking drags as scroll/pull-to-refresh gestures. */
+  overscroll-behavior: none;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#viewport,
+#viewport canvas {
+  position: fixed;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+/* ============================== Overlays ============================== */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(16px + var(--safe-top)) calc(16px + var(--safe-right))
+    calc(16px + var(--safe-bottom)) calc(16px + var(--safe-left));
+  background: radial-gradient(circle at 50% 30%, rgba(0, 107, 63, 0.45), rgba(16, 20, 15, 0.92));
+  backdrop-filter: blur(3px);
+  overflow-y: auto;
+}
+
+.overlay--solid {
+  background: linear-gradient(170deg, #143524 0%, var(--colour-ink) 70%);
+  backdrop-filter: none;
+}
+
+.panel {
+  width: min(560px, 100%);
+  padding: 22px;
+  border: 1px solid rgba(252, 209, 22, 0.35);
+  border-radius: var(--radius);
+  background: var(--colour-ink-soft);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+  text-align: center;
+}
+
+.panel--info {
+  text-align: left;
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--colour-gold);
+}
+
+.title {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 5.2vw, 2.1rem);
+  line-height: 1.15;
+  color: var(--colour-sand);
+}
+
+.title--small {
+  font-size: clamp(1.15rem, 4.4vw, 1.5rem);
+}
+
+.subtitle,
+.loading-text {
+  margin: 0 0 16px;
+  font-size: 0.94rem;
+  line-height: 1.5;
+  color: rgba(244, 234, 214, 0.78);
+}
+
+.footnote {
+  margin: 14px 0 0;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: rgba(244, 234, 214, 0.5);
+}
+
+/* ============================== Buttons ============================== */
+
+.primary-button {
+  display: block;
+  width: 100%;
+  min-height: 52px;
+  margin: 0 0 14px;
+  padding: 14px 18px;
+  border: 0;
+  border-radius: 10px;
+  background: linear-gradient(180deg, var(--colour-green), #004f2e);
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 1.04rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: transform 120ms ease, filter 120ms ease;
+}
+
+.primary-button:hover,
+.primary-button:focus-visible {
+  filter: brightness(1.12);
+  outline: 2px solid var(--colour-gold);
+  outline-offset: 2px;
+}
+
+.primary-button:active {
+  transform: scale(0.985);
+}
+
+.icon-button {
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(244, 234, 214, 0.28);
+  border-radius: 50%;
+  background: rgba(16, 20, 15, 0.5);
+  color: var(--colour-sand);
+  font-size: 0.86rem;
+  line-height: 1;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.icon-button:active {
+  background: rgba(0, 107, 63, 0.65);
+}
+
+/* ============================== Settings ============================== */
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  text-align: left;
+}
+
+.settings-label {
+  font-size: 0.86rem;
+  color: rgba(244, 234, 214, 0.8);
+}
+
+.settings-select,
+.settings-range {
+  flex: 0 1 190px;
+  min-height: 40px;
+  padding: 6px 8px;
+  border: 1px solid rgba(244, 234, 214, 0.25);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--colour-sand);
+  font-size: 0.86rem;
+}
+
+.settings-range {
+  padding: 0;
+  accent-color: var(--colour-gold);
+}
+
+/* ============================ Controls list ============================ */
+
+.controls-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(244, 234, 214, 0.14);
+  text-align: left;
+  font-size: 0.84rem;
+}
+
+.controls-grid dt {
+  font-weight: 700;
+  color: var(--colour-gold);
+  white-space: nowrap;
+}
+
+.controls-grid dd {
+  margin: 0;
+  color: rgba(244, 234, 214, 0.76);
+}
+
+/* ============================== Info body ============================== */
+
+.info-body {
+  margin-bottom: 18px;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: rgba(244, 234, 214, 0.86);
+}
+
+.info-body p {
+  margin: 0 0 10px;
+}
+
+.info-body ul {
+  margin: 0 0 10px;
+  padding-left: 20px;
+}
+
+.info-body li {
+  margin-bottom: 4px;
+}
+
+/* ================================ HUD ================================ */
+
+.hud {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.hud-top {
+  position: absolute;
+  top: calc(10px + var(--safe-top));
+  left: calc(12px + var(--safe-left));
+  right: calc(12px + var(--safe-right));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.location-label {
+  margin: 0;
+  padding: 7px 13px;
+  border-radius: 999px;
+  background: rgba(16, 20, 15, 0.46);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(244, 234, 214, 0.9);
+}
+
+.crosshair {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  background: rgba(244, 234, 214, 0.65);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.interaction-prompt {
+  position: absolute;
+  bottom: calc(22% + var(--safe-bottom));
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 15px;
+  border: 1px solid rgba(252, 209, 22, 0.5);
+  border-radius: 999px;
+  background: rgba(16, 20, 15, 0.72);
+  transform: translateX(-50%);
+  font-size: 0.88rem;
+}
+
+.interaction-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 7px;
+  border-radius: 6px;
+  background: var(--colour-gold);
+  color: var(--colour-ink);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+/* =========================== Touch controls =========================== */
+
+.touch-controls {
+  position: absolute;
+  inset: 0;
+}
+
+.touch-joystick {
+  position: absolute;
+  bottom: calc(26px + var(--safe-bottom));
+  left: calc(26px + var(--safe-left));
+  width: 132px;
+  height: 132px;
+  border: 2px solid rgba(244, 234, 214, 0.26);
+  border-radius: 50%;
+  background: rgba(16, 20, 15, 0.26);
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.touch-joystick-knob {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 56px;
+  height: 56px;
+  margin: -28px 0 0 -28px;
+  border-radius: 50%;
+  background: rgba(252, 209, 22, 0.62);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+  will-change: transform;
+}
+
+/* Invisible drag surface for camera look: the whole right-hand side. */
+.touch-look {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 45%;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.touch-action-button {
+  position: absolute;
+  right: calc(24px + var(--safe-right));
+  bottom: calc(104px + var(--safe-bottom));
+  width: 92px;
+  height: 92px;
+  border: 2px solid rgba(252, 209, 22, 0.55);
+  border-radius: 50%;
+  background: rgba(0, 107, 63, 0.55);
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 700;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.touch-action-button:active {
+  background: rgba(252, 209, 22, 0.78);
+  color: var(--colour-ink);
+}
+
+.touch-action-button[disabled] {
+  opacity: 0.32;
+}
+
+/* ============================= Loading bar ============================= */
+
+.loading-bar {
+  width: 100%;
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(244, 234, 214, 0.16);
+}
+
+.loading-bar-fill {
+  width: 8%;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--colour-green), var(--colour-gold), var(--colour-red));
+  transition: width 220ms ease;
+}
+
+/* ============================ Small screens ============================ */
+
+@media (max-height: 460px) {
+  .controls-grid {
+    display: none;
+  }
+
+  .panel {
+    padding: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primary-button,
+  .loading-bar-fill {
+    transition: none;
+  }
+}

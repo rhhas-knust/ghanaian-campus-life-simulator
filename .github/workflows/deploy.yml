@@ -1,0 +1,85 @@
+# Build the Vite site and publish it to GitHub Pages.
+#
+# This uses the current official approach — the Pages *Actions* pipeline
+# (configure-pages -> upload-pages-artifact -> deploy-pages). There is no
+# `gh-pages` branch and nothing is committed back to the repository: the build
+# output is uploaded as an artifact and served directly.
+#
+# BEFORE THE FIRST RUN, someone with admin rights must set
+# Settings -> Pages -> Build and deployment -> Source = "GitHub Actions".
+# See DEPLOYMENT.md.
+
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  # Lets you re-deploy from the Actions tab without pushing a commit.
+  workflow_dispatch:
+
+permissions:
+  # Required to check out the repository.
+  contents: read
+  # Required by actions/deploy-pages to publish.
+  pages: write
+  # Required by actions/deploy-pages to mint its OIDC token.
+  id-token: write
+
+# One deployment at a time. `cancel-in-progress: false` so a run that is already
+# publishing is allowed to finish rather than leaving the site half-updated.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        # `npm ci` installs exactly what package-lock.json pins, and fails loudly
+        # if the lockfile and package.json have drifted apart.
+        run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build the production site
+        # vite.config.ts sets base to '/ghanaian-campus-life-simulator/', which is
+        # what makes the bundled asset URLs resolve under the project-site path.
+        run: npm run build
+
+      - name: Fail if the build produced nothing
+        run: test -f dist/index.html
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload the dist directory as the Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
