@@ -59,6 +59,7 @@ it with a glTF loader.
 | Change a colour or add a material | `src/config/palette.ts` |
 | Change walk speed, camera feel, a quality preset | `src/config/settings.ts` |
 | Register an artist asset | `src/config/assets.ts` |
+| Look up the concept art (map, buildings, UI) | `art/reference/` — reference only, never shipped |
 | Change how buildings are *generated* from their data | `src/world/Buildings.ts` |
 | Change collision behaviour | `src/physics/CollisionSystem.ts` |
 | Change the HUD or a menu | `src/ui/` and `index.html` |
