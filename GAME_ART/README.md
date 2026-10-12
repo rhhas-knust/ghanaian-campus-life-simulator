@@ -6,9 +6,12 @@ them.
 
 They live here, outside `public/`, on purpose. Everything in `public/` is copied
 into every GitHub Pages deploy; these 29 MB of JPEGs would be published without
-the game ever using them. When a real model, texture or icon is made *from* one
+the game ever using them. When a real model, texture or image is made *from* one
 of these references, that derived asset goes in `public/assets/` and is
-registered in `src/config/assets.ts` — see [`public/assets/README.md`](../../public/assets/README.md).
+registered in `src/config/assets.ts` — see [`public/assets/README.md`](../public/assets/README.md).
+
+**How the game uses this art, the palette, and the rules for new work:**
+[`ART_DIRECTION.md`](ART_DIRECTION.md).
 
 All images are 2752 x 1536 JPEG.
 
@@ -55,27 +58,10 @@ stair towers at the ends, a raised plinth with entrance steps and a canopy.
 | --- | --- |
 | [`gameplay-storyboards/gameplay_storyboards.jpeg`](gameplay-storyboards/gameplay_storyboards.jpeg) | Four frames: (1) first-person, approaching the security gate; (2) first-person, along the main path; (3) the central courtyard and lecture halls; (4) third-person beside a campus information finger-post. Thumbstick shown in every frame. |
 
-## How this compares with the current Phase 1 build
+## Status
 
-Recorded so the gap is visible, not as a decision about what to change.
-
-- **Layout.** The master plan is a different campus from the one in
-  `src/config/campusLayout.ts`: a roundabout courtyard with roads, hostels,
-  a cafeteria, sports pitches and car parks, versus the current avenue,
-  square courtyard and seven blocks.
-- **Architecture.** Close in spirit (verandahs, balconies, red roofs, green
-  trim), but the references use cream walls, hipped roofs throughout, external
-  stair towers and green balustrades rather than the current ochre / terracotta
-  palette and kente bands.
-- **Camera.** Storyboard frame 4 and the HUD reference show a **third-person**
-  view; the current build is first-person only. Frames 1–3 are first-person.
-- **HUD.** Energy, money, minimap, objectives, mission and in-game time do not
-  exist yet; the current HUD has a location label, interaction prompt, pause
-  button and touch controls.
-- **Life.** Vehicles and student NPCs appear throughout; the current build has
-  none.
-- **Consistency within the set.** The minimap reference shows a cross-plan
-  "Great Hall" at the centre of a plaza, which does not match the master plan's
-  monument courtyard. Hostel A (flat roof, six storeys) and Hostel B (hipped
-  roofs, four storeys) are different designs. Worth confirming which is
-  authoritative before modelling.
+Phase 1 now follows this art: the layout is traced from the master plan, the
+buildings follow the elevation sheets, and the HUD follows the UI mock-ups.
+Two of the images are also loaded at runtime (as the campus map and the title
+background). Details, and the open questions about inconsistencies within the
+set, are in [`ART_DIRECTION.md`](ART_DIRECTION.md).

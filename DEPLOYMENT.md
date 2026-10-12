@@ -11,47 +11,43 @@ keep running.
 
 ---
 
-## What you have to do (one time)
+## Current status
+
+| | |
+| --- | --- |
+| Repository visibility | **Public** |
+| Pages source | **GitHub Actions** |
+| Last verified deploy | Run #2 on 2026-10-10, both jobs green |
+
+Nothing else needs setting up: every push to `main` deploys automatically.
+
+## One-time setup (for reference, or for a fork)
 
 ### 1. Turn on Pages, with GitHub Actions as the source
 
 1. Open the repository on GitHub.
 2. **Settings** → **Pages** (left sidebar).
 3. Under **Build and deployment** → **Source**, choose **GitHub Actions**.
-4. Save.
 
-That is the whole setup. Do **not** pick "Deploy from a branch" — this project
-has no `gh-pages` branch and never commits build output.
+Do **not** pick "Deploy from a branch" — this project has no `gh-pages` branch
+and never commits build output. Until this is set, the workflow fails at the
+*Configure GitHub Pages* step with `Get Pages site failed ... Not Found`, which
+is exactly what happened on this repository's first run.
 
-> At the time of writing, this repository has `has_pages: false` — Pages has
-> never been enabled on it. The workflow will fail at the *Configure GitHub
-> Pages* step until the setting above is made.
+### 2. Private repositories need a paid plan
 
-### 2. If the repository is private, it needs a paid plan
+GitHub Pages on a **private** repository needs GitHub Pro, Team or Enterprise;
+on the free plan the option does not appear. This repository was made public
+to avoid that. If it is ever made private again, either upgrade or expect
+deploys to stop.
 
-**This repository is currently private.** GitHub Pages on a private repository
-requires **GitHub Pro, Team or Enterprise**. On the free plan the Pages settings
-page will not offer the option.
+Nothing in this project is secret — no keys, credentials or personal data.
+Check that any new artist assets are cleared for publication, because
+everything in `public/` is published.
 
-Two ways forward:
+### 3. Re-deploy without a commit
 
-- **Make the repository public.** Settings → General → Danger Zone → Change
-  visibility. Nothing in this project is secret: there are no keys, no
-  credentials and no personal data. Check that any artist assets added later are
-  cleared for publication first.
-- **Or upgrade the account or organisation** to a plan that includes private
-  Pages.
-
-Everything else in this document works the same either way.
-
-### 3. Push and watch it run
-
-The workflow runs on every push to `main`, and can also be started by hand from
-the **Actions** tab (**Deploy to GitHub Pages** → **Run workflow**).
-
-The first successful run prints the live URL in the `deploy` job summary.
-
----
+**Actions** → **Deploy to GitHub Pages** → **Run workflow**.
 
 ## How the workflow works
 
@@ -169,6 +165,16 @@ bind to all interfaces; use the network address they print.
 
 ---
 
+## What gets published
+
+Only `dist/` — the build output. That is `index.html`, the bundled JavaScript
+and CSS, and a copy of `public/` (the favicon and `public/assets/`, including
+the two derived images: `campus-map.webp` and `title-background.webp`).
+
+The concept art in `GAME_ART/` is **not** published: it is outside `public/`,
+so Vite never copies it. That keeps 29 MB of reference JPEGs out of every
+deploy.
+
 ## Troubleshooting
 
 | Symptom | Cause | Fix |
@@ -177,6 +183,7 @@ bind to all interfaces; use the network address they print.
 | No **GitHub Actions** option under Pages → Source | Private repository on a free plan | Make it public, or upgrade (step 2) |
 | Blank page, console 404s on `/assets/*.js` | `base` does not match the repository name | Fix `BASE_PATH` in `vite.config.ts` |
 | Page loads, 3D area is black | WebGL unavailable or hardware acceleration off | The loading overlay says so; try an up-to-date Chrome or Firefox |
+| Title background or campus map missing | An image path hard-coded with a leading `/` | Use `resolveAssetUrl()` from `src/config/assets.ts` |
 | Old version still served | CDN cache | Hard-refresh, or wait a few minutes |
 | `npm ci` fails in CI | `package-lock.json` out of step with `package.json` | Run `npm install` locally and commit the lockfile |
 | Deploy succeeds, 404 at the URL | Looking at the root instead of the sub-directory | Use the full URL with `/ghanaian-campus-life-simulator/` |

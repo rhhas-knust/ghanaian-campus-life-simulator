@@ -2,20 +2,22 @@
  * World generation orchestrator.
  *
  * Runs each world module in turn, collects their geometry into the batcher and
- * their colliders/interactables into flat arrays, then merges everything into a
- * handful of static meshes.
+ * their colliders and interactables into flat arrays, then merges everything
+ * into a few dozen static meshes.
  *
- * ORDER MATTERS in exactly one place: vegetation runs last, because the
- * scattered background belts need the finished collider list in order to reject
- * positions that would grow a tree through a wall.
+ * Two ordering rules:
+ *  - The sign atlas is built FIRST, from every label the data files mention,
+ *    because world modules place lettering as they go.
+ *  - Vegetation runs LAST, because the scattered belts need the finished
+ *    collider list to keep trees out of buildings.
  */
 
-import { Group, type Mesh } from 'three';
+import { Group, MeshLambertMaterial, type Mesh } from 'three';
 
-import { WALKWAYS } from '../config/campusLayout';
+import { BRIDGES, BUILDINGS } from '../config/campusLayout';
 import type { MaterialKey } from '../config/palette';
 import type { QualityPreset } from '../config/settings';
-import type { Collider, Interactable, Vec2Tuple } from '../types';
+import type { Collider, Interactable } from '../types';
 import { GeometryBatcher, type BatchStats } from '../utils/GeometryBatcher';
 import type { MaterialLibrary } from '../utils/MaterialLibrary';
 import { ShapeBuilder, degToRad } from '../utils/shapes';
@@ -23,20 +25,24 @@ import { buildBuildings } from './Buildings';
 import { buildEntrance } from './Entrance';
 import { buildGround } from './Ground';
 import { buildProps } from './Props';
-import { buildSignage } from './Signage';
+import { SignAtlas, type LabelStyle } from './SignAtlas';
+import { buildSignage, signLabels } from './Signage';
 import { buildVegetation } from './Vegetation';
 import type { WorldBuildContext, WorldSink } from './context';
 
 /**
- * Flat ground never needs to cast a shadow, and skipping it keeps a large,
- * nearly-screen-filling mesh out of the shadow pass.
+ * Flat ground never needs to cast a shadow, and leaving it out keeps a large,
+ * nearly screen-filling mesh out of the shadow pass.
  */
 const NON_SHADOW_CASTING: ReadonlySet<MaterialKey> = new Set<MaterialKey>([
-  'laterite',
   'lawn',
-  'pavingLight',
-  'pavingDark',
-  'kerb',
+  'lawnStripe',
+  'asphalt',
+  'roadMarking',
+  'pavingTan',
+  'pavingStone',
+  'courtSurface',
+  'signText',
 ]);
 
 export interface BuiltWorld {
@@ -45,11 +51,15 @@ export interface BuiltWorld {
   readonly colliders: readonly Collider[];
   readonly interactables: readonly Interactable[];
   readonly stats: BatchStats;
+  readonly signAtlas: SignAtlas;
 }
 
 export function buildWorld(quality: QualityPreset, materials: MaterialLibrary): BuiltWorld {
   const batcher = new GeometryBatcher();
   const shapes = new ShapeBuilder(batcher);
+
+  const signAtlas = new SignAtlas(collectLabels());
+  materials.register('signText', new MeshLambertMaterial({ map: signAtlas.texture }));
 
   const colliders: Collider[] = [];
   const interactables: Interactable[] = [];
@@ -75,19 +85,15 @@ export function buildWorld(quality: QualityPreset, materials: MaterialLibrary): 
     },
   };
 
-  const context: WorldBuildContext = { shapes, quality, sink };
+  const context: WorldBuildContext = { shapes, quality, sink, labels: signAtlas };
 
   buildGround(context);
   buildEntrance(context);
   buildBuildings(context);
   buildProps(context);
   buildSignage(context);
-
-  // Last: needs the collider list above to keep scattered trees off everything.
-  buildVegetation(context, {
-    existingColliders: colliders,
-    keepClearRects: walkwayKeepClearRects(),
-  });
+  // Last: reads the collider list above to keep scattered trees clear.
+  buildVegetation(context, colliders);
 
   const { meshes, stats } = batcher.build({
     materialFor: (key) => materials.get(key),
@@ -101,19 +107,31 @@ export function buildWorld(quality: QualityPreset, materials: MaterialLibrary): 
     group.add(mesh);
   }
 
-  return { group, colliders, interactables, stats };
+  return { group, colliders, interactables, stats, signAtlas };
 }
 
-/** Walkways and plazas that scattered trees must not grow through. */
-function walkwayKeepClearRects(): { centre: Vec2Tuple; size: readonly [number, number] }[] {
-  return WALKWAYS.map((walkway) => ({ centre: walkway.centre, size: walkway.size }));
+/** Every piece of lettering any world module will ask the atlas for. */
+function collectLabels(): { text: string; style: LabelStyle }[] {
+  const labels: { text: string; style: LabelStyle }[] = [];
+  for (const building of BUILDINGS) {
+    if (building.nameBoard) {
+      labels.push({ text: building.nameBoard, style: 'board' });
+    }
+  }
+  for (const bridge of BRIDGES) {
+    if (bridge.sign) {
+      labels.push({ text: bridge.sign.text, style: 'board' });
+    }
+  }
+  labels.push(...signLabels());
+  return labels;
 }
 
-/** Frees every merged geometry in a built world. Materials are owned elsewhere. */
+/** Frees every merged geometry and the sign atlas. Materials are owned elsewhere. */
 export function disposeWorld(world: BuiltWorld): void {
   for (const child of world.group.children) {
-    const mesh = child as Mesh;
-    mesh.geometry?.dispose();
+    (child as Mesh).geometry.dispose();
   }
   world.group.clear();
+  world.signAtlas.dispose();
 }

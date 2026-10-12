@@ -14,6 +14,7 @@
 import {
   BufferAttribute,
   BufferGeometry,
+  CircleGeometry,
   ConeGeometry,
   CylinderGeometry,
   IcosahedronGeometry,
@@ -45,6 +46,12 @@ const cylinderCache = new Map<string, BufferGeometry>();
 
 /** Horizontal 1 x 1 plane, facing straight up, centred on the origin. */
 const UNIT_GROUND = new PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
+
+/** Flat disc of radius 1 facing up — plazas, roundabouts, court markings. */
+const UNIT_DISC = new CircleGeometry(1, 40).rotateX(-Math.PI / 2);
+
+/** Vertical 1 x 1 quad facing +Z — sign lettering. UVs are rewritten per label. */
+const UNIT_LABEL = new PlaneGeometry(1, 1);
 
 /** Low-poly 1-radius ball, used for tree canopies and shrubs. */
 const UNIT_BLOB_DETAIL_0 = new IcosahedronGeometry(1, 0);
@@ -286,6 +293,48 @@ export class ShapeBuilder {
     this.batcher.add(material, boxGeometry(), this.matrix);
   }
 
+  /** Flat disc, e.g. the courtyard plaza or the roundabout island. */
+  disc(material: MaterialKey, centre: Vec2Tuple, radius: number, y: number): void {
+    this.compose([centre[0], y, centre[1]], [radius, 1, radius], 0);
+    this.batcher.add(material, UNIT_DISC, this.matrix);
+  }
+
+  /**
+   * A true hip roof: four slopes meeting a ridge that runs along the longer
+   * side. The concept art uses hip roofs on every building; a four-sided
+   * pyramid stretched over a long wing reads as a tent, so this builds the real
+   * shape. The geometry is sized per call, so it is created, submitted and
+   * freed here rather than cached.
+   */
+  hipRoof(material: MaterialKey, options: RoofOptions): void {
+    const geometry = createHipRoof(options.width, options.depth, options.height);
+    this.compose([options.at[0], options.baseY, options.at[1]], [1, 1, 1], options.rotationY ?? 0);
+    this.batcher.add(material, geometry, this.matrix);
+    geometry.dispose();
+  }
+
+  /**
+   * Vertical quad showing one cell of the sign-text atlas. `uv` is
+   * `[u0, v0, u1, v1]` in texture space. The quad faces `rotationY` (degrees;
+   * 0 = facing south, +Z).
+   */
+  label(
+    material: MaterialKey,
+    centre: Vec3Tuple,
+    width: number,
+    height: number,
+    rotationY: number,
+    uv: readonly [number, number, number, number],
+  ): void {
+    const geometry = UNIT_LABEL.clone();
+    const [u0, v0, u1, v1] = uv;
+    // PlaneGeometry vertex order: top-left, top-right, bottom-left, bottom-right.
+    geometry.setAttribute('uv', new BufferAttribute(new Float32Array([u0, v1, u1, v1, u0, v0, u1, v0]), 2));
+    this.compose(centre, [width, height, 1], rotationY);
+    this.batcher.add(material, geometry, this.matrix);
+    geometry.dispose();
+  }
+
   /** Builds `translate * rotateY * scale` into the scratch matrix. */
   private compose(centre: Vec3Tuple, scale: SizeTuple, rotationYDegrees: number): void {
     this.matrix
@@ -293,6 +342,67 @@ export class ShapeBuilder {
       .multiply(this.scratchA.makeRotationY(degToRad(rotationYDegrees)))
       .multiply(this.scratchB.makeScale(scale[0], scale[1], scale[2]));
   }
+}
+
+// ---------------------------------------------------------------------------
+// Hip roof geometry
+// ---------------------------------------------------------------------------
+
+/**
+ * Hip roof sitting on y = 0, `width` along X, `depth` along Z, apex `height`.
+ * The ridge runs along whichever side is longer, with length `long - short`,
+ * which keeps all four slopes at the same pitch.
+ */
+function createHipRoof(width: number, depth: number, height: number): BufferGeometry {
+  const alongX = width >= depth;
+  const long = alongX ? width : depth;
+  const short = alongX ? depth : width;
+  const halfRidge = Math.max(0, (long - short) / 2);
+  const hl = long / 2;
+  const hs = short / 2;
+
+  // Built with the ridge on local X, then swizzled if the ridge belongs on Z.
+  const corners = {
+    a: new Vector3(-hl, 0, hs),
+    b: new Vector3(hl, 0, hs),
+    c: new Vector3(hl, 0, -hs),
+    d: new Vector3(-hl, 0, -hs),
+    r1: new Vector3(-halfRidge, height, 0),
+    r2: new Vector3(halfRidge, height, 0),
+  };
+  const triangles: Vector3[][] = [
+    [corners.a, corners.b, corners.r2], // south slope (trapezoid)
+    [corners.a, corners.r2, corners.r1],
+    [corners.c, corners.d, corners.r1], // north slope (trapezoid)
+    [corners.c, corners.r1, corners.r2],
+    [corners.b, corners.c, corners.r2], // east hip
+    [corners.d, corners.a, corners.r1], // west hip
+    [corners.a, corners.d, corners.c], // underside, seen from the verandahs
+    [corners.a, corners.c, corners.b],
+  ];
+
+  const positions = new Float32Array(triangles.length * 9);
+  const uvs = new Float32Array(triangles.length * 6);
+  let p = 0;
+  let u = 0;
+  for (const triangle of triangles) {
+    for (const vertex of triangle) {
+      const x = alongX ? vertex.x : vertex.z;
+      const z = alongX ? vertex.z : -vertex.x;
+      positions[p++] = x;
+      positions[p++] = vertex.y;
+      positions[p++] = z;
+      uvs[u++] = x / long + 0.5;
+      uvs[u++] = z / long + 0.5;
+    }
+  }
+
+  const geometry = new BufferGeometry();
+  geometry.setAttribute('position', new BufferAttribute(positions, 3));
+  geometry.setAttribute('uv', new BufferAttribute(uvs, 2));
+  // Non-indexed, so these are true per-face normals: crisp hips and ridge.
+  geometry.computeVertexNormals();
+  return geometry;
 }
 
 // ---------------------------------------------------------------------------
@@ -352,6 +462,8 @@ export function disposeSharedGeometry(): void {
   cachedBox?.dispose();
   cachedBox = null;
   UNIT_GROUND.dispose();
+  UNIT_DISC.dispose();
+  UNIT_LABEL.dispose();
   UNIT_BLOB_DETAIL_0.dispose();
   UNIT_BLOB_DETAIL_1.dispose();
   UNIT_PYRAMID.dispose();

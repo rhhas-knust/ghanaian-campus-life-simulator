@@ -39,6 +39,17 @@ export class MaterialLibrary {
     return created;
   }
 
+  /**
+   * Supplies a hand-built material for a key — used for the sign-text atlas,
+   * whose material needs a generated texture that plain palette data cannot
+   * describe. Must be called before `get()` is first asked for that key.
+   */
+  register(key: MaterialKey, material: Material): void {
+    this.cache.get(key)?.dispose();
+    material.name = key;
+    this.cache.set(key, material);
+  }
+
   /** Frees every GPU-side material. Called when the game tears down. */
   dispose(): void {
     for (const material of this.cache.values()) {
@@ -56,8 +67,6 @@ export class MaterialLibrary {
         color: colour,
         side,
         flatShading: def.flatShading ?? false,
-        transparent: def.transparent ?? false,
-        opacity: def.opacity ?? 1,
       });
       if (def.emissive !== undefined) {
         material.emissive = new Color(def.emissive);
@@ -73,8 +82,6 @@ export class MaterialLibrary {
       metalness: def.metalness,
       side,
       flatShading: def.flatShading ?? false,
-      transparent: def.transparent ?? false,
-      opacity: def.opacity ?? 1,
     });
     if (def.emissive !== undefined) {
       material.emissive = new Color(def.emissive);

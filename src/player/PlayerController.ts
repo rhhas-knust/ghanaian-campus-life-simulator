@@ -1,161 +1,150 @@
 /**
- * First-person player.
+ * The player's body: where they stand, which way they look, how fast they move.
  *
- * Owns the camera's position and orientation, nothing else. Movement is
- * velocity-based with acceleration and damping rather than teleporting the
- * camera by `speed * delta`, which is what makes it feel like walking instead
- * of sliding on ice — and it matters much more on a touchscreen, where the
- * joystick is far noisier than a keyboard.
+ * Deliberately knows nothing about the camera. `CameraRig` reads this state
+ * and frames it in first or third person; `Avatar` reads it and animates the
+ * student model. That split is what lets the camera mode change without the
+ * movement feel changing at all.
  *
- * The player is a vertical cylinder as far as the world is concerned; its
- * ground-plane circle is handed to `CollisionSystem` every frame.
+ * Movement is velocity-based with acceleration and damping, rather than
+ * teleporting by `speed * delta` — that is what makes it feel like walking
+ * rather than sliding, and it matters most on a noisy touchscreen joystick.
  */
 
-import { Euler, Vector3, type PerspectiveCamera } from 'three';
+import { Vector3 } from 'three';
 
-import { CAMERA_SETTINGS, PLAYER_SETTINGS } from '../config/settings';
+import { AUTO_LEVEL_SETTINGS, CAMERA_SETTINGS, PLAYER_SETTINGS } from '../config/settings';
 import type { CollisionSystem } from '../physics/CollisionSystem';
 import type { LookDelta, MovementInput, SpawnDef } from '../types';
 import { degToRad } from '../utils/shapes';
 
+export interface PlayerUpdateOptions {
+  /** Ease the view back to the horizon after the player stops looking. */
+  readonly autoLevel: boolean;
+}
+
 export class PlayerController {
-  /** Ground-plane position. Y is always 0 here; eye height is added on output. */
-  private readonly position = new Vector3();
+  /** Ground-plane position. Y is always 0; heights are the camera's business. */
+  readonly position = new Vector3();
   private readonly velocity = new Vector3();
 
-  private yaw = 0;
-  private pitch = 0;
-  /** Accumulated distance walked, which drives the head bob phase. */
-  private bobPhase = 0;
+  private yawRadians = 0;
+  private pitchRadians = 0;
+  /** Distance walked, which drives the head-bob and walk-cycle phase. */
+  private stride = 0;
+  private secondsSinceLook = 0;
 
-  private readonly forwardVector = new Vector3();
-  private readonly rightVector = new Vector3();
-  private readonly desiredVelocity = new Vector3();
-  private readonly orientation = new Euler(0, 0, 0, 'YXZ');
+  private readonly forward = new Vector3();
+  private readonly right = new Vector3();
+  private readonly desired = new Vector3();
 
-  constructor(
-    private readonly camera: PerspectiveCamera,
-    private readonly collision: CollisionSystem,
-  ) {}
+  constructor(private readonly collision: CollisionSystem) {}
 
-  /** Places the player at a spawn point and points them the right way. */
-  reset(spawn: SpawnDef): void {
+  /** Places the player at a spawn point, facing the right way, standing still. */
+  reset(spawn: SpawnDef, pitch = 0): void {
     this.position.set(spawn.position[0], 0, spawn.position[1]);
     this.velocity.set(0, 0, 0);
-    this.yaw = degToRad(spawn.yawDegrees);
-    this.pitch = 0;
-    this.bobPhase = 0;
-    this.applyToCamera();
+    this.yawRadians = degToRad(spawn.yawDegrees);
+    this.pitchRadians = pitch;
+    this.stride = 0;
+    this.secondsSinceLook = 0;
   }
 
-  /** Current ground position, for the HUD and the interaction system. */
-  getPosition(target: Vector3): Vector3 {
-    return target.copy(this.position);
+  /** Look direction around the vertical axis. 0 = north (-Z). */
+  get yaw(): number {
+    return this.yawRadians;
   }
 
-  /** Unit vector the camera is facing, flattened onto the ground plane. */
-  getFlatForward(target: Vector3): Vector3 {
-    return target.set(-Math.sin(this.yaw), 0, -Math.cos(this.yaw));
+  get pitch(): number {
+    return this.pitchRadians;
   }
 
-  /** Metres per second, used to decide whether to bob the camera. */
   get speed(): number {
-    return this.velocity.length();
+    return Math.hypot(this.velocity.x, this.velocity.z);
   }
 
-  /**
-   * Advances the player by `delta` seconds.
-   *
-   * @param look Consumed look delta in radians — applied once, not integrated,
-   *             because mouse and touch deltas are already frame-relative.
-   */
-  update(delta: number, movement: MovementInput, look: LookDelta): void {
-    this.applyLook(look);
+  /** Metres walked so far — the phase for head bob and the walk cycle. */
+  get distanceWalked(): number {
+    return this.stride;
+  }
+
+  /** Direction of travel on the ground plane, as a yaw. Undefined when still. */
+  get travelYaw(): number | null {
+    if (this.speed < 0.3) {
+      return null;
+    }
+    return Math.atan2(-this.velocity.x, -this.velocity.z);
+  }
+
+  /** Unit vector the player is looking along, flattened onto the ground. */
+  getFlatForward(target: Vector3): Vector3 {
+    return target.set(-Math.sin(this.yawRadians), 0, -Math.cos(this.yawRadians));
+  }
+
+  update(delta: number, movement: MovementInput, look: LookDelta, options: PlayerUpdateOptions): void {
+    this.applyLook(delta, look, options);
     this.applyMovement(delta, movement);
-    this.applyToCamera();
   }
 
-  private applyLook(look: LookDelta): void {
-    this.yaw += look.yaw;
-    this.pitch += look.pitch;
+  private applyLook(delta: number, look: LookDelta, options: PlayerUpdateOptions): void {
+    const looked = Math.abs(look.yaw) + Math.abs(look.pitch) > 1e-5;
+    this.secondsSinceLook = looked ? 0 : this.secondsSinceLook + delta;
 
-    // Keep yaw in a sane range so it never loses float precision over a long
-    // session, and clamp pitch so the player cannot roll over backwards.
+    this.yawRadians += look.yaw;
+    this.pitchRadians += look.pitch;
+
+    // Auto-level: once the player has stopped dragging and is walking, ease the
+    // view back towards the horizon. This is the main fix for "the camera
+    // keeps ending up looking at the sky" on phones.
+    if (options.autoLevel && this.secondsSinceLook > AUTO_LEVEL_SETTINGS.delay && this.speed > 0.5) {
+      const target = AUTO_LEVEL_SETTINGS.restingPitch;
+      const step = AUTO_LEVEL_SETTINGS.rate * delta * Math.min(1, this.speed / PLAYER_SETTINGS.walkSpeed);
+      const gap = target - this.pitchRadians;
+      this.pitchRadians += Math.sign(gap) * Math.min(Math.abs(gap), step);
+    }
+
     const twoPi = Math.PI * 2;
-    this.yaw = ((this.yaw % twoPi) + twoPi) % twoPi;
-    this.pitch = Math.max(
-      -CAMERA_SETTINGS.maxPitch,
-      Math.min(CAMERA_SETTINGS.maxPitch, this.pitch),
-    );
+    this.yawRadians = ((this.yawRadians % twoPi) + twoPi) % twoPi;
+    this.pitchRadians = Math.max(CAMERA_SETTINGS.minPitch, Math.min(CAMERA_SETTINGS.maxPitch, this.pitchRadians));
   }
 
   private applyMovement(delta: number, movement: MovementInput): void {
-    this.getFlatForward(this.forwardVector);
-    // Right-hand perpendicular of forward on the ground plane.
-    this.rightVector.set(Math.cos(this.yaw), 0, -Math.sin(this.yaw));
+    this.getFlatForward(this.forward);
+    this.right.set(Math.cos(this.yawRadians), 0, -Math.sin(this.yawRadians));
 
-    const targetSpeed = movement.sprint
-      ? PLAYER_SETTINGS.sprintSpeed
-      : PLAYER_SETTINGS.walkSpeed;
+    const targetSpeed = movement.sprint ? PLAYER_SETTINGS.sprintSpeed : PLAYER_SETTINGS.walkSpeed;
+    this.desired.copy(this.forward).multiplyScalar(movement.forward).addScaledVector(this.right, movement.right);
 
-    this.desiredVelocity
-      .copy(this.forwardVector)
-      .multiplyScalar(movement.forward)
-      .addScaledVector(this.rightVector, movement.right);
-
-    const inputMagnitude = this.desiredVelocity.length();
-    if (inputMagnitude > 1e-4) {
-      this.desiredVelocity.multiplyScalar(targetSpeed / inputMagnitude);
+    const magnitude = this.desired.length();
+    if (magnitude > 1e-4) {
+      // A half-pushed joystick walks slowly; a full push walks at full speed.
+      this.desired.multiplyScalar((targetSpeed * Math.min(1, magnitude)) / magnitude);
     } else {
-      this.desiredVelocity.set(0, 0, 0);
+      this.desired.set(0, 0, 0);
     }
 
-    // Exponential approach: fast to start, fast to stop, no overshoot, and
-    // frame-rate independent.
-    const rate = inputMagnitude > 1e-4 ? PLAYER_SETTINGS.acceleration : PLAYER_SETTINGS.damping;
-    const blend = 1 - Math.exp(-rate * delta);
-    this.velocity.lerp(this.desiredVelocity, blend);
+    // Exponential approach: frame-rate independent, never overshoots.
+    const rate = magnitude > 1e-4 ? PLAYER_SETTINGS.acceleration : PLAYER_SETTINGS.damping;
+    this.velocity.lerp(this.desired, 1 - Math.exp(-rate * delta));
 
     if (this.velocity.lengthSq() < 1e-6) {
       this.velocity.set(0, 0, 0);
       return;
     }
 
-    const desiredX = this.position.x + this.velocity.x * delta;
-    const desiredZ = this.position.z + this.velocity.z * delta;
-    const [resolvedX, resolvedZ] = this.collision.resolve(
-      desiredX,
-      desiredZ,
+    const [x, z] = this.collision.resolve(
+      this.position.x + this.velocity.x * delta,
+      this.position.z + this.velocity.z * delta,
       PLAYER_SETTINGS.collisionRadius,
     );
-
-    // Bleed off the velocity component that collision just cancelled, so the
-    // player does not keep accelerating into a wall and then shoot sideways.
+    // Bleed off whatever collision cancelled, so the player does not keep
+    // accelerating into a wall and then shoot sideways off its end.
     if (delta > 0) {
-      this.velocity.x = (resolvedX - this.position.x) / delta;
-      this.velocity.z = (resolvedZ - this.position.z) / delta;
+      this.velocity.x = (x - this.position.x) / delta;
+      this.velocity.z = (z - this.position.z) / delta;
     }
-
-    this.position.x = resolvedX;
-    this.position.z = resolvedZ;
-
-    this.bobPhase += this.velocity.length() * delta;
-  }
-
-  private applyToCamera(): void {
-    const bobbing = this.speed > 0.4;
-    const bob = bobbing
-      ? Math.sin(this.bobPhase * PLAYER_SETTINGS.bobFrequency * Math.PI) *
-        PLAYER_SETTINGS.bobAmplitude
-      : 0;
-
-    this.camera.position.set(
-      this.position.x,
-      PLAYER_SETTINGS.eyeHeight + bob,
-      this.position.z,
-    );
-
-    this.orientation.set(this.pitch, this.yaw, 0);
-    this.camera.quaternion.setFromEuler(this.orientation);
+    this.position.x = x;
+    this.position.z = z;
+    this.stride += this.speed * delta;
   }
 }

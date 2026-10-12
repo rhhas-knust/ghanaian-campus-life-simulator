@@ -12,7 +12,21 @@ import './ui/styles.css';
 import { Game } from './core/Game';
 import { requireElement } from './ui/dom';
 
+/**
+ * Stops the browser treating gameplay touches as page gestures: the long-press
+ * context menu, iOS pinch-zoom, and double-tap zoom. Scrolling and
+ * pull-to-refresh are already disabled in CSS (`touch-action`,
+ * `overscroll-behavior`). Overlays still scroll because they opt back in.
+ */
+function blockPageGestures(): void {
+  const block = (event: Event): void => event.preventDefault();
+  window.addEventListener('contextmenu', block);
+  document.addEventListener('gesturestart', block);
+  document.addEventListener('dblclick', block);
+}
+
 async function bootstrap(): Promise<void> {
+  blockPageGestures();
   const container = requireElement('viewport');
   const game = new Game(container);
   await game.load();

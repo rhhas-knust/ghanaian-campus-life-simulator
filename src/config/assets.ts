@@ -82,8 +82,23 @@ export const AUDIO_ASSETS = {} satisfies Record<string, AudioAsset>;
 
 export type AudioKey = keyof typeof AUDIO_ASSETS;
 
-/** 2D images: UI icons, sign artwork, the artist's campus map reference. */
-export const IMAGE_ASSETS = {} satisfies Record<string, TextureAsset>;
+/**
+ * 2D images used at runtime. Both are derived from the concept art in
+ * `GAME_ART/` — downscaled and re-encoded as WebP so they cost ~200 KB together
+ * rather than the 7 MB of the source JPEGs.
+ */
+export const IMAGE_ASSETS = {
+  /** The master plan, shown full-screen as the campus map. Loaded on first open. */
+  campusMap: {
+    path: 'assets/images/campus-map.webp',
+    credit: 'GAME_ART/campus-map/campus_masterplan.jpeg, downscaled to 1600 px',
+  },
+  /** Storyboard frame 3 (the courtyard), behind the loading and start screens. */
+  titleBackground: {
+    path: 'assets/images/title-background.webp',
+    credit: 'GAME_ART/gameplay-storyboards/gameplay_storyboards.jpeg, frame 3, cropped',
+  },
+} satisfies Record<string, TextureAsset>;
 
 export type ImageKey = keyof typeof IMAGE_ASSETS;
 

@@ -1,174 +1,96 @@
 /**
- * Campus entrance and boundary wall.
+ * Perimeter fence and the security gate.
  *
- * The gate is the first thing the player sees, so it carries most of the
- * "where am I?" load: two rendered pillars with pyramid caps, a whitewashed
- * lintel across the top, and a kente band under it in the national colours.
+ * The fence follows the master plan: a low rendered wall with dark railings and
+ * a pillar every fifteen metres. The gate is the security booth on its traffic
+ * island (the booth itself is a building in the layout data) with two red and
+ * white barrier arms — raised, because the gate is open during the day, which
+ * is also why the arms have no collider.
  */
 
-import { BOUNDARY_WALLS, GATE, type WallSegmentDef } from '../config/campusLayout';
+import { FENCE, GATE_BARRIERS, planPoint, type FenceDef } from '../config/campusLayout';
+import type { MaterialKey } from '../config/palette';
 import type { Vec2Tuple } from '../types';
 import { offsetLocal } from '../utils/shapes';
 import type { WorldBuildContext } from './context';
 
+const WALL_HEIGHT = 0.6;
+const RAIL_TOP = 2;
+const POST_PITCH = 3;
+const PILLAR_PITCH = 15;
+
 export function buildEntrance(context: WorldBuildContext): void {
-  buildGate(context);
-  for (const wall of BOUNDARY_WALLS) {
-    buildWallSegment(context, wall);
+  for (const segment of FENCE) {
+    buildFence(context, segment);
   }
+  buildGate(context);
+}
+
+function buildFence(context: WorldBuildContext, segment: FenceDef): void {
+  const { shapes } = context;
+  const from = planPoint(segment.from);
+  const to = planPoint(segment.to);
+  const dx = to[0] - from[0];
+  const dz = to[1] - from[1];
+  const length = Math.hypot(dx, dz);
+  if (length < 0.5) {
+    return;
+  }
+  const centre: Vec2Tuple = [(from[0] + to[0]) / 2, (from[1] + to[1]) / 2];
+  // Local +Z runs from `from` to `to`.
+  const rotationY = (Math.atan2(dx, dz) * 180) / Math.PI;
+
+  shapes.boxAt('wallCream', centre, 0, [0.32, WALL_HEIGHT, length], rotationY);
+  shapes.boxAt('column', centre, WALL_HEIGHT, [0.4, 0.08, length], rotationY);
+  for (const railY of [1.25, RAIL_TOP - 0.06]) {
+    shapes.boxAt('fenceMetal', centre, railY, [0.05, 0.06, length], rotationY);
+  }
+
+  const posts = Math.floor(length / POST_PITCH);
+  for (let index = 0; index <= posts; index += 1) {
+    const along = -length / 2 + (index / Math.max(posts, 1)) * length;
+    shapes.boxAt('fenceMetal', offsetLocal(centre, rotationY, 0, along), WALL_HEIGHT, [0.06, RAIL_TOP - WALL_HEIGHT, 0.06], rotationY);
+  }
+  const pillars = Math.max(1, Math.round(length / PILLAR_PITCH));
+  for (let index = 0; index <= pillars; index += 1) {
+    const along = -length / 2 + (index / pillars) * length;
+    const at = offsetLocal(centre, rotationY, 0, along);
+    shapes.boxAt('wallCream', at, 0, [0.55, RAIL_TOP + 0.15, 0.55], rotationY);
+    shapes.boxAt('column', at, RAIL_TOP + 0.15, [0.68, 0.12, 0.68], rotationY);
+  }
+
+  context.sink.addBoxCollider(`fence:${segment.id}`, centre, 0.4, length / 2, rotationY);
 }
 
 function buildGate(context: WorldBuildContext): void {
-  const gate = GATE;
-  const halfOpening = gate.openingWidth / 2;
-  const pillarOffset = halfOpening + gate.pillarWidth / 2;
+  const { shapes } = context;
+  const booth = planPoint(GATE_BARRIERS.booth);
 
-  for (const sign of [-1, 1] as const) {
-    const pillarCentre = offsetLocal(gate.centre, gate.rotationY, sign * pillarOffset, 0);
+  // Traffic island the booth stands on.
+  shapes.boxAt('kerb', booth, 0, [3.6, 0.18, 13.2]);
+  context.sink.addBoxCollider('gate-island', booth, 1.9, 6.7, 0);
 
-    // Wider base course.
-    context.shapes.boxAt(
-      'plinth',
-      pillarCentre,
-      0,
-      [gate.pillarWidth + 0.5, 0.5, gate.pillarWidth + 0.5],
-      gate.rotationY,
-    );
-    context.shapes.boxAt(
-      gate.pillarMaterial,
-      pillarCentre,
-      0.5,
-      [gate.pillarWidth, gate.pillarHeight - 0.5, gate.pillarWidth],
-      gate.rotationY,
-    );
-    // Whitewashed banding and a pyramid cap.
-    context.shapes.boxAt(
-      'wallWhitewash',
-      pillarCentre,
-      gate.pillarHeight - 0.1,
-      [gate.pillarWidth + 0.3, 0.34, gate.pillarWidth + 0.3],
-      gate.rotationY,
-    );
-    context.shapes.pyramid(gate.archMaterial, {
-      at: pillarCentre,
-      baseY: gate.pillarHeight + 0.24,
-      width: gate.pillarWidth + 0.3,
-      depth: gate.pillarWidth + 0.3,
-      height: 0.8,
-      rotationY: gate.rotationY,
-    });
-
-    context.sink.addBoxCollider(
-      `gate-pillar:${sign > 0 ? 'east' : 'west'}`,
-      pillarCentre,
-      (gate.pillarWidth + 0.5) / 2,
-      (gate.pillarWidth + 0.5) / 2,
-      gate.rotationY,
-    );
-  }
-
-  // Lintel spanning the opening, with the name board and a kente band under it.
-  const lintelWidth = gate.openingWidth + gate.pillarWidth * 2;
-  context.shapes.boxAt(
-    gate.archMaterial,
-    gate.centre,
-    gate.archHeight,
-    [lintelWidth, 1.3, gate.archThickness],
-    gate.rotationY,
-  );
-  context.shapes.boxAt(
-    'signBoard',
-    offsetLocal(gate.centre, gate.rotationY, 0, gate.archThickness / 2 + 0.03),
-    gate.archHeight + 0.18,
-    [lintelWidth * 0.76, 0.86, 0.08],
-    gate.rotationY,
-  );
-
-  const bands = ['kenteRed', 'kenteGold', 'kenteGreen'] as const;
-  bands.forEach((material, index) => {
-    context.shapes.boxAt(
-      material,
-      gate.centre,
-      gate.archHeight - 0.18 - index * 0.06,
-      [lintelWidth, 0.06, gate.archThickness + 0.1],
-      gate.rotationY,
-    );
-  });
-
-  // Side walls returning from each pillar towards the boundary.
-  for (const sign of [-1, 1] as const) {
-    const returnCentre = offsetLocal(
-      gate.centre,
-      gate.rotationY,
-      sign * (pillarOffset + 1.6),
-      0,
-    );
-    context.shapes.boxAt(
-      gate.pillarMaterial,
-      returnCentre,
-      0,
-      [2.6, 2.6, gate.pillarWidth * 0.7],
-      gate.rotationY,
-    );
-    context.sink.addBoxCollider(
-      `gate-return:${sign > 0 ? 'east' : 'west'}`,
-      returnCentre,
-      1.3,
-      (gate.pillarWidth * 0.7) / 2,
-      gate.rotationY,
-    );
-  }
-}
-
-function buildWallSegment(context: WorldBuildContext, wall: WallSegmentDef): void {
-  const dx = wall.to[0] - wall.from[0];
-  const dz = wall.to[1] - wall.from[1];
-  const length = Math.hypot(dx, dz);
-  if (length < 0.1) {
-    return;
-  }
-
-  const centre: Vec2Tuple = [(wall.from[0] + wall.to[0]) / 2, (wall.from[1] + wall.to[1]) / 2];
-  // Rotate so local +Z runs from `from` to `to`.
-  const rotationY = (Math.atan2(dx, dz) * 180) / Math.PI;
-
-  context.shapes.boxAt(
-    wall.material,
-    centre,
-    0,
-    [wall.thickness, wall.height, length],
-    rotationY,
-  );
-  // Coping along the top.
-  context.shapes.boxAt(
-    'wallWhitewash',
-    centre,
-    wall.height,
-    [wall.thickness + 0.16, 0.16, length],
-    rotationY,
-  );
-
-  if (wall.pillarEvery > 0) {
-    const pillarCount = Math.max(2, Math.round(length / wall.pillarEvery));
-    for (let index = 0; index <= pillarCount; index += 1) {
-      const t = index / pillarCount;
-      const along = -length / 2 + t * length;
-      const pillarCentre = offsetLocal(centre, rotationY, 0, along);
-      context.shapes.boxAt(
-        'wallWhitewash',
-        pillarCentre,
-        0,
-        [wall.thickness + 0.3, wall.height + 0.35, wall.thickness + 0.3],
-        rotationY,
+  // Barrier arms either side of the booth, raised.
+  const tilt = -GATE_BARRIERS.raisedDegrees;
+  const pieces = 4;
+  for (const side of [-1, 1] as const) {
+    const pivot: Vec2Tuple = [booth[0] + side * 1.9, booth[1]];
+    shapes.boxAt('concrete', pivot, 0, [0.4, 1.1, 0.4]);
+    // Arm direction in world space: out over the lane, then tipped up.
+    const radians = (GATE_BARRIERS.raisedDegrees * Math.PI) / 180;
+    const dirX = side * Math.cos(radians);
+    const dirY = Math.sin(radians);
+    const pieceLength = GATE_BARRIERS.armLength / pieces;
+    for (let index = 0; index < pieces; index += 1) {
+      const distance = pieceLength * (index + 0.5);
+      const material: MaterialKey = index % 2 === 0 ? 'barrierStripe' : 'canvasWhite';
+      shapes.tiltedBox(
+        material,
+        [pivot[0] + dirX * distance, 1 + dirY * distance, pivot[1]],
+        [0.1, 0.12, pieceLength],
+        side * 90,
+        tilt,
       );
     }
   }
-
-  context.sink.addBoxCollider(
-    `wall:${wall.id}`,
-    centre,
-    wall.thickness / 2 + 0.2,
-    length / 2,
-    rotationY,
-  );
 }

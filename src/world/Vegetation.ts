@@ -1,24 +1,31 @@
 /**
- * Trees, shrubs and hedges.
+ * Trees and hedges, after `GAME_ART/props/campus_props_reference.jpeg`.
  *
- * Five species, all built from the same handful of primitives:
- *
- *   palm        — tall bare trunk, radiating fronds. The avenue tree.
- *   mango       — short thick trunk, one dense low canopy. Deep shade.
- *   neem        — slimmer trunk, taller airy canopy. Everywhere in Ghana.
+ *   palm        — tall coconut palm, drooping fronds. Lines the entrance road.
+ *   fanPalm     — short ringed trunk, a ball of stiff fan fronds.
+ *   mango       — dense low canopy with fruit. Deep shade.
+ *   neem        — taller, airier canopy. Everywhere in Ghana.
  *   flamboyant  — wide umbrella canopy with scarlet blossom.
- *   banana      — stubby stem with big drooping leaves.
  *
- * Hand-placed trees come from `TREES`; the background belts are filled by
- * seeded rejection sampling over `TREE_SCATTER_ZONES`, so the result is
- * identical on every device and every reload while staying cheap to author.
+ * Hand-placed trees come from `TREES`. The background belts come from seeded
+ * rejection sampling over `TREE_SCATTER_ZONES`, which keeps clear of
+ * buildings, roads, footpaths and the courtyard ring — so the result is
+ * identical on every device and never grows a tree through a wall or a road.
  */
 
 import {
+  CAR_PARKS,
+  FOOTBALL_FIELD,
+  BASKETBALL_COURT,
   HEDGES,
+  PATHS,
+  ROADS,
+  ROAD_DISCS,
   TREES,
   TREE_SCATTER_ZONES,
-  type TreeDef,
+  planLength,
+  planPoint,
+  planRect,
   type TreeScatterZoneDef,
   type TreeSpecies,
 } from '../config/campusLayout';
@@ -27,32 +34,39 @@ import { SeededRandom } from '../utils/Random';
 import type { WorldBuildContext } from './context';
 
 /** Trunk radius used for the collider, per species. */
-const TRUNK_COLLISION_RADIUS: Record<TreeSpecies, number> = {
-  palm: 0.38,
-  mango: 0.6,
-  neem: 0.5,
-  flamboyant: 0.62,
-  banana: 0.35,
+const TRUNK_RADIUS: Record<TreeSpecies, number> = {
+  palm: 0.32,
+  fanPalm: 0.36,
+  mango: 0.5,
+  neem: 0.42,
+  flamboyant: 0.55,
 };
 
-export interface VegetationOptions {
-  /**
-   * Colliders registered by earlier world modules. Scattered trees are rejected
-   * if they would land on a building, bench or walkway, so the belts never grow
-   * through a wall.
-   */
-  readonly existingColliders: readonly Collider[];
-  /** Rectangles (walkways, plazas) that scattered trees must keep off. */
-  readonly keepClearRects: readonly { centre: Vec2Tuple; size: readonly [number, number] }[];
+interface PlacedTree {
+  readonly species: TreeSpecies;
+  readonly at: Vec2Tuple;
+  readonly scale: number;
+  readonly rotationY: number;
 }
 
-export function buildVegetation(context: WorldBuildContext, options: VegetationOptions): void {
+interface KeepClear {
+  readonly rects: { centre: Vec2Tuple; half: Vec2Tuple }[];
+  readonly discs: { centre: Vec2Tuple; radius: number }[];
+}
+
+export function buildVegetation(context: WorldBuildContext, existingColliders: readonly Collider[]): void {
   for (const tree of TREES) {
-    buildTree(context, tree);
+    buildTree(context, {
+      species: tree.species,
+      at: planPoint(tree.at),
+      scale: tree.scale,
+      rotationY: (tree.at[0] * 37 + tree.at[1] * 11) % 360,
+    });
   }
 
+  const keepClear = keepClearAreas();
   for (const zone of TREE_SCATTER_ZONES) {
-    scatterZone(context, zone, options);
+    scatter(context, zone, existingColliders, keepClear);
   }
 
   buildHedges(context);
@@ -62,33 +76,48 @@ export function buildVegetation(context: WorldBuildContext, options: VegetationO
 // Scattering
 // ---------------------------------------------------------------------------
 
-function scatterZone(
+function keepClearAreas(): KeepClear {
+  const rects = [
+    ...ROADS.map((road) => road.rect),
+    ...PATHS.map((path) => path.rect),
+    ...CAR_PARKS.map((carPark) => carPark.rect),
+    FOOTBALL_FIELD.surround,
+    BASKETBALL_COURT.court,
+  ].map((rect) => {
+    const { centre, size } = planRect(rect);
+    return { centre, half: [size[0] / 2, size[1] / 2] as Vec2Tuple };
+  });
+  const discs = ROAD_DISCS.filter((disc) => disc.material !== 'lawn').map((disc) => ({
+    centre: planPoint(disc.centre),
+    radius: planLength(disc.radiusPx),
+  }));
+  return { rects, discs };
+}
+
+function scatter(
   context: WorldBuildContext,
   zone: TreeScatterZoneDef,
-  options: VegetationOptions,
+  colliders: readonly Collider[],
+  keepClear: KeepClear,
 ): void {
   const random = new SeededRandom(zone.seed);
   const target = Math.round(zone.count * context.quality.scatterDensity);
-  const [width, depth] = zone.size;
-
+  const { centre, size } = planRect(zone.rect);
   let placed = 0;
-  // Bounded attempt count: a crowded zone must never spin forever.
-  const maxAttempts = target * 12 + 24;
+  // Bounded: a crowded zone must never spin forever.
+  const maxAttempts = target * 16 + 32;
 
   for (let attempt = 0; attempt < maxAttempts && placed < target; attempt += 1) {
-    const position: Vec2Tuple = [
-      zone.centre[0] + random.range(-width / 2, width / 2),
-      zone.centre[1] + random.range(-depth / 2, depth / 2),
+    const at: Vec2Tuple = [
+      centre[0] + random.range(-size[0] / 2, size[0] / 2),
+      centre[1] + random.range(-size[1] / 2, size[1] / 2),
     ];
-
-    if (!isClear(position, zone.clearance, options)) {
+    if (!isClear(at, zone.clearance, colliders, keepClear)) {
       continue;
     }
-
     buildTree(context, {
-      id: `${zone.id}-${placed}`,
       species: random.pick(zone.species),
-      position,
+      at,
       scale: random.range(zone.minScale, zone.maxScale),
       rotationY: random.range(0, 360),
     });
@@ -96,38 +125,37 @@ function scatterZone(
   }
 }
 
-function isClear(position: Vec2Tuple, clearance: number, options: VegetationOptions): boolean {
-  for (const collider of options.existingColliders) {
+function isClear(at: Vec2Tuple, clearance: number, colliders: readonly Collider[], keepClear: KeepClear): boolean {
+  for (const collider of colliders) {
     if (collider.kind === 'circle') {
-      const dx = position[0] - collider.x;
-      const dz = position[1] - collider.z;
-      if (dx * dx + dz * dz < (collider.radius + clearance) ** 2) {
+      if (Math.hypot(at[0] - collider.x, at[1] - collider.z) < collider.radius + clearance) {
         return false;
       }
-    } else {
-      const angle = collider.rotationY;
-      const dx = position[0] - collider.x;
-      const dz = position[1] - collider.z;
-      const localX = dx * Math.cos(angle) - dz * Math.sin(angle);
-      const localZ = dx * Math.sin(angle) + dz * Math.cos(angle);
-      if (
-        Math.abs(localX) < collider.halfWidth + clearance &&
-        Math.abs(localZ) < collider.halfDepth + clearance
-      ) {
-        return false;
-      }
+      continue;
+    }
+    const cos = Math.cos(collider.rotationY);
+    const sin = Math.sin(collider.rotationY);
+    const dx = at[0] - collider.x;
+    const dz = at[1] - collider.z;
+    const localX = dx * cos - dz * sin;
+    const localZ = dx * sin + dz * cos;
+    if (Math.abs(localX) < collider.halfWidth + clearance && Math.abs(localZ) < collider.halfDepth + clearance) {
+      return false;
     }
   }
-
-  for (const rect of options.keepClearRects) {
+  for (const rect of keepClear.rects) {
     if (
-      Math.abs(position[0] - rect.centre[0]) < rect.size[0] / 2 + clearance &&
-      Math.abs(position[1] - rect.centre[1]) < rect.size[1] / 2 + clearance
+      Math.abs(at[0] - rect.centre[0]) < rect.half[0] + clearance * 0.6 &&
+      Math.abs(at[1] - rect.centre[1]) < rect.half[1] + clearance * 0.6
     ) {
       return false;
     }
   }
-
+  for (const disc of keepClear.discs) {
+    if (Math.hypot(at[0] - disc.centre[0], at[1] - disc.centre[1]) < disc.radius + clearance * 0.6) {
+      return false;
+    }
+  }
   return true;
 }
 
@@ -135,193 +163,135 @@ function isClear(position: Vec2Tuple, clearance: number, options: VegetationOpti
 // Species
 // ---------------------------------------------------------------------------
 
-function buildTree(context: WorldBuildContext, tree: TreeDef): void {
+function buildTree(context: WorldBuildContext, tree: PlacedTree): void {
   switch (tree.species) {
     case 'palm':
       buildPalm(context, tree);
       break;
+    case 'fanPalm':
+      buildFanPalm(context, tree);
+      break;
     case 'mango':
-      buildBroadleaf(context, tree, { trunkHeight: 2.6, canopyRadius: 3.6, squashY: 0.78, leaf: 'leafDark' });
+      buildBroadleaf(context, tree, { trunk: 2.4, canopy: 3.3, squash: 0.8, leaf: 'leafDark', fruit: true });
       break;
     case 'neem':
-      buildBroadleaf(context, tree, { trunkHeight: 4, canopyRadius: 3.1, squashY: 0.9, leaf: 'leafMid' });
+      buildBroadleaf(context, tree, { trunk: 3.8, canopy: 2.9, squash: 0.92, leaf: 'leafMid', fruit: false });
       break;
     case 'flamboyant':
       buildFlamboyant(context, tree);
       break;
-    case 'banana':
-      buildBanana(context, tree);
-      break;
   }
-
-  context.sink.addCircleCollider(
-    `tree:${tree.id}`,
-    tree.position,
-    TRUNK_COLLISION_RADIUS[tree.species] * tree.scale,
-  );
+  context.sink.addCircleCollider(`tree:${tree.species}`, tree.at, TRUNK_RADIUS[tree.species] * tree.scale);
 }
 
-function buildPalm(context: WorldBuildContext, tree: TreeDef): void {
-  const scale = tree.scale;
-  const trunkHeight = 7.6 * scale;
-  const trunkRadius = 0.26 * scale;
+function radial(tree: PlacedTree, angleDegrees: number, distance: number): Vec2Tuple {
+  const radians = (angleDegrees * Math.PI) / 180;
+  return [tree.at[0] + Math.sin(radians) * distance, tree.at[1] + Math.cos(radians) * distance];
+}
 
-  context.shapes.cylinder('trunkPalm', {
-    at: tree.position,
-    baseY: 0,
-    radius: trunkRadius,
-    radiusTopRatio: 0.72,
-    height: trunkHeight,
-    segments: 7,
-  });
+function buildPalm(context: WorldBuildContext, tree: PlacedTree): void {
+  const s = tree.scale;
+  const height = 7.4 * s;
+  context.shapes.cylinder('trunkPalm', { at: tree.at, baseY: 0, radius: 0.24 * s, radiusTopRatio: 0.72, height, segments: 7 });
+  context.shapes.blob('leafDark', { centre: [tree.at[0], height, tree.at[1]], radius: 0.4 * s, squash: [1, 0.8, 1] });
 
-  // Crown shaft.
-  context.shapes.blob('leafDark', {
-    centre: [tree.position[0], trunkHeight, tree.position[1]],
-    radius: 0.42 * scale,
-    squash: [1, 0.8, 1],
-  });
-
-  // Nine fronds, radiating and drooping.
-  const frondCount = 9;
-  for (let index = 0; index < frondCount; index += 1) {
-    const angle = tree.rotationY + (index / frondCount) * 360;
-    const droop = index % 2 === 0 ? 24 : 42;
-    const length = (3.5 + (index % 3) * 0.35) * scale;
-    const radians = (angle * Math.PI) / 180;
+  for (let index = 0; index < 9; index += 1) {
+    const angle = tree.rotationY + index * 40;
+    const droop = index % 2 === 0 ? 22 : 40;
+    const length = (3.4 + (index % 3) * 0.3) * s;
     const reach = length * 0.42;
-
+    const [x, z] = radial(tree, angle, reach);
     context.shapes.tiltedBox(
       'frond',
-      [
-        tree.position[0] + Math.sin(radians) * reach,
-        trunkHeight - Math.sin((droop * Math.PI) / 180) * reach * 0.8,
-        tree.position[1] + Math.cos(radians) * reach,
-      ],
-      [0.55 * scale, 0.07 * scale, length],
+      [x, height - Math.sin((droop * Math.PI) / 180) * reach * 0.8, z],
+      [0.6 * s, 0.06 * s, length],
       angle,
       droop,
     );
   }
 }
 
-interface BroadleafOptions {
-  readonly trunkHeight: number;
-  readonly canopyRadius: number;
-  readonly squashY: number;
-  readonly leaf: 'leafDark' | 'leafMid' | 'leafLight';
+/** Ringed trunk and a dense ball of short, stiff fronds. */
+function buildFanPalm(context: WorldBuildContext, tree: PlacedTree): void {
+  const s = tree.scale;
+  const height = 3.6 * s;
+  context.shapes.cylinder('trunkPalm', { at: tree.at, baseY: 0, radius: 0.3 * s, radiusTopRatio: 0.85, height, segments: 7 });
+  for (let ring = 1; ring < 4; ring += 1) {
+    context.shapes.cylinder('trunk', { at: tree.at, baseY: ring * height * 0.24, radius: 0.33 * s, height: 0.12 * s, segments: 7 });
+  }
+  for (let index = 0; index < 12; index += 1) {
+    const angle = tree.rotationY + index * 30;
+    const lift = index % 3 === 0 ? -35 : index % 3 === 1 ? 5 : 30;
+    const length = 2.2 * s;
+    const [x, z] = radial(tree, angle, length * 0.45);
+    context.shapes.tiltedBox(
+      'leafLight',
+      [x, height + Math.sin((-lift * Math.PI) / 180) * length * 0.4, z],
+      [0.9 * s, 0.05 * s, length],
+      angle,
+      lift,
+    );
+  }
 }
 
-function buildBroadleaf(
-  context: WorldBuildContext,
-  tree: TreeDef,
-  options: BroadleafOptions,
-): void {
-  const scale = tree.scale;
-  const trunkHeight = options.trunkHeight * scale;
-  const canopyRadius = options.canopyRadius * scale;
+interface BroadleafOptions {
+  readonly trunk: number;
+  readonly canopy: number;
+  readonly squash: number;
+  readonly leaf: 'leafDark' | 'leafMid' | 'leafLight';
+  readonly fruit: boolean;
+}
 
-  context.shapes.cylinder('trunk', {
-    at: tree.position,
-    baseY: 0,
-    radius: 0.38 * scale,
-    radiusTopRatio: 0.74,
-    height: trunkHeight + 0.6,
-    segments: 7,
-  });
+function buildBroadleaf(context: WorldBuildContext, tree: PlacedTree, options: BroadleafOptions): void {
+  const s = tree.scale;
+  const trunk = options.trunk * s;
+  const canopy = options.canopy * s;
+  context.shapes.cylinder('trunk', { at: tree.at, baseY: 0, radius: 0.34 * s, radiusTopRatio: 0.7, height: trunk + 0.6, segments: 7 });
 
-  // Three overlapping lobes read as a far denser canopy than a single sphere.
-  const lobes: { offset: readonly [number, number, number]; radius: number }[] = [
-    { offset: [0, trunkHeight + canopyRadius * 0.55, 0], radius: canopyRadius },
-    {
-      offset: [canopyRadius * 0.5, trunkHeight + canopyRadius * 0.3, canopyRadius * 0.2],
-      radius: canopyRadius * 0.68,
-    },
-    {
-      offset: [-canopyRadius * 0.42, trunkHeight + canopyRadius * 0.35, -canopyRadius * 0.34],
-      radius: canopyRadius * 0.62,
-    },
+  // Three overlapping lobes read as a far denser canopy than a single ball.
+  const lobes = [
+    { angle: 0, out: 0, y: trunk + canopy * 0.55, r: canopy },
+    { angle: tree.rotationY + 60, out: canopy * 0.5, y: trunk + canopy * 0.3, r: canopy * 0.68 },
+    { angle: tree.rotationY + 220, out: canopy * 0.48, y: trunk + canopy * 0.35, r: canopy * 0.62 },
   ];
-
   for (const lobe of lobes) {
-    const radians = (tree.rotationY * Math.PI) / 180;
-    const ox = lobe.offset[0] * Math.cos(radians) - lobe.offset[2] * Math.sin(radians);
-    const oz = lobe.offset[0] * Math.sin(radians) + lobe.offset[2] * Math.cos(radians);
+    const [x, z] = radial(tree, lobe.angle, lobe.out);
     context.shapes.blob(options.leaf, {
-      centre: [tree.position[0] + ox, lobe.offset[1], tree.position[1] + oz],
-      radius: lobe.radius,
-      squash: [1.08, options.squashY, 1.08],
+      centre: [x, lobe.y, z],
+      radius: lobe.r,
+      squash: [1.08, options.squash, 1.08],
       rotationY: tree.rotationY,
     });
   }
-}
 
-function buildFlamboyant(context: WorldBuildContext, tree: TreeDef): void {
-  const scale = tree.scale;
-  const trunkHeight = 3.4 * scale;
-  const canopyRadius = 4.8 * scale;
-
-  context.shapes.cylinder('trunk', {
-    at: tree.position,
-    baseY: 0,
-    radius: 0.46 * scale,
-    radiusTopRatio: 0.6,
-    height: trunkHeight,
-    segments: 8,
-  });
-
-  // Wide, flat umbrella — the flamboyant's signature silhouette.
-  context.shapes.blob('leafMid', {
-    centre: [tree.position[0], trunkHeight + canopyRadius * 0.3, tree.position[1]],
-    radius: canopyRadius,
-    squash: [1, 0.42, 1],
-    rotationY: tree.rotationY,
-  });
-
-  // Scarlet blossom dotted over the top.
-  for (let index = 0; index < 4; index += 1) {
-    const angle = tree.rotationY + index * 90 + 20;
-    const radians = (angle * Math.PI) / 180;
-    context.shapes.blob('blossom', {
-      centre: [
-        tree.position[0] + Math.sin(radians) * canopyRadius * 0.55,
-        trunkHeight + canopyRadius * 0.46,
-        tree.position[1] + Math.cos(radians) * canopyRadius * 0.55,
-      ],
-      radius: canopyRadius * 0.26,
-      squash: [1, 0.35, 1],
-    });
+  if (options.fruit) {
+    // A few mangoes hanging below the canopy edge.
+    for (let index = 0; index < 6; index += 1) {
+      const angle = tree.rotationY + index * 60 + 15;
+      const [x, z] = radial(tree, angle, canopy * 0.82);
+      context.shapes.blob('mangoFruit', {
+        centre: [x, trunk + canopy * 0.05 + (index % 2) * 0.4, z],
+        radius: 0.16 * s,
+        squash: [0.8, 1.15, 0.8],
+      });
+    }
   }
 }
 
-function buildBanana(context: WorldBuildContext, tree: TreeDef): void {
-  const scale = tree.scale;
-  const stemHeight = 2.3 * scale;
-
-  context.shapes.cylinder('leafDark', {
-    at: tree.position,
-    baseY: 0,
-    radius: 0.22 * scale,
-    radiusTopRatio: 0.8,
-    height: stemHeight,
-    segments: 6,
+function buildFlamboyant(context: WorldBuildContext, tree: PlacedTree): void {
+  const s = tree.scale;
+  const trunk = 3.2 * s;
+  const canopy = 4.6 * s;
+  context.shapes.cylinder('trunk', { at: tree.at, baseY: 0, radius: 0.44 * s, radiusTopRatio: 0.6, height: trunk, segments: 8 });
+  context.shapes.blob('leafMid', {
+    centre: [tree.at[0], trunk + canopy * 0.3, tree.at[1]],
+    radius: canopy,
+    squash: [1, 0.42, 1],
+    rotationY: tree.rotationY,
   });
-
-  for (let index = 0; index < 6; index += 1) {
-    const angle = tree.rotationY + index * 61;
-    const radians = (angle * Math.PI) / 180;
-    const length = 2.1 * scale;
-    context.shapes.tiltedBox(
-      'frond',
-      [
-        tree.position[0] + Math.sin(radians) * length * 0.38,
-        stemHeight - 0.25 * scale,
-        tree.position[1] + Math.cos(radians) * length * 0.38,
-      ],
-      [0.78 * scale, 0.06 * scale, length],
-      angle,
-      34,
-    );
+  for (let index = 0; index < 4; index += 1) {
+    const [x, z] = radial(tree, tree.rotationY + index * 90 + 20, canopy * 0.55);
+    context.shapes.blob('blossom', { centre: [x, trunk + canopy * 0.46, z], radius: canopy * 0.26, squash: [1, 0.35, 1] });
   }
 }
 
@@ -331,38 +301,21 @@ function buildBanana(context: WorldBuildContext, tree: TreeDef): void {
 
 function buildHedges(context: WorldBuildContext): void {
   for (const hedge of HEDGES) {
-    const dx = hedge.to[0] - hedge.from[0];
-    const dz = hedge.to[1] - hedge.from[1];
+    const from = planPoint(hedge.from);
+    const to = planPoint(hedge.to);
+    const dx = to[0] - from[0];
+    const dz = to[1] - from[1];
     const length = Math.hypot(dx, dz);
     if (length < 0.1) {
       continue;
     }
-
-    const centre: Vec2Tuple = [
-      (hedge.from[0] + hedge.to[0]) / 2,
-      (hedge.from[1] + hedge.to[1]) / 2,
-    ];
-    // Rotate so the hedge's local Z axis runs from `from` to `to`.
+    const centre: Vec2Tuple = [(from[0] + to[0]) / 2, (from[1] + to[1]) / 2];
     const rotationY = (Math.atan2(dx, dz) * 180) / Math.PI;
+    context.shapes.boxAt('hedge', centre, 0, [0.9, hedge.height, length], rotationY);
 
-    context.shapes.boxAt(
-      'hedge',
-      centre,
-      0,
-      [hedge.thickness, hedge.height, length],
-      rotationY,
-    );
-
-    // Knee-high hedges are a visual boundary, not a wall — no collider. Anything
-    // waist-high or above does block the player.
+    // Knee-high planting is a visual edge, not a wall.
     if (hedge.height >= 1) {
-      context.sink.addBoxCollider(
-        `hedge:${hedge.id}`,
-        centre,
-        hedge.thickness / 2,
-        length / 2,
-        rotationY,
-      );
+      context.sink.addBoxCollider(`hedge:${hedge.id}`, centre, 0.45, length / 2, rotationY);
     }
   }
 }

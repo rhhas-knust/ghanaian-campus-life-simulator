@@ -25,6 +25,8 @@ export interface TouchInputOptions {
   readonly interactButton: HTMLButtonElement;
   readonly getSensitivity: () => number;
   readonly isLookEnabled: () => boolean;
+  /** Flip vertical look, from the pause-menu setting. */
+  readonly isInvertY: () => boolean;
 }
 
 export class TouchInput {
@@ -181,10 +183,19 @@ export class TouchInput {
     }
     if (this.options.isLookEnabled()) {
       const sensitivity = CAMERA_SETTINGS.touchSensitivity * this.options.getSensitivity();
-      this.state.addLook(
-        -(event.clientX - this.lookLast.x) * sensitivity,
-        -(event.clientY - this.lookLast.y) * sensitivity,
-      );
+      const dx = event.clientX - this.lookLast.x;
+      let dy = event.clientY - this.lookLast.y;
+
+      // The swipe fix. A thumb sweeping sideways across a phone screen does not
+      // move in a straight line: it arcs, usually upwards. Fed straight into
+      // pitch, every sideways swipe tipped the view a little further towards
+      // the sky. So: a mostly-horizontal drag step keeps only a sliver of its
+      // vertical movement, and vertical drags are weaker than horizontal ones.
+      if (Math.abs(dy) < Math.abs(dx) * CAMERA_SETTINGS.touchAxisLockRatio) {
+        dy *= CAMERA_SETTINGS.touchAxisLockDamping;
+      }
+      const vertical = this.options.isInvertY() ? 1 : -1;
+      this.state.addLook(-dx * sensitivity, vertical * dy * sensitivity * CAMERA_SETTINGS.touchPitchFactor);
     }
     this.lookLast = { x: event.clientX, y: event.clientY };
     event.preventDefault();

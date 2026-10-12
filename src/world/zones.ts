@@ -2,15 +2,13 @@
  * Resolves the player's `[x, z]` to a human-readable place name for the HUD.
  *
  * Zones are plain rectangles from `campusLayout.ts`. Where they overlap, the
- * highest `priority` wins, so "Ananse Memorial Library" beats "Campus Grounds".
+ * highest `priority` wins, so "Library" beats the default "Central Campus".
  */
 
-import { ZONES } from '../config/campusLayout';
-
-const DEFAULT_NAME = 'Campus Grounds';
+import { DEFAULT_ZONE_NAME, ZONES } from '../config/campusLayout';
 
 export function resolveZoneName(x: number, z: number): string {
-  let bestName = DEFAULT_NAME;
+  let bestName = DEFAULT_ZONE_NAME;
   let bestPriority = -1;
 
   for (const zone of ZONES) {
