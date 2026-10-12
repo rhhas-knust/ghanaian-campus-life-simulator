@@ -252,8 +252,13 @@ surface using it, campus-wide.
 
 ## Artist asset integration
 
-Full brief: **[`public/assets/README.md`](public/assets/README.md)**. The short
-version:
+**Concept art** — the campus master plan, building elevations, props, UI and
+storyboards — is in **[`art/reference/`](art/reference/README.md)**, with an
+index of what each image shows. It sits outside `public/` so it is not
+published with the site.
+
+**Game-ready assets** follow the brief in
+**[`public/assets/README.md`](public/assets/README.md)**. The short version:
 
 1. Drop the file into `public/assets/models/` (or `textures/`, `audio/`,
    `images/`).

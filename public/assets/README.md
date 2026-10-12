@@ -16,6 +16,10 @@ public/assets/
 └── images/     sign artwork, UI icons, the artist's campus map reference
 ```
 
+The artist's **concept art** (master plan, elevations, UI mock-ups) is not
+here — it is in [`art/reference/`](../../art/reference/README.md), outside
+`public/`, so it is never deployed.
+
 ## How to add an asset
 
 1. **Drop the file** into the right folder above. Use lowercase, hyphenated
