@@ -21,6 +21,7 @@ export class InputState {
 
   private interactPending = false;
   private pausePending = false;
+  private cameraTogglePending = false;
 
   private readonly movement: MovementInput = { forward: 0, right: 0, sprint: false };
 
@@ -44,6 +45,17 @@ export class InputState {
 
   queuePause(): void {
     this.pausePending = true;
+  }
+
+  queueCameraToggle(): void {
+    this.cameraTogglePending = true;
+  }
+
+  /** Returns true at most once per press. */
+  consumeCameraToggle(): boolean {
+    const pending = this.cameraTogglePending;
+    this.cameraTogglePending = false;
+    return pending;
   }
 
   /** Returns true at most once per press. */

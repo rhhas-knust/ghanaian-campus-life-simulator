@@ -1,6 +1,6 @@
 /**
- * Desktop input: WASD/arrows to walk, mouse to look, E to interact, Esc/P to
- * pause.
+ * Desktop input: WASD/arrows to walk, mouse to look, E to interact, V to
+ * switch camera, Esc/P to pause.
  *
  * Mouse look uses the Pointer Lock API, which is the only way to get unbounded
  * relative mouse movement in a browser. Pointer lock has two consequences we
@@ -23,6 +23,7 @@ const RIGHT_KEYS = new Set(['KeyD', 'ArrowRight']);
 const SPRINT_KEYS = new Set(['ShiftLeft', 'ShiftRight']);
 const INTERACT_KEYS = new Set(['KeyE', 'Enter', 'Space']);
 const PAUSE_KEYS = new Set(['Escape', 'KeyP']);
+const CAMERA_KEYS = new Set(['KeyV', 'KeyC']);
 
 export interface KeyboardMouseOptions {
   /** Element pointer lock is requested on. */
@@ -33,6 +34,8 @@ export interface KeyboardMouseOptions {
   readonly getSensitivity: () => number;
   /** Look input is ignored unless this returns true. */
   readonly isLookEnabled: () => boolean;
+  /** Flip vertical look, from the pause-menu setting. */
+  readonly isInvertY: () => boolean;
 }
 
 export class KeyboardMouseInput {
@@ -108,6 +111,12 @@ export class KeyboardMouseInput {
       return;
     }
 
+    if (CAMERA_KEYS.has(event.code)) {
+      this.state.queueCameraToggle();
+      event.preventDefault();
+      return;
+    }
+
     if (INTERACT_KEYS.has(event.code)) {
       this.state.queueInteract();
       // Space would otherwise scroll the page.
@@ -139,7 +148,8 @@ export class KeyboardMouseInput {
       return;
     }
     const sensitivity = CAMERA_SETTINGS.mouseSensitivity * this.options.getSensitivity();
-    this.state.addLook(-event.movementX * sensitivity, -event.movementY * sensitivity);
+    const vertical = this.options.isInvertY() ? 1 : -1;
+    this.state.addLook(-event.movementX * sensitivity, vertical * event.movementY * sensitivity);
   };
 
   private readonly handlePointerLockChange = (): void => {

@@ -24,6 +24,10 @@ export interface QualityPreset {
   /** Fog start/end as a fraction of `drawDistance`. */
   readonly fogNearFactor: number;
   readonly fogFarFactor: number;
+  /** `full` = framed windows every 3.2 m; `simple` = bare panes every 4.2 m. */
+  readonly windowDetail: 'full' | 'simple';
+  /** Half-width of the sun's shadow box, which follows the player (metres). */
+  readonly shadowRadius: number;
 }
 
 export const QUALITY_PRESETS: Record<QualityLevel, QualityPreset> = {
@@ -38,6 +42,8 @@ export const QUALITY_PRESETS: Record<QualityLevel, QualityPreset> = {
     lampPointLights: false,
     fogNearFactor: 0.35,
     fogFarFactor: 0.98,
+    windowDetail: 'simple',
+    shadowRadius: 40,
   },
   medium: {
     label: 'Medium',
@@ -50,6 +56,8 @@ export const QUALITY_PRESETS: Record<QualityLevel, QualityPreset> = {
     lampPointLights: false,
     fogNearFactor: 0.45,
     fogFarFactor: 1,
+    windowDetail: 'full',
+    shadowRadius: 45,
   },
   high: {
     label: 'High — desktop',
@@ -62,6 +70,8 @@ export const QUALITY_PRESETS: Record<QualityLevel, QualityPreset> = {
     lampPointLights: true,
     fogNearFactor: 0.55,
     fogFarFactor: 1,
+    windowDetail: 'full',
+    shadowRadius: 60,
   },
 };
 
@@ -84,13 +94,62 @@ export const PLAYER_SETTINGS = {
 /** Camera look behaviour. Mouse and touch each get their own base sensitivity. */
 export const CAMERA_SETTINGS = {
   fieldOfView: 72,
-  near: 0.1,
+  near: 0.15,
   /** Radians of yaw per pixel of mouse movement. */
   mouseSensitivity: 0.0022,
   /** Radians of yaw per pixel of touch drag — touch needs a bigger multiplier. */
   touchSensitivity: 0.0042,
-  /** Clamp so the player can never look past straight up/down. */
-  maxPitch: Math.PI / 2 - 0.05,
+  /**
+   * Vertical drag counts for this fraction of horizontal. Players reported
+   * that any swipe on a phone tipped the view up at the sky: a thumb sweeping
+   * sideways naturally arcs upwards, and at full vertical sensitivity that arc
+   * becomes pitch. Halving it, plus the axis lock below, fixes most of it.
+   */
+  touchPitchFactor: 0.5,
+  /**
+   * If a single drag step's vertical movement is less than this fraction of its
+   * horizontal movement, it is treated as a sideways swipe and its vertical
+   * part is almost ignored.
+   */
+  touchAxisLockRatio: 0.6,
+  touchAxisLockDamping: 0.15,
+  /** Look-up / look-down limits in radians (about +50 and -57 degrees). */
+  maxPitch: 0.88,
+  minPitch: -1.0,
+} as const;
+
+/**
+ * Auto-levelling: after the player stops dragging and starts walking, the view
+ * eases back to the horizon. Default on for touch, off for mouse (where the
+ * player's hand is always on the camera anyway). Toggle in the pause menu.
+ */
+export const AUTO_LEVEL_SETTINGS = {
+  /** Seconds without look input before levelling starts. */
+  delay: 1.1,
+  /** Radians per second at full walking speed. */
+  rate: 1.4,
+  /** Rest a touch below the horizon, so the path ahead is in view. */
+  restingPitch: -0.08,
+} as const;
+
+/** Third-person camera: an orbit behind the player, pulled in when blocked. */
+export const THIRD_PERSON_SETTINGS = {
+  /** Distance behind the player's head, in metres. */
+  distance: 4.4,
+  /** Height of the point the camera looks at (roughly the shoulders). */
+  targetHeight: 1.55,
+  /** Elevation of the orbit in radians at level pitch. */
+  baseElevation: 0.32,
+  minElevation: 0.05,
+  maxElevation: 1.05,
+  /** Never closer than this to the player, even when squeezed by a wall. */
+  minDistance: 1.2,
+  /** Clearance kept between the camera and any collider, in metres. */
+  wallClearance: 0.4,
+  /** Higher = snappier follow. Units: 1/second. */
+  followSharpness: 16,
+  /** How quickly the avatar turns to face its direction of travel. */
+  avatarTurnSharpness: 10,
 } as const;
 
 /** Touch joystick geometry, in CSS pixels. Must match `styles.css`. */
@@ -108,4 +167,9 @@ export const MAX_FRAME_DELTA = 1 / 20;
 export const STORAGE_KEYS = {
   quality: 'gcls.quality',
   sensitivity: 'gcls.sensitivity',
+  cameraMode: 'gcls.cameraMode',
+  invertY: 'gcls.invertY',
+  autoLevel: 'gcls.autoLevel',
 } as const;
+
+export type CameraMode = 'first' | 'third';

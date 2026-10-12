@@ -1,13 +1,12 @@
 # Project phases
 
-The plan from walkable prototype to a campus life simulator. Only **Phase 1** is
-built. Everything after it is a sketch, and later phases are deliberately
-sketchier than earlier ones — they will change once we have seen the artist's
-assets and watched someone actually play.
+The roadmap from a walkable campus to a campus life simulator. Only **Phase 1**
+is built. Later phases are deliberately sketchier than earlier ones — they will
+change once the artist's 3D assets exist and people have actually played.
 
 | Phase | Theme | Status |
 | --- | --- | --- |
-| 1 | Walkable campus prototype | **Complete** |
+| 1 | Playable campus | **Built** — awaiting a test on real Android hardware |
 | 2 | Real assets and a living campus | Not started |
 | 3 | Student life systems | Not started |
 | 4 | Academics and progression | Not started |
@@ -15,30 +14,38 @@ assets and watched someone actually play.
 
 ---
 
-## Phase 1 — Walkable campus prototype ✅
+## Phase 1 — Playable campus
 
-**Goal:** prove a Ghanaian campus can be explored in a browser on a phone,
-and set up a structure the artist's work can drop into.
+**Goal:** a believable Ghanaian university campus you can explore in a browser,
+on a desktop or an Android phone, built so the artist's work can drop in.
 
 Delivered:
 
-- First-person movement with keyboard/mouse and touch, on one shared input path.
-- Circle-vs-rotated-box collision, campus bounds, sliding along walls.
-- Procedural campus generated entirely from data files: entrance gate, boundary
-  wall, avenue, courtyard, seven buildings, planting, street furniture, signage.
-- Ghanaian-inspired architecture: raised plinths, verandah colonnades, balcony
-  slabs, wide eaves on gable and hip roofs, breeze-block screens, louvre
-  shutters, kente bands.
-- Natural tropical daylight, gradient sky, distance fog, single-cascade shadows.
-- Proximity interaction with eleven readable objects.
-- Pause/resume, graphics quality presets, look sensitivity, persisted settings.
-- Geometry batching: ~2,200 pieces into ~35 draw calls, ~29,000 triangles.
-- Automatic GitHub Pages deployment with typecheck and lint gating the publish.
-- Organised asset directories and a documented hand-off for the artist.
+- **Layout traced from the master plan** in `GAME_ART/`: security gate,
+  roundabout, circular courtyard with monument, three lecture halls, library,
+  student centre, cafeteria, two hostels, football field, basketball court,
+  car parks, perimeter fence.
+- **Four H-plan buildings**: Library, Student Centre, Administration Block,
+  Faculty of Engineering.
+- **Buildings in the style of the elevation sheets**: cream render, green
+  balustraded corridors, stair towers, signed entrance canopies, red hip roofs.
+- **First- and third-person cameras** with a toggle; a student avatar with a
+  walk cycle; a third-person camera that avoids walls.
+- **Desktop and touch controls**, including the fix for touch look drifting
+  towards the sky.
+- **Collision** with buildings, fence, trees, posts, benches and cars.
+- **Interactive campus sign**, signpost, notice board and building plaques.
+- **Mobile HUD** after the reference: location pill, minimap, camera button,
+  joystick, INTERACT button, pause menu.
+- **Campus map** (the master plan, with a "you are here" marker).
+- Pause/resume, three quality presets, persisted settings, fullscreen and
+  landscape on phones, loading and error states.
+- **GitHub Pages deployment** gated on typecheck, lint and build.
+- **39-check browser smoke test** covering movement, collision, interaction,
+  both cameras, the map and the touch controls.
 
-**Explicitly out of scope and still missing:** vertical movement, audio, NPCs,
-time of day, any game systems, any save file, text rendered in 3D, and a unit
-test suite.
+**Out of scope for Phase 1:** NPCs, missions, interiors, moving vehicles,
+audio, time of day, inventory, save files, multiplayer, any backend.
 
 ---
 
@@ -46,88 +53,64 @@ test suite.
 
 **Goal:** replace the placeholders and make the campus feel inhabited.
 
-### Asset pipeline
-- glTF/GLB loader honouring `MODEL_ASSETS`, so a building with `model` set uses
-  the real mesh. The hook already exists in `Buildings.ts`.
-- Draco / meshopt decoding, and KTX2 textures where they pay for themselves.
-- Progressive loading with a real progress bar, instead of the current
-  all-at-once build.
-- Import the artist's master campus plan into `campusLayout.ts`, probably via a
-  small JSON importer rather than by hand.
+### Assets
+- glTF/GLB loader honouring `MODEL_ASSETS`; any building with `model` set uses
+  the real mesh (the hook already exists in `Buildings.ts`).
+- Models built from the elevation sheets in `GAME_ART/buildings/`.
+- A rigged student character replacing the procedural avatar, with proper
+  walk and idle animations.
+- Draco/meshopt and KTX2 compression where they pay for themselves.
 
-### Terrain and traversal
-- **Ground height sampling.** This unblocks the biggest Phase 1 compromise:
-  verandahs and plinths are currently solid because the player cannot step up.
-- Steps and ramps; gentle slopes across the campus.
-- A capsule collider with a step-height allowance, replacing the 2D circle.
+### Traversal
+- **Ground height and step height**, so verandahs, steps and plinths become
+  walkable rather than part of the building colliders.
+- At least one interior — the library is the obvious first.
 
 ### Life
-- Instanced student crowds walking between buildings on a path graph.
-- Day/night cycle driving sun angle, colour and the lamp lights that are already
-  wired to the lamp data.
-- Weather, above all the Harmattan haze and a proper afternoon downpour.
-- Ambience: birds, distant generators, traffic beyond the wall, footsteps that
-  change with the surface.
-
-### Interiors
-- At least one building you can walk into — the library is the obvious first.
-- Interior/exterior transitions that do not stall on a phone.
+- Students walking between buildings on a path graph (instanced, not batched).
+- Cars entering through the gate and parking.
+- Day/night cycle, using the lamp lights already wired to the lamp data.
+- Ambient audio: birds, distant traffic, footsteps by surface.
 
 ---
 
 ## Phase 3 — Student life systems
 
-**Goal:** turn the campus into a place with needs and consequences.
+**Goal:** needs, money and consequences — the parts of the HUD reference that
+are not built yet (energy bar, cedi balance, objectives).
 
-- A clock, a timetable and a calendar.
-- Hunger, energy and money. The Students' Centre chop bar becomes a real
-  location with a menu and prices.
-- Inventory: ID card, notebook, phone, food.
-- Hall life: a room, roommates, the state of the water and the lights.
-- A quest/task system, seeded by the SRC notice board that already exists as a
-  readable object.
-- Save and load, in `localStorage` — still no server.
+- Clock, timetable and calendar.
+- Energy, hunger and money (₵). The cafeteria becomes a real place to eat.
+- Inventory: ID card, notebook, phone.
+- Hostel life: a room in Hastech Hostels, a roommate, water and light.
+- Task/quest system, seeded by the SRC notice board.
+- Save and load, on the device — still no server.
 
 ---
 
 ## Phase 4 — Academics and progression
 
-**Goal:** the actual point of being on campus.
-
-- Attend lectures: being in the right room at the right time matters.
-- Assignments, deadlines and the consequences of missing them.
-- Quizzes and exams as minigames.
-- Course selection, credits, CGPA.
-- Semester structure, with matriculation and congregation in the Great Hall.
-- Study mechanics: the library, group study, the night before.
+- Lectures in the lecture halls at timetabled times.
+- Assignments, deadlines, exams as mini-games.
+- Courses, credits and CGPA.
+- Semester structure, matriculation and congregation.
 
 ---
 
 ## Phase 5 — Social life, story and polish
 
-**Goal:** the things people will actually remember.
-
-- NPC students with names, schedules and opinions. Friendship and reputation.
-- Hall week, the jollof cook-off, SRC elections, inter-hall games.
-- Clubs and societies.
-- A main storyline across the academic year.
-- Photo mode, achievements, an end-of-year summary.
-- Accessibility pass: colour-blind-safe palette, subtitles, remappable controls,
-  a reduced-motion option.
-- Localisation, including Twi and Pidgin.
+- NPC students with names, schedules and opinions.
+- Hall week, the jollof cook-off, SRC elections, inter-hostel football.
+- A storyline across the academic year.
+- Accessibility pass, localisation (including Twi), photo mode.
 
 ---
 
-## Technical work that cuts across phases
+## Cross-cutting technical work
 
-These are not features, but they will each need a dedicated piece of work.
-
-- **Unit tests.** `CollisionSystem`, `InteractionSystem`, `SeededRandom` and the
-  zone resolver are all pure and trivially testable. First item on [TODO.md](TODO.md).
-- **Performance budget in CI.** Fail the build if draw calls, triangle count or
-  bundle size cross a threshold.
-- **Cascaded shadow maps**, replacing the single wide cascade.
-- **Level of detail and frustum culling** once the campus has real models.
-- **Text in 3D** via an SDF font atlas, so signs can actually be read in-world.
-- **Web Workers** for world generation, to keep the main thread free.
-- **PWA / offline support** — valuable on intermittent mobile data.
+- Unit tests for the pure modules (`CollisionSystem`, `SeededRandom`,
+  `resolveZoneName`, `InteractionSystem`, the plan conversions).
+- The smoke test in CI.
+- A performance budget in CI (draw calls, triangles, bundle size).
+- Level of detail once real models arrive.
+- Offline support (PWA) for patchy mobile data.

@@ -1,577 +1,621 @@
 /**
  * Building generator.
  *
- * Reads `BUILDINGS` from the campus layout and produces placeholder geometry in
- * a recognisably Ghanaian institutional idiom:
+ * Reads `BUILDINGS` and `BRIDGES` from the campus layout and produces
+ * placeholder geometry in the style of the elevation sheets in
+ * `GAME_ART/buildings/`: cream render on a grey plinth, green-framed windows,
+ * balconied corridors with green balustrades, external stair towers at the
+ * ends, a canopy over the entrance, and red hipped roofs with wide eaves.
  *
- *  - A raised concrete plinth with a step, because the rains come hard and the
- *    ground floor has to sit above the splash line.
- *  - Deep verandah colonnades with balcony slabs and railings, so every room
- *    opens to the outside air instead of an internal corridor.
- *  - Wide overhanging eaves on a steep gable or hip roof, in red oxide or zinc.
- *  - Louvred breeze-block screens on the gable ends for cross-ventilation.
- *  - Optional painted kente band between the storeys.
- *
- * None of these proportions are hard-coded here: they all derive from the
- * building's own data entry, so moving or resizing a block in
- * `campusLayout.ts` reshapes everything, including its collider and plaque.
+ * Every building is a list of rectangular WINGS. An H-plan is three wings, a
+ * courtyard hostel five, a lecture block one. Each wing generates its own
+ * walls, windows, corridors, roof and collider, so the open courts of an H are
+ * walkable. Faces where one wing butts into another are detected automatically
+ * and left plain, so the data file never has to say "no windows here".
  */
 
 import { Vector3 } from 'three';
 
-import { BUILDINGS, type BuildingDef, type VerandahStyle } from '../config/campusLayout';
-import { offsetLocal } from '../utils/shapes';
+import {
+  BRIDGES,
+  BUILDINGS,
+  planPoint,
+  planRect,
+  type BridgeDef,
+  type BuildingDef,
+  type Facing,
+  type WingDef,
+} from '../config/campusLayout';
+import type { MaterialKey } from '../config/palette';
+import type { Vec2Tuple } from '../types';
 import type { WorldBuildContext } from './context';
 
-/** Depth of the shaded verandah, in metres. */
-const VERANDAH_DEPTH = 2.6;
-/** How far the roof oversails the walls. */
-const EAVE_OVERHANG = 1.1;
 const PLINTH_HEIGHT = 0.45;
-const PLINTH_MARGIN = 0.7;
-const COLUMN_SIDE = 0.34;
+const VERANDAH_DEPTH = 2.4;
+const EAVE_OVERHANG = 0.9;
+const COLUMN_SIDE = 0.3;
+const STAIR_TOWER_WIDTH = 3.6;
+const STAIR_TOWER_DEPTH = 3;
+
+const FACINGS: readonly Facing[] = ['north', 'south', 'east', 'west'];
+
+/** Unit vector pointing out of each face, as `[x, z]`. */
+const OUTWARD: Record<Facing, Vec2Tuple> = {
+  north: [0, -1],
+  south: [0, 1],
+  east: [1, 0],
+  west: [-1, 0],
+};
+
+/** `rotationY` (degrees) that turns local +Z to point out of the face. */
+const FACE_ROTATION: Record<Facing, number> = { south: 0, north: 180, east: 90, west: -90 };
+
+/** A wing resolved to world metres. */
+interface Wing {
+  readonly def: WingDef;
+  readonly centre: Vec2Tuple;
+  readonly halfWidth: number;
+  readonly halfDepth: number;
+}
 
 export function buildBuildings(context: WorldBuildContext): void {
   for (const building of BUILDINGS) {
-    if (building.model !== null) {
-      // A real model has been supplied for this building; `ModelLoader` (Phase 2)
-      // takes over and the placeholder is skipped entirely. The collider and
-      // plaque below still apply, so navigation keeps working either way.
-      registerFootprint(context, building);
-      registerPlaque(context, building);
-      continue;
+    const wings = building.wings.map(resolveWing);
+
+    if (building.model === null) {
+      for (const wing of wings) {
+        buildWing(context, building, wing, wings);
+      }
+      if (building.entrance) {
+        buildEntrance(context, building, wings);
+      }
     }
 
-    buildPlinth(context, building);
-    buildWalls(context, building);
-    buildWindows(context, building);
-    buildVerandahs(context, building);
-    buildEntrance(context, building);
-    buildRoof(context, building);
-    registerFootprint(context, building);
-    registerPlaque(context, building);
+    // Colliders and the plaque apply whether the building is placeholder
+    // geometry or (later) a real model.
+    for (const wing of wings) {
+      registerWingCollider(context, building, wing, wings);
+    }
+    registerPlaque(context, building, wings);
+  }
+
+  for (const bridge of BRIDGES) {
+    buildBridge(context, bridge);
   }
 }
 
+function resolveWing(def: WingDef): Wing {
+  const { centre, size } = planRect(def.rect);
+  return { def, centre, halfWidth: size[0] / 2, halfDepth: size[1] / 2 };
+}
+
 // ---------------------------------------------------------------------------
-// Mass
+// Face geometry helpers
 // ---------------------------------------------------------------------------
 
-function buildPlinth(context: WorldBuildContext, building: BuildingDef): void {
-  const [width, , depth] = building.size;
-  const { position, rotationY } = building;
-  const skirt = verandahPadding(building.verandah);
+interface Face {
+  /** Centre of the wall face, at ground level. */
+  readonly centre: Vec2Tuple;
+  readonly outward: Vec2Tuple;
+  /** True when the face runs along X (north/south faces). */
+  readonly alongX: boolean;
+  readonly length: number;
+}
 
-  context.shapes.boxAt(
-    'plinth',
-    offsetLocal(position, rotationY, 0, skirt.offsetZ),
-    0,
-    [width + PLINTH_MARGIN * 2 + skirt.extraX * 2, PLINTH_HEIGHT, depth + PLINTH_MARGIN * 2 + skirt.extraZ],
-    rotationY,
-  );
+function faceOf(wing: Wing, facing: Facing): Face {
+  const [ox, oz] = OUTWARD[facing];
+  const alongX = facing === 'north' || facing === 'south';
+  return {
+    centre: [wing.centre[0] + ox * wing.halfWidth, wing.centre[1] + oz * wing.halfDepth],
+    outward: [ox, oz],
+    alongX,
+    length: alongX ? wing.halfWidth * 2 : wing.halfDepth * 2,
+  };
+}
 
-  // A single step across the whole frontage.
-  const frontZ = depth / 2 + skirt.front + PLINTH_MARGIN;
-  context.shapes.boxAt(
-    'kerb',
-    offsetLocal(position, rotationY, 0, frontZ + 0.45),
-    0,
-    [Math.min(width, 12), PLINTH_HEIGHT * 0.55, 0.9],
-    rotationY,
+/** World point `along` metres down the face and `out` metres in front of it. */
+function onFace(face: Face, along: number, out: number): Vec2Tuple {
+  return [
+    face.centre[0] + (face.alongX ? along : 0) + face.outward[0] * out,
+    face.centre[1] + (face.alongX ? 0 : along) + face.outward[1] * out,
+  ];
+}
+
+/** `[sizeX, sizeZ]` for a box `along` long down the face and `out` deep. */
+function faceBox(face: Face, along: number, out: number): readonly [number, number] {
+  return face.alongX ? [along, out] : [out, along];
+}
+
+function insideWing(point: Vec2Tuple, wing: Wing, margin = 0): boolean {
+  return (
+    Math.abs(point[0] - wing.centre[0]) < wing.halfWidth - margin &&
+    Math.abs(point[1] - wing.centre[1]) < wing.halfDepth - margin
   );
 }
 
-function buildWalls(context: WorldBuildContext, building: BuildingDef): void {
-  const [width, height, depth] = building.size;
-  const { position, rotationY } = building;
+/** True when the point is buried inside a DIFFERENT wing of the same building. */
+function coveredByOtherWing(point: Vec2Tuple, self: Wing, wings: readonly Wing[]): boolean {
+  return wings.some((other) => other !== self && insideWing(point, other, -0.05));
+}
 
-  context.shapes.boxAt(building.walls, position, PLINTH_HEIGHT, [width, height, depth], rotationY);
+/** Faces that really get a verandah: requested in data AND not butting into another wing. */
+function verandahFaces(wing: Wing, wings: readonly Wing[]): Facing[] {
+  return wing.def.verandah.filter((facing) => {
+    const face = faceOf(wing, facing);
+    return !coveredByOtherWing(onFace(face, 0, 0.6), wing, wings);
+  });
+}
 
-  // Whitewashed corner pilasters — a very common detail, and they stop the long
-  // flat walls of the placeholder reading as a plain shipping container.
-  for (const signX of [-1, 1] as const) {
-    for (const signZ of [-1, 1] as const) {
+/** Extra footprint each side, from verandahs. */
+function padding(wing: Wing, wings: readonly Wing[]): Record<Facing, number> {
+  const faces = verandahFaces(wing, wings);
+  const pad = { north: 0, south: 0, east: 0, west: 0 };
+  for (const facing of faces) {
+    pad[facing] = VERANDAH_DEPTH;
+  }
+  return pad;
+}
+
+/** Footprint rectangle (centre + half extents) including verandahs. */
+function paddedFootprint(
+  wing: Wing,
+  wings: readonly Wing[],
+  extra: number,
+): { centre: Vec2Tuple; halfWidth: number; halfDepth: number } {
+  const pad = padding(wing, wings);
+  const minX = wing.centre[0] - wing.halfWidth - pad.west - extra;
+  const maxX = wing.centre[0] + wing.halfWidth + pad.east + extra;
+  const minZ = wing.centre[1] - wing.halfDepth - pad.north - extra;
+  const maxZ = wing.centre[1] + wing.halfDepth + pad.south + extra;
+  return {
+    centre: [(minX + maxX) / 2, (minZ + maxZ) / 2],
+    halfWidth: (maxX - minX) / 2,
+    halfDepth: (maxZ - minZ) / 2,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Wing
+// ---------------------------------------------------------------------------
+
+function buildWing(
+  context: WorldBuildContext,
+  building: BuildingDef,
+  wing: Wing,
+  wings: readonly Wing[],
+): void {
+  const { shapes } = context;
+  const width = wing.halfWidth * 2;
+  const depth = wing.halfDepth * 2;
+  const height = building.height;
+
+  // Plinth under the wing and its verandahs.
+  const plinth = paddedFootprint(wing, wings, 0.5);
+  shapes.boxAt('plinth', plinth.centre, 0, [plinth.halfWidth * 2, PLINTH_HEIGHT, plinth.halfDepth * 2]);
+
+  // Main mass.
+  shapes.boxAt(building.walls, wing.centre, PLINTH_HEIGHT, [width, height, depth]);
+
+  // Floor bands — the slab edges that stripe every elevation in the art.
+  const storeyHeight = height / building.storeys;
+  for (let level = 1; level < building.storeys; level += 1) {
+    shapes.boxAt(
+      'column',
+      wing.centre,
+      PLINTH_HEIGHT + level * storeyHeight - 0.12,
+      [width + 0.12, 0.24, depth + 0.12],
+    );
+  }
+
+  for (const facing of FACINGS) {
+    buildWindows(context, building, wing, wings, facing);
+  }
+  for (const facing of verandahFaces(wing, wings)) {
+    buildVerandah(context, building, wing, facing);
+  }
+  if (wing.def.stairs) {
+    buildStairTowers(context, building, wing, wings);
+  }
+  buildRoof(context, building, wing, wings);
+}
+
+function buildWindows(
+  context: WorldBuildContext,
+  building: BuildingDef,
+  wing: Wing,
+  wings: readonly Wing[],
+  facing: Facing,
+): void {
+  const face = faceOf(wing, facing);
+  const storeyHeight = building.height / building.storeys;
+  const detailed = context.quality.windowDetail === 'full';
+  const spacing = detailed ? 3.2 : 4.2;
+  const windowWidth = 1.6;
+  const count = Math.floor((face.length - 2) / spacing);
+  if (count < 1) {
+    return;
+  }
+  const span = (count - 1) * spacing;
+  const hasVerandah = verandahFaces(wing, wings).includes(facing);
+
+  for (let storey = 0; storey < building.storeys; storey += 1) {
+    const floorY = PLINTH_HEIGHT + storey * storeyHeight;
+
+    for (let index = 0; index < count; index += 1) {
+      const along = -span / 2 + index * spacing;
+      // Skip anything that would be buried inside a neighbouring wing.
+      if (coveredByOtherWing(onFace(face, along, 0.6), wing, wings)) {
+        continue;
+      }
+
+      // Corridor faces open onto rooms: every third bay is a door.
+      const isDoor = hasVerandah && index % 3 === 1;
+      const openingHeight = isDoor ? Math.min(2.4, storeyHeight * 0.72) : storeyHeight * 0.4;
+      const sill = isDoor ? floorY : floorY + storeyHeight * 0.3;
+      const openingWidth = isDoor ? 1.3 : windowWidth;
+
+      if (detailed) {
+        // Green frame standing just proud of the wall...
+        const [frameX, frameZ] = faceBox(face, openingWidth + 0.24, 0.1);
+        context.shapes.boxAt('trimGreen', onFace(face, along, 0.04), sill - 0.08, [
+          frameX,
+          openingHeight + 0.16,
+          frameZ,
+        ]);
+      }
+      // ...and the pane (or door leaf) in front of it.
+      const [paneX, paneZ] = faceBox(face, openingWidth, 0.1);
       context.shapes.boxAt(
-        building.trim,
-        offsetLocal(position, rotationY, (signX * width) / 2, (signZ * depth) / 2),
-        PLINTH_HEIGHT,
-        [0.7, height + 0.15, 0.7],
-        rotationY,
+        isDoor ? 'trimGreen' : 'glass',
+        onFace(face, along, 0.08),
+        sill,
+        [paneX, openingHeight, paneZ],
       );
     }
   }
+}
 
-  if (building.kenteBand) {
-    buildKenteBand(context, building);
+function buildVerandah(
+  context: WorldBuildContext,
+  building: BuildingDef,
+  wing: Wing,
+  facing: Facing,
+): void {
+  const { shapes } = context;
+  const face = faceOf(wing, facing);
+  const storeyHeight = building.height / building.storeys;
+  const runLength = face.length + 0.3;
+
+  for (let level = 0; level < building.storeys; level += 1) {
+    const slabY = PLINTH_HEIGHT + level * storeyHeight - (level === 0 ? 0.1 : 0.12);
+    const [slabX, slabZ] = faceBox(face, runLength, VERANDAH_DEPTH);
+    shapes.boxAt(level === 0 ? 'plinth' : 'column', onFace(face, 0, VERANDAH_DEPTH / 2), slabY, [
+      slabX,
+      level === 0 ? 0.12 : 0.24,
+      slabZ,
+    ]);
+
+    if (level > 0) {
+      // Green balustrade along the corridor edge.
+      const [railX, railZ] = faceBox(face, runLength, 0.08);
+      shapes.boxAt('trimGreen', onFace(face, 0, VERANDAH_DEPTH - 0.12), slabY + 0.24, [railX, 0.95, railZ]);
+      const [capX, capZ] = faceBox(face, runLength, 0.16);
+      shapes.boxAt('trimGreen', onFace(face, 0, VERANDAH_DEPTH - 0.12), slabY + 1.15, [capX, 0.08, capZ]);
+    }
   }
 
-  // Louvred breeze-block screens high on the two gable ends.
-  const screenY = PLINTH_HEIGHT + height * 0.76;
-  const screenHeight = Math.min(1.6, height * 0.16);
-  for (const signX of [-1, 1] as const) {
-    context.shapes.boxAt(
-      'breezeBlock',
-      offsetLocal(position, rotationY, (signX * width) / 2 + signX * 0.05, 0),
-      screenY,
-      [0.2, screenHeight, depth * 0.55],
-      rotationY,
+  // Colonnade, one column roughly every 3.4 m.
+  const columnCount = Math.max(2, Math.round(face.length / 3.4) + 1);
+  const columnSpan = face.length - 0.4;
+  for (let index = 0; index < columnCount; index += 1) {
+    const along = -columnSpan / 2 + (index / (columnCount - 1)) * columnSpan;
+    shapes.boxAt('column', onFace(face, along, VERANDAH_DEPTH - 0.22), PLINTH_HEIGHT, [
+      COLUMN_SIDE,
+      building.height,
+      COLUMN_SIDE,
+    ]);
+  }
+}
+
+function buildStairTowers(
+  context: WorldBuildContext,
+  building: BuildingDef,
+  wing: Wing,
+  wings: readonly Wing[],
+): void {
+  const { shapes } = context;
+  // Stairs go on the two SHORT ends.
+  const ends: Facing[] = wing.halfWidth >= wing.halfDepth ? ['east', 'west'] : ['north', 'south'];
+  const storeyHeight = building.height / building.storeys;
+
+  for (const facing of ends) {
+    const face = faceOf(wing, facing);
+    if (coveredByOtherWing(onFace(face, 0, STAIR_TOWER_DEPTH + 0.5), wing, wings)) {
+      continue;
+    }
+    const towerCentre = onFace(face, 0, STAIR_TOWER_DEPTH / 2);
+    const [tx, tz] = faceBox(face, STAIR_TOWER_WIDTH, STAIR_TOWER_DEPTH);
+
+    shapes.boxAt('plinth', towerCentre, 0, [tx + 0.6, PLINTH_HEIGHT, tz + 0.6]);
+    shapes.boxAt(building.stairAccent, towerCentre, PLINTH_HEIGHT, [tx, building.height + 0.5, tz]);
+    shapes.hipRoof('roofRed', {
+      at: towerCentre,
+      baseY: PLINTH_HEIGHT + building.height + 0.5,
+      width: tx + 1,
+      depth: tz + 1,
+      height: 1.4,
+    });
+
+    // Zig-zag green stair flights on the outer face, one per storey.
+    const flightLength = Math.hypot(STAIR_TOWER_WIDTH * 0.85, storeyHeight);
+    const tilt = (Math.atan2(storeyHeight, STAIR_TOWER_WIDTH * 0.85) * 180) / Math.PI;
+    for (let level = 0; level < building.storeys; level += 1) {
+      const midY = PLINTH_HEIGHT + level * storeyHeight + storeyHeight / 2;
+      const direction = level % 2 === 0 ? 1 : -1;
+      const centre = onFace(face, 0, STAIR_TOWER_DEPTH + 0.08);
+      // Flights run along the face; tiltedBox's long axis is local Z.
+      shapes.tiltedBox(
+        'trimGreen',
+        [centre[0], midY, centre[1]],
+        [0.12, 0.3, flightLength],
+        face.alongX ? 90 : 0,
+        direction * (face.alongX ? -tilt : tilt),
+      );
+      const [landingX, landingZ] = faceBox(face, STAIR_TOWER_WIDTH, 0.9);
+      shapes.boxAt('column', onFace(face, 0, STAIR_TOWER_DEPTH + 0.45), PLINTH_HEIGHT + (level + 1) * storeyHeight - 0.15, [
+        landingX,
+        0.15,
+        landingZ,
+      ]);
+    }
+
+    context.sink.addBoxCollider(
+      `${building.id}:stairs-${facing}`,
+      onFace(face, 0, (STAIR_TOWER_DEPTH + 0.9) / 2),
+      (face.alongX ? STAIR_TOWER_WIDTH : STAIR_TOWER_DEPTH + 0.9) / 2 + 0.2,
+      (face.alongX ? STAIR_TOWER_DEPTH + 0.9 : STAIR_TOWER_WIDTH) / 2 + 0.2,
+      0,
     );
   }
 }
 
-/** Red / gold / green stripe wrapped round the building between storeys. */
-function buildKenteBand(context: WorldBuildContext, building: BuildingDef): void {
-  const [width, height, depth] = building.size;
-  const { position, rotationY } = building;
-  const bandY = PLINTH_HEIGHT + height * 0.52;
-  const stripe = 0.16;
-  const stripes = ['kenteGreen', 'kenteGold', 'kenteRed'] as const;
+function buildRoof(
+  context: WorldBuildContext,
+  building: BuildingDef,
+  wing: Wing,
+  wings: readonly Wing[],
+): void {
+  const roof = paddedFootprint(wing, wings, EAVE_OVERHANG);
+  const eavesY = PLINTH_HEIGHT + building.height;
+  const width = roof.halfWidth * 2;
+  const depth = roof.halfDepth * 2;
 
-  stripes.forEach((material, index) => {
-    context.shapes.boxAt(
-      material,
-      position,
-      bandY + index * stripe,
-      [width + 0.16, stripe, depth + 0.16],
-      rotationY,
-    );
+  // Green fascia band under the eaves, as in every elevation sheet.
+  context.shapes.boxAt('trimGreen', roof.centre, eavesY - 0.05, [width, 0.32, depth]);
+
+  if (building.roof === 'flat') {
+    context.shapes.boxAt('roofRed', roof.centre, eavesY + 0.27, [width, 0.4, depth]);
+    return;
+  }
+  context.shapes.hipRoof('roofRed', {
+    at: roof.centre,
+    baseY: eavesY + 0.27,
+    width,
+    depth,
+    height: building.roofPitch,
   });
 }
 
 // ---------------------------------------------------------------------------
-// Openings
+// Entrance, name board and plaque
 // ---------------------------------------------------------------------------
 
-function buildWindows(context: WorldBuildContext, building: BuildingDef): void {
-  const [width, height, depth] = building.size;
-  const storeyHeight = height / building.storeys;
+interface EntranceSpot {
+  readonly face: Face;
+  readonly facing: Facing;
+  /** Point on the wall face. */
+  readonly at: Vec2Tuple;
+  /** How far the verandah already projects, so the canopy starts beyond it. */
+  readonly clear: number;
+}
 
-  for (let storey = 0; storey < building.storeys; storey += 1) {
-    const sillY = PLINTH_HEIGHT + storey * storeyHeight + storeyHeight * 0.32;
-    const windowHeight = storeyHeight * 0.42;
+function entranceSpot(building: BuildingDef, wings: readonly Wing[]): EntranceSpot | null {
+  if (!building.entrance) {
+    return null;
+  }
+  const at = planPoint(building.entrance.at);
+  const facing = building.entrance.facing;
+  // The wing whose face the entrance point sits on.
+  const wing =
+    wings.find((candidate) => {
+      const face = faceOf(candidate, facing);
+      const distance = face.alongX ? Math.abs(at[1] - face.centre[1]) : Math.abs(at[0] - face.centre[0]);
+      const along = face.alongX ? Math.abs(at[0] - face.centre[0]) : Math.abs(at[1] - face.centre[1]);
+      return distance < 1 && along <= face.length / 2 + 0.5;
+    }) ?? wings[0];
+  if (!wing) {
+    return null;
+  }
+  const face = faceOf(wing, facing);
+  const clear = verandahFaces(wing, wings).includes(facing) ? VERANDAH_DEPTH : 0;
+  return { face, facing, at, clear };
+}
 
-    placeWindowRun(context, building, {
-      axisLength: width,
-      faceOffset: depth / 2,
-      alongX: true,
-      sillY,
-      windowHeight,
-    });
-    placeWindowRun(context, building, {
-      axisLength: width,
-      faceOffset: -depth / 2,
-      alongX: true,
-      sillY,
-      windowHeight,
-    });
-    placeWindowRun(context, building, {
-      axisLength: depth,
-      faceOffset: width / 2,
-      alongX: false,
-      sillY,
-      windowHeight,
-    });
-    placeWindowRun(context, building, {
-      axisLength: depth,
-      faceOffset: -width / 2,
-      alongX: false,
-      sillY,
-      windowHeight,
-    });
+function buildEntrance(context: WorldBuildContext, building: BuildingDef, wings: readonly Wing[]): void {
+  const spot = entranceSpot(building, wings);
+  if (!spot) {
+    return;
+  }
+  const { shapes } = context;
+  const [ox, oz] = spot.face.outward;
+  const out = (distance: number, along = 0): Vec2Tuple => {
+    const ax = spot.face.alongX ? along : 0;
+    const az = spot.face.alongX ? 0 : along;
+    return [spot.at[0] + ox * distance + ax, spot.at[1] + oz * distance + az];
+  };
+
+  const canopyDepth = 2.6;
+  const canopyWidth = 5.4;
+  const canopyStart = spot.clear;
+  const canopyY = Math.min(3.4, building.height / building.storeys - 0.2) + PLINTH_HEIGHT;
+  const [cx, cz] = faceBox(spot.face, canopyWidth, canopyDepth);
+
+  // Door, steps, canopy slab and its two columns.
+  const [doorX, doorZ] = faceBox(spot.face, 2.4, 0.16);
+  shapes.boxAt('trimGreen', out(0.08), PLINTH_HEIGHT, [doorX, 2.5, doorZ]);
+  for (let step = 0; step < 3; step += 1) {
+    const [sx, sz] = faceBox(spot.face, canopyWidth - 0.4, 0.45);
+    shapes.boxAt('plinth', out(canopyStart + canopyDepth + 0.2 + step * 0.42), 0, [
+      sx,
+      PLINTH_HEIGHT - step * 0.15,
+      sz,
+    ]);
+  }
+  shapes.boxAt('plinth', out(canopyStart + canopyDepth / 2), 0, [cx, PLINTH_HEIGHT, cz]);
+  shapes.boxAt('column', out(canopyStart + canopyDepth / 2), canopyY, [cx + 0.2, 0.22, cz + 0.2]);
+  shapes.boxAt('trimGreen', out(canopyStart + canopyDepth / 2), canopyY + 0.22, [cx + 0.25, 0.12, cz + 0.25]);
+  for (const side of [-1, 1] as const) {
+    const columnAt = out(canopyStart + canopyDepth - 0.3, side * (canopyWidth / 2 - 0.35));
+    shapes.boxAt('column', columnAt, PLINTH_HEIGHT, [COLUMN_SIDE, canopyY - PLINTH_HEIGHT, COLUMN_SIDE]);
+    context.sink.addCircleCollider(`${building.id}:canopy-column-${side}`, columnAt, 0.3);
+  }
+
+  // Name board on the canopy's front edge, e.g. "LIBRARY".
+  if (building.nameBoard) {
+    const cell = context.labels.cell(building.nameBoard, 'board');
+    const boardHeight = 0.7;
+    const boardWidth = Math.min(canopyWidth + 1.5, boardHeight * cell.aspect);
+    const labelHeight = boardWidth / cell.aspect;
+    const labelAt = out(canopyStart + canopyDepth + 0.14);
+    shapes.label(
+      'signText',
+      [labelAt[0], canopyY + 0.35 + labelHeight / 2, labelAt[1]],
+      boardWidth,
+      labelHeight,
+      FACE_ROTATION[spot.facing],
+      cell.uv,
+    );
   }
 }
 
-interface WindowRun {
-  /** Length of the wall the windows run along. */
-  readonly axisLength: number;
-  /** Signed distance from the building centre out to the face. */
-  readonly faceOffset: number;
-  /** True when the run travels along the local X axis. */
-  readonly alongX: boolean;
-  readonly sillY: number;
-  readonly windowHeight: number;
-}
-
-function placeWindowRun(
+function registerWingCollider(
   context: WorldBuildContext,
   building: BuildingDef,
-  run: WindowRun,
+  wing: Wing,
+  wings: readonly Wing[],
 ): void {
-  const { position, rotationY } = building;
-  const spacing = 3.1;
-  const windowWidth = 1.7;
-  const count = Math.max(1, Math.floor((run.axisLength - 2.4) / spacing));
-  const span = (count - 1) * spacing;
-
-  // Which way is "out of the wall" for this run: +1 or -1 along the face axis.
-  const outward = Math.sign(run.faceOffset) || 1;
-  const trimDepth = 0.3;
-  const glassDepth = 0.14;
-  // Sit the glass just proud of the surround. A genuinely recessed pane would
-  // need a four-bar frame per window, which across seven buildings is over a
-  // thousand extra boxes for a detail nobody can see from the courtyard.
-  const glassOut = run.faceOffset + outward * (trimDepth / 2);
-  const shutterOffset = windowWidth * 0.62 + 0.26;
-
-  for (let index = 0; index < count; index += 1) {
-    const along = -span / 2 + index * spacing;
-
-    const atFace = (offset: number, slide = 0): readonly [number, number] =>
-      run.alongX ? [along + slide, offset] : [offset, along + slide];
-
-    const trimSize: [number, number] = run.alongX
-      ? [windowWidth + 0.34, trimDepth]
-      : [trimDepth, windowWidth + 0.34];
-    const glassSize: [number, number] = run.alongX
-      ? [windowWidth, glassDepth]
-      : [glassDepth, windowWidth];
-    const shutterSize: [number, number] = run.alongX ? [0.5, 0.16] : [0.16, 0.5];
-
-    const [trimX, trimZ] = atFace(run.faceOffset);
-    const [glassX, glassZ] = atFace(glassOut);
-
-    // Painted surround, then the pane standing proud of it.
-    context.shapes.boxAt(
-      building.trim,
-      offsetLocal(position, rotationY, trimX, trimZ),
-      run.sillY - 0.16,
-      [trimSize[0], run.windowHeight + 0.42, trimSize[1]],
-      rotationY,
-    );
-    context.shapes.boxAt(
-      'glass',
-      offsetLocal(position, rotationY, glassX, glassZ),
-      run.sillY,
-      [glassSize[0], run.windowHeight, glassSize[1]],
-      rotationY,
-    );
-
-    // Louvred shutters thrown open against the wall, one either side.
-    for (const side of [-1, 1] as const) {
-      const [shutterX, shutterZ] = atFace(glassOut, side * shutterOffset);
-      context.shapes.boxAt(
-        'shutterGreen',
-        offsetLocal(position, rotationY, shutterX, shutterZ),
-        run.sillY,
-        [shutterSize[0], run.windowHeight, shutterSize[1]],
-        rotationY,
-      );
-    }
-  }
-}
-
-function buildEntrance(context: WorldBuildContext, building: BuildingDef): void {
-  const [, height, depth] = building.size;
-  const { position, rotationY } = building;
-  const doorHeight = Math.min(2.6, height * 0.42);
-  const frontZ = depth / 2 + 0.06;
-
-  context.shapes.boxAt(
-    building.trim,
-    offsetLocal(position, rotationY, 0, frontZ),
-    PLINTH_HEIGHT,
-    [3.4, doorHeight + 0.5, 0.3],
-    rotationY,
-  );
-  context.shapes.boxAt(
-    'doorWood',
-    offsetLocal(position, rotationY, 0, frontZ + 0.1),
-    PLINTH_HEIGHT,
-    [2.6, doorHeight, 0.18],
-    rotationY,
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Verandahs
-// ---------------------------------------------------------------------------
-
-function buildVerandahs(context: WorldBuildContext, building: BuildingDef): void {
-  switch (building.verandah) {
-    case 'none':
-      return;
-    case 'front':
-      buildVerandahSide(context, building, 'front');
-      return;
-    case 'front-and-back':
-      buildVerandahSide(context, building, 'front');
-      buildVerandahSide(context, building, 'back');
-      return;
-    case 'wrap':
-      buildVerandahSide(context, building, 'front');
-      buildVerandahSide(context, building, 'back');
-      buildVerandahSide(context, building, 'left');
-      buildVerandahSide(context, building, 'right');
-      return;
-  }
-}
-
-type VerandahSide = 'front' | 'back' | 'left' | 'right';
-
-function buildVerandahSide(
-  context: WorldBuildContext,
-  building: BuildingDef,
-  side: VerandahSide,
-): void {
-  const [width, height, depth] = building.size;
-  const { position, rotationY, storeys } = building;
-
-  const alongX = side === 'front' || side === 'back';
-  const runLength = alongX ? width : depth;
-  const faceDistance = (alongX ? depth : width) / 2;
-  const sign = side === 'front' || side === 'right' ? 1 : -1;
-  const centreOut = sign * (faceDistance + VERANDAH_DEPTH / 2);
-
-  const toLocal = (along: number, out: number): readonly [number, number] =>
-    alongX ? [along, out] : [out, along];
-
-  // Slab at ground level, plus one balcony slab per upper storey.
-  const storeyHeight = height / storeys;
-  for (let level = 0; level < storeys; level += 1) {
-    const slabY = PLINTH_HEIGHT + level * storeyHeight - (level === 0 ? 0.12 : 0.14);
-    const [lx, lz] = toLocal(0, centreOut);
-    context.shapes.boxAt(
-      level === 0 ? 'plinth' : building.trim,
-      offsetLocal(position, rotationY, lx, lz),
-      slabY,
-      alongX
-        ? [runLength + 0.4, 0.14, VERANDAH_DEPTH]
-        : [VERANDAH_DEPTH, 0.14, runLength + 0.4],
-      rotationY,
-    );
-
-    if (level > 0) {
-      // Balcony railing along the outer edge.
-      const railOut = sign * (faceDistance + VERANDAH_DEPTH - 0.12);
-      const [rx, rz] = toLocal(0, railOut);
-      context.shapes.boxAt(
-        'metalRail',
-        offsetLocal(position, rotationY, rx, rz),
-        slabY + 0.14,
-        alongX ? [runLength + 0.4, 1, 0.1] : [0.1, 1, runLength + 0.4],
-        rotationY,
-      );
-    }
-  }
-
-  // Colonnade. One column roughly every 3.4 m, never fewer than three.
-  const columnCount = Math.max(3, Math.round(runLength / 3.4) + 1);
-  const columnSpan = runLength - 0.6;
-  const columnOut = sign * (faceDistance + VERANDAH_DEPTH - 0.3);
-
-  for (let index = 0; index < columnCount; index += 1) {
-    const t = columnCount === 1 ? 0.5 : index / (columnCount - 1);
-    const along = -columnSpan / 2 + t * columnSpan;
-    const [cx, cz] = toLocal(along, columnOut);
-    const columnCentre = offsetLocal(position, rotationY, cx, cz);
-
-    context.shapes.boxAt(
-      building.trim,
-      columnCentre,
-      PLINTH_HEIGHT,
-      [COLUMN_SIDE, height, COLUMN_SIDE],
-      rotationY,
-    );
-    // Capital, so the colonnade reads as architecture rather than scaffolding.
-    context.shapes.boxAt(
-      building.trim,
-      columnCentre,
-      PLINTH_HEIGHT + height - 0.3,
-      [COLUMN_SIDE + 0.18, 0.3, COLUMN_SIDE + 0.18],
-      rotationY,
-    );
-  }
-
-  // Beam carrying the roof overhang above the colonnade.
-  const [bx, bz] = toLocal(0, columnOut);
-  context.shapes.boxAt(
-    building.trim,
-    offsetLocal(position, rotationY, bx, bz),
-    PLINTH_HEIGHT + height - 0.02,
-    alongX ? [runLength + 0.5, 0.34, 0.42] : [0.42, 0.34, runLength + 0.5],
-    rotationY,
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Roofs
-// ---------------------------------------------------------------------------
-
-function buildRoof(context: WorldBuildContext, building: BuildingDef): void {
-  const [width, height, depth] = building.size;
-  const { position, rotationY } = building;
-  const padding = verandahPadding(building.verandah);
-
-  const roofWidth = width + padding.extraX * 2 + EAVE_OVERHANG * 2;
-  const roofDepth = depth + padding.extraZ + EAVE_OVERHANG * 2;
-  const roofCentre = offsetLocal(position, rotationY, 0, padding.offsetZ);
-  const eavesY = PLINTH_HEIGHT + height + 0.3;
-
-  // Fascia board band at the eaves line, sitting just under the roof.
-  context.shapes.boxAt(
-    'fascia',
-    roofCentre,
-    eavesY - 0.3,
-    [roofWidth, 0.3, roofDepth],
-    rotationY,
-  );
-
-  switch (building.roofStyle) {
-    case 'gable': {
-      // The prism's ridge runs along its local Z, so rotate a further 90 degrees
-      // when the building is wider than it is deep — a ridge always wants to run
-      // along the longer axis.
-      const ridgeAlongX = roofWidth >= roofDepth;
-      context.shapes.gable(building.roof, {
-        at: roofCentre,
-        baseY: eavesY,
-        width: ridgeAlongX ? roofDepth : roofWidth,
-        depth: ridgeAlongX ? roofWidth : roofDepth,
-        height: building.roofPitch,
-        rotationY: rotationY + (ridgeAlongX ? 90 : 0),
-      });
-      return;
-    }
-    case 'hip': {
-      context.shapes.pyramid(building.roof, {
-        at: roofCentre,
-        baseY: eavesY,
-        width: roofWidth,
-        depth: roofDepth,
-        height: building.roofPitch,
-        rotationY,
-      });
-      return;
-    }
-    case 'flat': {
-      context.shapes.boxAt(
-        building.roof,
-        roofCentre,
-        eavesY,
-        [roofWidth, 0.26, roofDepth],
-        rotationY,
-      );
-      // Parapet on all four sides.
-      for (const signX of [-1, 1] as const) {
-        context.shapes.boxAt(
-          building.trim,
-          offsetLocal(roofCentre, rotationY, (signX * roofWidth) / 2, 0),
-          eavesY + 0.26,
-          [0.24, 0.6, roofDepth],
-          rotationY,
-        );
-      }
-      for (const signZ of [-1, 1] as const) {
-        context.shapes.boxAt(
-          building.trim,
-          offsetLocal(roofCentre, rotationY, 0, (signZ * roofDepth) / 2),
-          eavesY + 0.26,
-          [roofWidth, 0.6, 0.24],
-          rotationY,
-        );
-      }
-      return;
-    }
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Collision and plaques
-// ---------------------------------------------------------------------------
-
-interface VerandahPadding {
-  readonly front: number;
-  readonly back: number;
-  readonly extraX: number;
-  /** Total extra depth across both faces. */
-  readonly extraZ: number;
-  /** Local-Z shift of the padded footprint's centre. */
-  readonly offsetZ: number;
-}
-
-function verandahPadding(style: VerandahStyle): VerandahPadding {
-  switch (style) {
-    case 'none':
-      return { front: 0, back: 0, extraX: 0, extraZ: 0, offsetZ: 0 };
-    case 'front':
-      return {
-        front: VERANDAH_DEPTH,
-        back: 0,
-        extraX: 0,
-        extraZ: VERANDAH_DEPTH,
-        offsetZ: VERANDAH_DEPTH / 2,
-      };
-    case 'front-and-back':
-      return {
-        front: VERANDAH_DEPTH,
-        back: VERANDAH_DEPTH,
-        extraX: 0,
-        extraZ: VERANDAH_DEPTH * 2,
-        offsetZ: 0,
-      };
-    case 'wrap':
-      return {
-        front: VERANDAH_DEPTH,
-        back: VERANDAH_DEPTH,
-        extraX: VERANDAH_DEPTH,
-        extraZ: VERANDAH_DEPTH * 2,
-        offsetZ: 0,
-      };
-  }
-}
-
-/**
- * Registers the solid footprint.
- *
- * Phase 1 has no vertical movement, so the verandah — which sits 0.45 m up on
- * the plinth — is deliberately included in the blocked area rather than left
- * walkable. Walking it would put the camera visually through the slab. Step
- * height and a walkable verandah are Phase 2 work.
- */
-function registerFootprint(context: WorldBuildContext, building: BuildingDef): void {
-  const [width, , depth] = building.size;
-  const padding = verandahPadding(building.verandah);
-  const margin = 0.2;
-
+  // Verandahs sit 0.45 m up on the plinth and the player has no step height,
+  // so the corridor is inside the blocked footprint rather than walkable.
+  const footprint = paddedFootprint(wing, wings, 0.25);
   context.sink.addBoxCollider(
-    building.id,
-    offsetLocal(building.position, building.rotationY, 0, padding.offsetZ),
-    width / 2 + padding.extraX + margin,
-    depth / 2 + padding.extraZ / 2 + margin,
-    building.rotationY,
+    `${building.id}:wing`,
+    footprint.centre,
+    footprint.halfWidth,
+    footprint.halfDepth,
+    0,
   );
 }
 
-/** A readable plaque beside the main entrance, if the data file supplies one. */
-function registerPlaque(context: WorldBuildContext, building: BuildingDef): void {
+function registerPlaque(context: WorldBuildContext, building: BuildingDef, wings: readonly Wing[]): void {
   if (!building.plaque) {
     return;
   }
+  const spot = entranceSpot(building, wings);
+  let at: Vec2Tuple;
+  let rotationY: number;
 
-  const [width, , depth] = building.size;
-  const padding = verandahPadding(building.verandah);
-  const localX = Math.min(width / 2 - 1, 2.8);
-  const localZ = depth / 2 + padding.front + 0.5;
-  const [x, z] = offsetLocal(building.position, building.rotationY, localX, localZ);
+  if (spot) {
+    const [ox, oz] = spot.face.outward;
+    const along = 3.9;
+    const out = spot.clear + 4;
+    at = [
+      spot.at[0] + ox * out + (spot.face.alongX ? along : 0),
+      spot.at[1] + oz * out + (spot.face.alongX ? 0 : along),
+    ];
+    rotationY = FACE_ROTATION[spot.facing];
+  } else {
+    // No entrance: stand the plaque in front of the middle of the south side.
+    const maxZ = Math.max(...wings.map((wing) => wing.centre[1] + wing.halfDepth));
+    const minX = Math.min(...wings.map((wing) => wing.centre[0] - wing.halfWidth));
+    const maxX = Math.max(...wings.map((wing) => wing.centre[0] + wing.halfWidth));
+    at = [(minX + maxX) / 2 + 4.4, maxZ + 3.6];
+    rotationY = 0;
+  }
 
-  // Brass plate on a post.
-  context.shapes.boxAt('signPost', [x, z], 0, [0.12, 1.4, 0.12], building.rotationY);
-  context.shapes.boxAt(
-    'kenteGold',
-    [x, z],
-    1.25,
-    [0.9, 0.56, 0.08],
-    building.rotationY,
-  );
+  context.shapes.boxAt('metalPole', at, 0, [0.12, 1.3, 0.12], rotationY);
+  context.shapes.boxAt('kenteGold', at, 1.15, [0.95, 0.6, 0.08], rotationY);
+  context.sink.addCircleCollider(`plaque:${building.id}`, at, 0.25);
 
   context.sink.addInteractable({
     id: `plaque:${building.id}`,
-    position: new Vector3(x, 1.5, z),
-    radius: 3.2,
+    position: new Vector3(at[0], 1.4, at[1]),
+    radius: 3.4,
     promptLabel: `Read the ${building.name} plaque`,
     eyebrow: 'Building Plaque',
     title: building.plaque.title,
     body: building.plaque.body,
     ...(building.plaque.bullets ? { bullets: building.plaque.bullets } : {}),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Bridges and gateway canopies
+// ---------------------------------------------------------------------------
+
+function buildBridge(context: WorldBuildContext, bridge: BridgeDef): void {
+  const { shapes } = context;
+  const { centre, size } = planRect(bridge.rect);
+  const [width, depth] = size;
+  const deckMaterial: MaterialKey = 'column';
+
+  shapes.boxAt(deckMaterial, centre, bridge.clearance, [width, bridge.depth, depth]);
+
+  if (bridge.sign) {
+    // Gateway canopy: a deep fascia carrying the sign, on two front columns.
+    const facing = bridge.sign.facing;
+    const [ox, oz] = OUTWARD[facing];
+    const alongX = facing === 'north' || facing === 'south';
+    const reach = alongX ? depth / 2 : width / 2;
+    const span = alongX ? width : depth;
+    for (const side of [-1, 1] as const) {
+      const columnAt: Vec2Tuple = [
+        centre[0] + ox * (reach - 0.4) + (alongX ? side * (span / 2 - 0.5) : 0),
+        centre[1] + oz * (reach - 0.4) + (alongX ? 0 : side * (span / 2 - 0.5)),
+      ];
+      shapes.boxAt('column', columnAt, 0, [0.5, bridge.clearance, 0.5]);
+      context.sink.addCircleCollider(`${bridge.id}:column-${side}`, columnAt, 0.4);
+    }
+    const cell = context.labels.cell(bridge.sign.text, 'board');
+    const labelWidth = Math.min(span - 0.6, (bridge.depth - 0.25) * cell.aspect);
+    const labelHeight = labelWidth / cell.aspect;
+    shapes.label(
+      'signText',
+      [
+        centre[0] + ox * (reach + 0.03),
+        bridge.clearance + bridge.depth / 2,
+        centre[1] + oz * (reach + 0.03),
+      ],
+      labelWidth,
+      labelHeight,
+      FACE_ROTATION[facing],
+      cell.uv,
+    );
+    return;
+  }
+
+  // Footbridge: deck, green balustrades both sides and a red roof over it.
+  const alongX = width >= depth;
+  for (const side of [-1, 1] as const) {
+    const railAt: Vec2Tuple = alongX
+      ? [centre[0], centre[1] + side * (depth / 2 - 0.06)]
+      : [centre[0] + side * (width / 2 - 0.06), centre[1]];
+    shapes.boxAt('trimGreen', railAt, bridge.clearance + bridge.depth, alongX ? [width, 1, 0.08] : [0.08, 1, depth]);
+  }
+  shapes.hipRoof('roofRed', {
+    at: centre,
+    baseY: bridge.clearance + bridge.depth + 2.6,
+    width: width + 0.8,
+    depth: depth + 0.8,
+    height: 0.9,
   });
 }

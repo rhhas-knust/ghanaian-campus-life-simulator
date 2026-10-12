@@ -11,12 +11,12 @@
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <meta
       name="description"
-      content="Phase 1 prototype of the Ghanaian Campus Life Simulator: a lightweight first-person 3D university campus you can walk around in the browser."
+      content="Ghanaian Campus Life Simulator — walk a 3D Ghanaian university campus in your browser, on desktop or Android."
     />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <title>Ghanaian Campus Life Simulator — Phase 1</title>
+    <title>Ghanaian Campus Life Simulator</title>
   </head>
   <body>
     <!-- The WebGL canvas is created by the engine and appended here. -->
@@ -26,10 +26,23 @@
     <div id="hud" class="hud" hidden>
       <div id="crosshair" class="crosshair" aria-hidden="true"></div>
 
-      <div id="hud-top" class="hud-top">
-        <p id="location-label" class="location-label">Campus Entrance</p>
-        <button id="pause-button" class="icon-button" type="button" aria-label="Pause game">
-          <span aria-hidden="true">❙❙</span>
+      <button id="pause-button" class="hud-button hud-pause" type="button" aria-label="Pause game">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
+      </button>
+
+      <div class="location-pill" role="status" aria-live="polite">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z" /></svg>
+        <span id="location-label">Main Gate</span>
+      </div>
+
+      <div class="hud-right">
+        <div class="minimap" aria-label="Minimap">
+          <canvas id="minimap-canvas" width="132" height="132"></canvas>
+          <span class="minimap-north" aria-hidden="true">N</span>
+        </div>
+        <button id="camera-button" class="hud-button hud-camera" type="button" aria-label="Switch camera view">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h3l2-2h6l2 2h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1zm8 3a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z" /></svg>
+          <span id="camera-button-label">1st</span>
         </button>
       </div>
 
@@ -39,14 +52,21 @@
         <span id="interaction-text" class="interaction-text">Read sign</span>
       </div>
 
-      <!-- Touch controls: injected/managed by src/ui/TouchControls.ts -->
+      <div id="look-hint" class="look-hint" hidden>
+        <span>Swipe to look</span>
+      </div>
+
+      <p id="desktop-hint" class="desktop-hint">V camera · E interact · Shift run · Esc pause</p>
+
+      <!-- Touch controls: wired up by src/input/TouchInput.ts -->
       <div id="touch-controls" class="touch-controls" hidden>
+        <div id="touch-look" class="touch-look" aria-hidden="true"></div>
         <div id="touch-joystick" class="touch-joystick" aria-hidden="true">
           <div id="touch-joystick-knob" class="touch-joystick-knob"></div>
         </div>
-        <div id="touch-look" class="touch-look" aria-hidden="true"></div>
-        <button id="touch-interact" class="touch-action-button" type="button" aria-label="Interact">
-          Interact
+        <button id="touch-interact" class="touch-action-button" type="button" aria-label="Interact" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V10h.5V8.5a1.5 1.5 0 0 1 3 0V10h.5V9.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-2.7L4.3 14a1.5 1.5 0 0 1 2.4-1.8L9 15z" /></svg>
+          <span>Interact</span>
         </button>
       </div>
     </div>
@@ -54,9 +74,9 @@
     <!-- ========================= Overlays ========================= -->
 
     <!-- Loading -->
-    <div id="loading-screen" class="overlay overlay--solid">
+    <div id="loading-screen" class="overlay overlay--title">
       <div class="panel">
-        <p class="eyebrow">Phase 1 Prototype</p>
+        <p class="eyebrow">Phase 1</p>
         <h1 class="title">Ghanaian Campus Life Simulator</h1>
         <p class="loading-text" id="loading-text">Building the campus…</p>
         <div class="loading-bar"><div id="loading-bar-fill" class="loading-bar-fill"></div></div>
@@ -64,58 +84,78 @@
     </div>
 
     <!-- Start / click-to-play (also re-used to re-acquire pointer lock) -->
-    <div id="start-screen" class="overlay" hidden>
+    <div id="start-screen" class="overlay overlay--title" hidden>
       <div class="panel">
-        <p class="eyebrow">Phase 1 Prototype</p>
+        <p class="eyebrow">Phase 1</p>
         <h1 class="title">Ghanaian Campus Life Simulator</h1>
         <p class="subtitle">
-          Walk the entrance, courtyard and lecture blocks of a Ghanaian university campus.
+          Walk in through the main gate and explore the courtyard, lecture halls, library, student
+          centre and hostels.
         </p>
+        <p class="rotate-hint">Turn your phone sideways for the best view.</p>
 
         <button id="start-button" class="primary-button" type="button">Enter Campus</button>
 
-        <div class="controls-grid" id="controls-grid-start"></div>
-        <p class="footnote">
-          Placeholder geometry only — final buildings and the campus map will replace these shapes.
-        </p>
+        <dl class="controls-grid" id="controls-grid-start"></dl>
       </div>
     </div>
 
     <!-- Pause menu -->
     <div id="pause-screen" class="overlay" hidden>
-      <div class="panel">
-        <p class="eyebrow">Paused</p>
-        <h2 class="title title--small">Campus Life Simulator</h2>
+      <div class="panel panel--pause">
+        <h2 class="pause-title">Pause</h2>
+        <p class="pause-subtitle">Ghanaian Campus Life Simulator</p>
 
-        <button id="resume-button" class="primary-button" type="button">Resume</button>
+        <button id="resume-button" class="primary-button" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+          Resume
+        </button>
+        <button id="map-button" class="secondary-button" type="button">Campus Map</button>
+        <button id="camera-mode-button" class="secondary-button" type="button">View: First person</button>
 
-        <div class="settings-row">
-          <label class="settings-label" for="quality-select">Graphics quality</label>
-          <select id="quality-select" class="settings-select">
-            <option value="low">Low — best for older phones</option>
-            <option value="medium">Medium</option>
-            <option value="high">High — desktop</option>
-          </select>
-        </div>
+        <details class="settings">
+          <summary>Settings</summary>
+          <div class="settings-row">
+            <label class="settings-label" for="quality-select">Graphics quality</label>
+            <select id="quality-select" class="settings-select">
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+          <div class="settings-row">
+            <label class="settings-label" for="sensitivity-range">Look sensitivity</label>
+            <input id="sensitivity-range" class="settings-range" type="range" min="0.3" max="2.5" step="0.1" value="1" />
+          </div>
+          <div class="settings-row">
+            <label class="settings-label" for="invert-y-toggle">Invert up/down look</label>
+            <input id="invert-y-toggle" class="settings-toggle" type="checkbox" />
+          </div>
+          <div class="settings-row">
+            <label class="settings-label" for="auto-level-toggle">Level the view when walking</label>
+            <input id="auto-level-toggle" class="settings-toggle" type="checkbox" />
+          </div>
+        </details>
 
-        <div class="settings-row">
-          <label class="settings-label" for="sensitivity-range">Look sensitivity</label>
-          <input
-            id="sensitivity-range"
-            class="settings-range"
-            type="range"
-            min="0.3"
-            max="2.5"
-            step="0.1"
-            value="1"
-          />
-        </div>
-
-        <div class="controls-grid" id="controls-grid-pause"></div>
+        <details class="settings">
+          <summary>Controls</summary>
+          <dl class="controls-grid" id="controls-grid-pause"></dl>
+        </details>
       </div>
     </div>
 
-    <!-- Interaction read-out (campus sign, building plaques) -->
+    <!-- Campus map: the artist's master plan, with a "you are here" marker -->
+    <div id="map-screen" class="overlay overlay--map" hidden>
+      <div class="map-frame">
+        <div class="map-canvas">
+          <img id="map-image" alt="Campus master plan" decoding="async" />
+          <div id="map-marker" class="map-marker" aria-label="You are here"></div>
+        </div>
+        <button id="map-close" class="primary-button map-close" type="button">Close map</button>
+      </div>
+    </div>
+
+    <!-- Interaction read-out (campus sign, plaques, notice board) -->
     <div id="info-screen" class="overlay" hidden>
       <div class="panel panel--info">
         <p class="eyebrow" id="info-eyebrow">Campus Sign</p>
@@ -126,10 +166,10 @@
     </div>
 
     <noscript>
-      <div class="overlay overlay--solid">
+      <div class="overlay overlay--title">
         <div class="panel">
           <h1 class="title">JavaScript required</h1>
-          <p class="subtitle">This 3D campus prototype needs JavaScript and WebGL enabled.</p>
+          <p class="subtitle">This 3D campus needs JavaScript and WebGL enabled.</p>
         </div>
       </div>
     </noscript>

@@ -1,199 +1,155 @@
 /**
  * Campus signage — the interactive objects.
  *
- * Three physical forms, all driven from `SIGNS` in the campus layout:
+ *   campus-board — the welcome board inside the gate (the required campus
+ *                  sign), green with gold lettering, under a red hood.
+ *   finger-post  — the timber direction sign from storyboard frame 4, with
+ *                  readable arms ("LIBRARY", "HOSTELS", ...).
+ *   notice       — the SRC notice board outside the Student Centre.
  *
- *   campus-board — the big twin-post welcome board inside the gate. This is the
- *                  required interactive campus sign, placed directly in the
- *                  player's line of sight at spawn.
- *   directory    — a slim single-post finger board.
- *   notice       — a glazed notice box on short legs.
- *
- * Each one registers an `Interactable`, which is all the interaction system
- * needs: it does not know or care what the sign looks like.
+ * Lettering comes from the shared sign atlas, so it costs no extra draw calls.
+ * Each sign also registers an `Interactable`, which is all the interaction
+ * system needs — it does not know or care what the sign looks like.
  */
 
 import { Vector3 } from 'three';
 
-import { SIGNS, type SignDef } from '../config/campusLayout';
+import { SIGNS, planPoint, type SignDef } from '../config/campusLayout';
+import type { Vec2Tuple } from '../types';
 import { offsetLocal } from '../utils/shapes';
 import type { WorldBuildContext } from './context';
+import type { LabelStyle } from './SignAtlas';
 
 export function buildSignage(context: WorldBuildContext): void {
   for (const sign of SIGNS) {
+    const at = planPoint(sign.at);
     switch (sign.kind) {
       case 'campus-board':
-        buildCampusBoard(context, sign);
+        buildCampusBoard(context, sign, at);
         break;
-      case 'directory':
-        buildDirectory(context, sign);
+      case 'finger-post':
+        buildFingerPost(context, sign, at);
         break;
       case 'notice':
-        buildNoticeBox(context, sign);
+        buildNotice(context, sign, at);
         break;
     }
-    registerInteractable(context, sign);
+    context.sink.addInteractable({
+      id: `sign:${sign.id}`,
+      position: new Vector3(at[0], 1.6, at[1]),
+      radius: sign.interactionRadius,
+      promptLabel: sign.interaction.promptLabel,
+      eyebrow: sign.interaction.eyebrow,
+      title: sign.interaction.title,
+      body: sign.interaction.body,
+      ...(sign.interaction.bullets ? { bullets: sign.interaction.bullets } : {}),
+    });
   }
 }
 
-function registerInteractable(context: WorldBuildContext, sign: SignDef): void {
-  context.sink.addInteractable({
-    id: `sign:${sign.id}`,
-    position: new Vector3(sign.position[0], 1.6 * sign.scale, sign.position[1]),
-    radius: sign.interactionRadius,
-    promptLabel: sign.interaction.promptLabel,
-    eyebrow: sign.interaction.eyebrow,
-    title: sign.interaction.title,
-    body: sign.interaction.body,
-    ...(sign.interaction.bullets ? { bullets: sign.interaction.bullets } : {}),
-  });
-}
-
-/** Big board on two posts, kente band across the head, board face to local +Z. */
-function buildCampusBoard(context: WorldBuildContext, sign: SignDef): void {
-  const s = sign.scale;
-  const boardWidth = 4.6 * s;
-  const boardHeight = 2.5 * s;
-  const boardBase = 1.1 * s;
-  const { position, rotationY } = sign;
-
-  for (const direction of [-1, 1] as const) {
-    const postCentre = offsetLocal(position, rotationY, (direction * boardWidth) / 2.6, 0);
-    context.shapes.boxAt('signPost', postCentre, 0, [0.22 * s, boardBase + boardHeight, 0.22 * s], rotationY);
-    context.shapes.boxAt('plinth', postCentre, 0, [0.5 * s, 0.2 * s, 0.5 * s], rotationY);
-  }
-
-  // Board face, with a gold frame behind it.
-  context.shapes.boxAt(
-    'kenteGold',
-    position,
-    boardBase,
-    [boardWidth + 0.18 * s, boardHeight + 0.18 * s, 0.1 * s],
-    rotationY,
-  );
-  context.shapes.boxAt(
-    'signBoard',
-    offsetLocal(position, rotationY, 0, 0.06 * s),
-    boardBase + 0.09 * s,
-    [boardWidth, boardHeight, 0.08 * s],
-    rotationY,
-  );
-
-  // Kente header band across the top of the board.
-  const bands = ['kenteRed', 'kenteGold', 'kenteGreen'] as const;
-  bands.forEach((material, index) => {
-    context.shapes.boxAt(
-      material,
-      offsetLocal(position, rotationY, 0, 0.1 * s),
-      boardBase + boardHeight - (index + 1) * 0.16 * s,
-      [boardWidth * 0.94, 0.16 * s, 0.06 * s],
-      rotationY,
-    );
-  });
-
-  // Pitched zinc hood keeping the rain off.
-  context.shapes.gable('roofZinc', {
-    at: offsetLocal(position, rotationY, 0, 0.1 * s),
-    baseY: boardBase + boardHeight,
-    width: 1.1 * s,
-    depth: boardWidth + 0.5 * s,
-    height: 0.4 * s,
-    rotationY: rotationY + 90,
-  });
-
-  context.sink.addBoxCollider(
-    `sign:${sign.id}`,
-    position,
-    boardWidth / 2 + 0.2,
-    0.35,
-    rotationY,
+/** Every label the signs need, so the atlas can be built before the world. */
+export function signLabels(): { text: string; style: LabelStyle }[] {
+  return SIGNS.flatMap((sign) =>
+    sign.labels.map((text) => ({ text, style: styleFor(sign) })),
   );
 }
 
-/** Slim finger board on one post. */
-function buildDirectory(context: WorldBuildContext, sign: SignDef): void {
-  const s = sign.scale;
-  const { position, rotationY } = sign;
-
-  context.shapes.boxAt('plinth', position, 0, [0.6 * s, 0.18 * s, 0.6 * s], rotationY);
-  context.shapes.cylinder('signPost', {
-    at: position,
-    baseY: 0.1 * s,
-    radius: 0.1 * s,
-    height: 2.5 * s,
-    segments: 6,
-    rotationY,
-  });
-
-  // Three stacked finger boards, each pointing a different way.
-  const fingers = [
-    { y: 2.3, rotation: 0, material: 'kenteGreen' },
-    { y: 1.95, rotation: -24, material: 'kenteGold' },
-    { y: 1.6, rotation: 22, material: 'kenteRed' },
-  ] as const;
-
-  for (const finger of fingers) {
-    context.shapes.boxAt(
-      finger.material,
-      offsetLocal(position, rotationY + finger.rotation, 0.75 * s, 0),
-      finger.y * s,
-      [1.6 * s, 0.3 * s, 0.07 * s],
-      rotationY + finger.rotation,
-    );
-  }
-
-  context.sink.addCircleCollider(`sign:${sign.id}`, position, 0.4);
+function styleFor(sign: SignDef): LabelStyle {
+  return sign.kind === 'campus-board' ? 'welcome' : sign.kind === 'finger-post' ? 'wood' : 'board';
 }
 
-/** Glazed notice box on two short legs. */
-function buildNoticeBox(context: WorldBuildContext, sign: SignDef): void {
-  const s = sign.scale;
-  const { position, rotationY } = sign;
-  const width = 2.2 * s;
-  const height = 1.5 * s;
-  const base = 0.85 * s;
+/** A label quad on the sign's face, `out` metres in front of its centre plane. */
+function faceLabel(
+  context: WorldBuildContext,
+  sign: SignDef,
+  at: Vec2Tuple,
+  text: string,
+  options: { x: number; y: number; out: number; maxWidth: number; height: number; flip?: boolean },
+): number {
+  const cell = context.labels.cell(text, styleFor(sign));
+  const width = Math.min(options.maxWidth, options.height * cell.aspect);
+  const height = width / cell.aspect;
+  const rotation = sign.rotationY + (options.flip ? 180 : 0);
+  const centre = offsetLocal(at, sign.rotationY, options.x, options.flip ? -options.out : options.out);
+  context.shapes.label('signText', [centre[0], options.y, centre[1]], width, height, rotation, cell.uv);
+  return width;
+}
 
-  for (const direction of [-1, 1] as const) {
-    context.shapes.boxAt(
-      'signPost',
-      offsetLocal(position, rotationY, (direction * width) / 2.8, 0),
-      0,
-      [0.14 * s, base, 0.14 * s],
-      rotationY,
-    );
+function buildCampusBoard(context: WorldBuildContext, sign: SignDef, at: Vec2Tuple): void {
+  const { shapes } = context;
+  const rotation = sign.rotationY;
+  const width = 4.8;
+  const height = 2.4;
+  const base = 1.1;
+
+  shapes.boxAt('plinth', at, 0, [width + 0.9, 0.35, 1.2], rotation);
+  for (const side of [-1, 1] as const) {
+    shapes.boxAt('column', offsetLocal(at, rotation, (side * (width + 0.3)) / 2, 0), 0.35, [0.45, base + height + 0.2, 0.45], rotation);
+  }
+  shapes.boxAt('kenteGold', at, base, [width + 0.16, height + 0.16, 0.16], rotation);
+  shapes.boxAt('kenteGreen', offsetLocal(at, rotation, 0, 0.04), base + 0.08, [width, height, 0.12], rotation);
+  shapes.hipRoof('roofRed', {
+    at,
+    baseY: base + height + 0.45,
+    width: width + 1.4,
+    depth: 1.3,
+    height: 0.6,
+    rotationY: rotation,
+  });
+
+  const [headline, subline] = sign.labels;
+  if (headline) {
+    faceLabel(context, sign, at, headline, { x: 0, y: base + height * 0.66, out: 0.12, maxWidth: width - 0.4, height: 0.9 });
+  }
+  if (subline) {
+    faceLabel(context, sign, at, subline, { x: 0, y: base + height * 0.26, out: 0.12, maxWidth: width - 0.5, height: 0.42 });
   }
 
-  context.shapes.boxAt('woodDark', position, base, [width, height, 0.14 * s], rotationY);
-  context.shapes.boxAt(
-    'glass',
-    offsetLocal(position, rotationY, 0, 0.09 * s),
-    base + 0.1 * s,
-    [width - 0.2 * s, height - 0.2 * s, 0.04 * s],
-    rotationY,
-  );
-  // Paper notices behind the glass, at slight angles.
-  const notices = [
-    { x: -0.5, y: 0.95, rotation: 3 },
-    { x: 0.42, y: 1.05, rotation: -5 },
-    { x: 0.1, y: 0.5, rotation: 2 },
-  ] as const;
-  for (const notice of notices) {
-    context.shapes.boxAt(
-      'fascia',
-      offsetLocal(position, rotationY, notice.x * s, 0.07 * s),
-      base + notice.y * s - 0.2 * s,
-      [0.52 * s, 0.4 * s, 0.02 * s],
-      rotationY + notice.rotation,
-    );
+  context.sink.addBoxCollider(`sign:${sign.id}`, at, (width + 0.9) / 2, 0.6, rotation);
+}
+
+function buildFingerPost(context: WorldBuildContext, sign: SignDef, at: Vec2Tuple): void {
+  const { shapes } = context;
+  const rotation = sign.rotationY;
+  shapes.boxAt('woodWarm', at, 0, [0.2, 3.3, 0.2], rotation);
+  shapes.boxAt('woodWarm', at, 3.3, [0.26, 0.1, 0.26], rotation);
+
+  sign.labels.forEach((text, index) => {
+    const y = 2.9 - index * 0.45;
+    const side = index % 2 === 0 ? -1 : 1;
+    const labelHeight = 0.32;
+    const cell = context.labels.cell(text, 'wood');
+    const armLength = Math.min(1.9, labelHeight * cell.aspect) + 0.25;
+    const armX = side * (armLength / 2 + 0.1);
+    shapes.boxAt('woodWarm', offsetLocal(at, rotation, armX, 0), y - 0.2, [armLength, 0.4, 0.07], rotation);
+    // Lettering on both faces, so the post reads from either direction.
+    for (const flip of [false, true]) {
+      faceLabel(context, sign, at, text, { x: armX, y, out: 0.045, maxWidth: armLength - 0.2, height: labelHeight, flip });
+    }
+  });
+
+  context.sink.addCircleCollider(`sign:${sign.id}`, at, 0.35);
+}
+
+function buildNotice(context: WorldBuildContext, sign: SignDef, at: Vec2Tuple): void {
+  const { shapes } = context;
+  const rotation = sign.rotationY;
+  const width = 2.2;
+  const base = 0.8;
+  const height = 1.5;
+
+  for (const side of [-1, 1] as const) {
+    shapes.boxAt('woodWarm', offsetLocal(at, rotation, (side * width) / 2.6, 0), 0, [0.12, base, 0.12], rotation);
+  }
+  shapes.boxAt('woodWarm', at, base, [width, height, 0.12], rotation);
+  shapes.boxAt('canvasWhite', offsetLocal(at, rotation, -0.45, 0.07), base + 0.35, [0.5, 0.6, 0.02], rotation + 3);
+  shapes.boxAt('canvasWhite', offsetLocal(at, rotation, 0.4, 0.07), base + 0.25, [0.55, 0.45, 0.02], rotation - 4);
+  shapes.boxAt('roofRed', offsetLocal(at, rotation, 0, 0.12), base + height + 0.3, [width + 0.3, 0.1, 0.5], rotation);
+
+  const [header] = sign.labels;
+  if (header) {
+    faceLabel(context, sign, at, header, { x: 0, y: base + height + 0.08, out: 0.08, maxWidth: width - 0.2, height: 0.3 });
   }
 
-  context.shapes.boxAt(
-    'roofZinc',
-    offsetLocal(position, rotationY, 0, 0.16 * s),
-    base + height,
-    [width + 0.2 * s, 0.1 * s, 0.5 * s],
-    rotationY,
-  );
-
-  context.sink.addBoxCollider(`sign:${sign.id}`, position, width / 2 + 0.1, 0.3, rotationY);
+  context.sink.addBoxCollider(`sign:${sign.id}`, at, width / 2 + 0.1, 0.3, rotation);
 }

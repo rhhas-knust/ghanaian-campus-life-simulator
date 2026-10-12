@@ -16,7 +16,9 @@ import type { BatchStats } from '../utils/GeometryBatcher';
 
 export interface CampusDebugApi {
   /** Player position on the ground plane, and the direction they face. */
-  getPlayer(): { x: number; z: number; yawDegrees: number; speed: number };
+  getPlayer(): { x: number; z: number; yawDegrees: number; pitch: number; speed: number };
+  /** Camera mode and world position — for checking third-person framing. */
+  getCamera(): { mode: string; x: number; y: number; z: number };
   /** Geometry batching statistics from world generation. */
   getStats(): BatchStats & { colliders: number; interactables: number };
   /** Current state machine phase. */

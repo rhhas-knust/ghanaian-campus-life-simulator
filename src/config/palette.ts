@@ -2,109 +2,115 @@
  * Material library — EDITABLE DATA FILE.
  *
  * Every surface in the campus references one of these keys instead of creating
- * its own material. That gives us two things that matter on low-end Android
- * devices:
+ * its own material. One `THREE.Material` exists per key, and the geometry
+ * batcher merges everything sharing a key into one mesh — so the number of keys
+ * actually used is, roughly, the number of draw calls.
  *
- *  1. One `THREE.Material` instance per key (not per object).
- *  2. A stable key we can batch geometry against, so the whole campus renders in
- *     roughly a dozen draw calls (see `src/utils/GeometryBatcher.ts`).
- *
- * Colours are sampled from Ghanaian building traditions: laterite/ochre render,
- * whitewashed pilasters, deep-shaded verandahs, red-oxide and zinc roofing, and
- * kente accent bands in red, gold, green and black.
- *
- * To restyle the campus, change the numbers here — nothing else needs touching.
+ * Colours are sampled from the concept art in `GAME_ART/` (see
+ * `GAME_ART/ART_DIRECTION.md`): cream render, red corrugated roofs, green
+ * window frames and balustrades, grey plinths, tan footpaths, dark asphalt.
  */
 
 export interface MaterialDef {
-  /** Base colour as a hex literal, e.g. 0xc98b55. */
+  /** Base colour as a hex literal, e.g. 0xede2c4. */
   readonly colour: number;
   readonly roughness: number;
   readonly metalness: number;
   /** Flat shading gives low-poly geometry a crisp, stylised look for free. */
   readonly flatShading?: boolean;
-  readonly transparent?: boolean;
-  readonly opacity?: number;
-  /** `double` renders back faces too — needed for single-plane leaves/fronds. */
+  /** `double` renders back faces too — needed for single-plane leaves. */
   readonly side?: 'front' | 'double';
-  /** Emissive tint, used for lamp glass so it reads at dusk without a light. */
+  /** Self-lit tint, used for lamp glass so it reads without a real light. */
   readonly emissive?: number;
   readonly emissiveIntensity?: number;
 }
 
 export const MATERIAL_LIBRARY = {
   // ---------------------------------------------------------------- ground
-  lawn: { colour: 0x5c8a46, roughness: 0.95, metalness: 0 },
-  laterite: { colour: 0xb0693d, roughness: 0.98, metalness: 0 },
-  pavingLight: { colour: 0xc7c0b0, roughness: 0.85, metalness: 0 },
-  pavingDark: { colour: 0xaaa28e, roughness: 0.9, metalness: 0 },
-  kerb: { colour: 0xe4ded0, roughness: 0.8, metalness: 0 },
+  lawn: { colour: 0x6f9b45, roughness: 0.95, metalness: 0 },
+  lawnStripe: { colour: 0x5f8c3b, roughness: 0.95, metalness: 0 },
+  asphalt: { colour: 0x45484c, roughness: 0.92, metalness: 0 },
+  roadMarking: { colour: 0xeceae2, roughness: 0.8, metalness: 0 },
+  pavingTan: { colour: 0xe2cd9f, roughness: 0.9, metalness: 0 },
+  pavingStone: { colour: 0xc2bdb2, roughness: 0.88, metalness: 0 },
+  kerb: { colour: 0xd9d4c8, roughness: 0.85, metalness: 0 },
+  courtSurface: { colour: 0x7e8389, roughness: 0.85, metalness: 0 },
+  soil: { colour: 0xa86a43, roughness: 0.98, metalness: 0 },
 
   // ----------------------------------------------------------------- walls
-  wallOchre: { colour: 0xc98b55, roughness: 0.92, metalness: 0 },
-  wallWhitewash: { colour: 0xf1ebdf, roughness: 0.88, metalness: 0 },
-  wallTerracotta: { colour: 0xb4572d, roughness: 0.92, metalness: 0 },
-  wallSandcrete: { colour: 0xb8b2a4, roughness: 0.9, metalness: 0 },
-  plinth: { colour: 0x8f8778, roughness: 0.95, metalness: 0 },
-  breezeBlock: { colour: 0xdcd6c7, roughness: 0.9, metalness: 0 },
+  wallCream: { colour: 0xede0bf, roughness: 0.9, metalness: 0 },
+  wallRed: { colour: 0xc0674d, roughness: 0.9, metalness: 0 },
+  column: { colour: 0xf3ebd6, roughness: 0.85, metalness: 0 },
+  plinth: { colour: 0xa9a59b, roughness: 0.95, metalness: 0 },
+  breezeBlock: { colour: 0xd9cfb4, roughness: 0.9, metalness: 0 },
 
   // ------------------------------------------------------------------ roofs
-  roofOxide: { colour: 0xa3382a, roughness: 0.78, metalness: 0.08, flatShading: true },
-  roofZinc: { colour: 0x8c9398, roughness: 0.55, metalness: 0.32, flatShading: true },
-  roofRust: { colour: 0x95492c, roughness: 0.8, metalness: 0.1, flatShading: true },
-  fascia: { colour: 0xf1ebdf, roughness: 0.85, metalness: 0 },
+  roofRed: { colour: 0xb85b46, roughness: 0.75, metalness: 0.1, flatShading: true },
+  trimGreen: { colour: 0x4e7a55, roughness: 0.75, metalness: 0.05 },
 
   // -------------------------------------------------------------- openings
-  glass: { colour: 0x2d4552, roughness: 0.22, metalness: 0.5 },
-  shutterGreen: { colour: 0x2f6b4a, roughness: 0.85, metalness: 0 },
-  doorWood: { colour: 0x6d4726, roughness: 0.88, metalness: 0 },
+  glass: { colour: 0x33454f, roughness: 0.25, metalness: 0.45 },
+  interiorShade: { colour: 0x5a5547, roughness: 1, metalness: 0 },
 
   // ----------------------------------------------------------------- props
-  woodLight: { colour: 0x9a6c3c, roughness: 0.9, metalness: 0 },
-  woodDark: { colour: 0x4d3421, roughness: 0.9, metalness: 0 },
-  metalRail: { colour: 0x8b9298, roughness: 0.5, metalness: 0.45 },
+  woodWarm: { colour: 0xa8703f, roughness: 0.85, metalness: 0 },
+  concrete: { colour: 0xbab6ad, roughness: 0.92, metalness: 0 },
+  metalPole: { colour: 0x9a9d9f, roughness: 0.45, metalness: 0.55 },
+  fenceMetal: { colour: 0x3f4440, roughness: 0.6, metalness: 0.4 },
   lampGlass: {
-    colour: 0xfff2c4,
+    colour: 0xfff4d2,
     roughness: 0.3,
     metalness: 0,
-    emissive: 0xffe9a8,
-    emissiveIntensity: 0.55,
+    emissive: 0xffecb8,
+    emissiveIntensity: 0.6,
   },
+  canvasWhite: { colour: 0xf2efe7, roughness: 0.9, metalness: 0, flatShading: true },
+  carRed: { colour: 0x9c3b34, roughness: 0.4, metalness: 0.5 },
+  carSilver: { colour: 0xb7bcc0, roughness: 0.35, metalness: 0.6 },
+  carBlue: { colour: 0x3d6194, roughness: 0.4, metalness: 0.5 },
+  barrierStripe: { colour: 0xd8382f, roughness: 0.6, metalness: 0.1 },
 
   // --------------------------------------------------------------- planting
   trunk: { colour: 0x6b5340, roughness: 0.95, metalness: 0, flatShading: true },
-  trunkPalm: { colour: 0x8a7256, roughness: 0.95, metalness: 0, flatShading: true },
-  leafDark: { colour: 0x2f5d32, roughness: 0.9, metalness: 0, flatShading: true },
-  leafMid: { colour: 0x3f7a39, roughness: 0.9, metalness: 0, flatShading: true },
-  leafLight: { colour: 0x5a9a42, roughness: 0.9, metalness: 0, flatShading: true },
+  trunkPalm: { colour: 0x8f765a, roughness: 0.95, metalness: 0, flatShading: true },
+  leafDark: { colour: 0x356b33, roughness: 0.9, metalness: 0, flatShading: true },
+  leafMid: { colour: 0x4b8a3c, roughness: 0.9, metalness: 0, flatShading: true },
+  leafLight: { colour: 0x6aa647, roughness: 0.9, metalness: 0, flatShading: true },
   frond: {
-    colour: 0x5d8c3a,
+    colour: 0x5f9a3e,
     roughness: 0.9,
     metalness: 0,
     flatShading: true,
     side: 'double',
   },
+  mangoFruit: { colour: 0xe0a238, roughness: 0.7, metalness: 0, flatShading: true },
   blossom: { colour: 0xd8452f, roughness: 0.9, metalness: 0, flatShading: true },
-  hedge: { colour: 0x3a6b33, roughness: 0.95, metalness: 0, flatShading: true },
+  hedge: { colour: 0x3f7536, roughness: 0.95, metalness: 0, flatShading: true },
 
-  // -------------------------------------------------- signage / kente bands
-  signBoard: { colour: 0x0f4d2d, roughness: 0.8, metalness: 0 },
-  signPost: { colour: 0x47403a, roughness: 0.7, metalness: 0.2 },
+  // ----------------------------------------------------- monument / flags
+  monumentStone: { colour: 0xd9d3c5, roughness: 0.85, metalness: 0 },
   kenteRed: { colour: 0xce1126, roughness: 0.85, metalness: 0 },
   kenteGold: { colour: 0xfcd116, roughness: 0.7, metalness: 0.15 },
   kenteGreen: { colour: 0x006b3f, roughness: 0.85, metalness: 0 },
   kenteBlack: { colour: 0x1b1b1b, roughness: 0.85, metalness: 0 },
+
+  /**
+   * Text on signs and building name boards. The colour is a placeholder: the
+   * real material is built from the generated sign-text atlas
+   * (`src/world/SignAtlas.ts`), so every label on campus is ONE draw call.
+   */
+  signText: { colour: 0xffffff, roughness: 0.8, metalness: 0 },
 } as const satisfies Record<string, MaterialDef>;
 
-/** Union of every valid material key, e.g. `'wallOchre' | 'roofZinc' | …`. */
+/** Union of every valid material key, e.g. `'wallCream' | 'roofRed' | …`. */
 export type MaterialKey = keyof typeof MATERIAL_LIBRARY;
 
-/** Sky gradient + fog, tuned for bright tropical West African daylight. */
+/** Sky gradient + fog, tuned to the warm afternoon light in the concept art. */
 export const ATMOSPHERE = {
-  skyTop: 0x4f9bd4,
-  skyHorizon: 0xd9e4e8,
-  /** Warm bounce light off red laterite soil. */
-  groundBounce: 0xb58b63,
-  sunColour: 0xfff4dc,
-  fogColour: 0xd3dfe2,
+  skyTop: 0x5d9fd6,
+  skyHorizon: 0xdfe8ea,
+  /** Warm bounce light off the ground. */
+  groundBounce: 0xa58a62,
+  sunColour: 0xfff1d6,
+  fogColour: 0xd9e3e5,
 } as const;

@@ -30,7 +30,7 @@ import {
   Vector3,
 } from 'three';
 
-import { LAMPS } from '../config/campusLayout';
+import { LAMPS, planPoint } from '../config/campusLayout';
 import { ATMOSPHERE } from '../config/palette';
 import type { QualityPreset } from '../config/settings';
 
@@ -56,23 +56,24 @@ export function buildLighting(scene: Scene, quality: QualityPreset): LightingHan
 
   const sun = new DirectionalLight(ATMOSPHERE.sunColour, 2.1);
   sun.position.copy(SUN_DIRECTION).multiplyScalar(SUN_DISTANCE);
-  sun.target.position.set(0, 0, -28);
+  sun.target.position.set(0, 0, 0);
   scene.add(sun);
   scene.add(sun.target);
 
   if (quality.shadows) {
     sun.castShadow = true;
     sun.shadow.mapSize.set(quality.shadowMapSize, quality.shadowMapSize);
-    // One orthographic frustum has to cover the whole campus, so it is wide and
-    // the resolution per metre is modest. Soft, approximate shadows are the
-    // right trade here — crisp ones would need cascades we cannot afford.
-    const extent = 86;
+    // The shadow box follows the player (see `updateShadowFocus`) rather than
+    // covering the whole 272 m campus, which would leave each shadow texel
+    // half a metre wide. Distant buildings lose their shadows, but fog is
+    // already softening them by then.
+    const extent = quality.shadowRadius;
     sun.shadow.camera.left = -extent;
     sun.shadow.camera.right = extent;
     sun.shadow.camera.top = extent;
     sun.shadow.camera.bottom = -extent;
     sun.shadow.camera.near = 1;
-    sun.shadow.camera.far = 320;
+    sun.shadow.camera.far = SUN_DISTANCE * 2;
     sun.shadow.bias = -0.0004;
     sun.shadow.normalBias = 0.09;
     sun.shadow.camera.updateProjectionMatrix();
@@ -147,8 +148,9 @@ function buildLampLights(scene: Scene): PointLight[] {
   const lights: PointLight[] = [];
 
   for (const lamp of LAMPS) {
+    const [x, z] = planPoint(lamp.at);
     const light = new PointLight(0xffe2a8, 0.5, 14, 2);
-    light.position.set(lamp.position[0], lamp.height - 0.3, lamp.position[1]);
+    light.position.set(x, lamp.height - 0.3, z);
     // Shadow-casting point lights need six render passes each. Never.
     light.castShadow = false;
     light.name = `lamp-light:${lamp.id}`;
@@ -157,6 +159,29 @@ function buildLampLights(scene: Scene): PointLight[] {
   }
 
   return lights;
+}
+
+/**
+ * Re-centres the sun and its shadow box on the player.
+ *
+ * The focus is snapped to whole shadow texels: without that, every step the
+ * player takes slides the shadow map by a fraction of a texel and every shadow
+ * edge on screen shimmers.
+ */
+export function updateShadowFocus(handles: LightingHandles, quality: QualityPreset, x: number, z: number): void {
+  if (!quality.shadows) {
+    return;
+  }
+  const texel = (quality.shadowRadius * 2) / quality.shadowMapSize;
+  const snappedX = Math.round(x / texel) * texel;
+  const snappedZ = Math.round(z / texel) * texel;
+  handles.sun.target.position.set(snappedX, 0, snappedZ);
+  handles.sun.position.set(
+    snappedX + SUN_DIRECTION.x * SUN_DISTANCE,
+    SUN_DIRECTION.y * SUN_DISTANCE,
+    snappedZ + SUN_DIRECTION.z * SUN_DISTANCE,
+  );
+  handles.sun.target.updateMatrixWorld();
 }
 
 /** Releases the sky's geometry and shader. */

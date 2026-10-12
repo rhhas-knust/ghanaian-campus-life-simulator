@@ -11,6 +11,7 @@
 import type { QualityPreset } from '../config/settings';
 import type { Interactable, Vec2Tuple } from '../types';
 import type { ShapeBuilder } from '../utils/shapes';
+import type { SignAtlas } from './SignAtlas';
 
 export interface WorldSink {
   /**
@@ -36,4 +37,6 @@ export interface WorldBuildContext {
   readonly shapes: ShapeBuilder;
   readonly quality: QualityPreset;
   readonly sink: WorldSink;
+  /** Lettering for signs and name boards; draw with `shapes.label`. */
+  readonly labels: SignAtlas;
 }

@@ -17,13 +17,13 @@ public/assets/
 ```
 
 The artist's **concept art** (master plan, elevations, UI mock-ups) is not
-here — it is in [`art/reference/`](../../art/reference/README.md), outside
+here — it is in [`GAME_ART/`](../../GAME_ART/README.md), outside
 `public/`, so it is never deployed.
 
 ## How to add an asset
 
 1. **Drop the file** into the right folder above. Use lowercase, hyphenated
-   names: `great-hall.glb`, not `Great Hall FINAL v2.glb`.
+   names: `library.glb`, not `Library FINAL v2.glb`.
 2. **Register it** in `src/config/assets.ts`, in `MODEL_ASSETS`,
    `TEXTURE_ASSETS`, `AUDIO_ASSETS` or `IMAGE_ASSETS`.
 3. **Point the world at it.** For a building, set `model: '<yourKey>'` on its
@@ -38,8 +38,8 @@ the site is served from a sub-directory, which it is.
 ## Budgets
 
 Phase 1 targets a mid-range Android phone at 30+ fps. The whole campus is
-currently under 30,000 triangles and about 150 KB gzipped of JavaScript, so
-there is real headroom — but it is finite.
+currently about 70,000 triangles in ~38 draw calls and about 166 KB of gzipped
+JavaScript, so there is real headroom — but it is finite.
 
 | Thing | Budget |
 | --- | --- |
