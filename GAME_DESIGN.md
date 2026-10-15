@@ -45,7 +45,9 @@ institution, and no real university or person is depicted in the story.
    ending is reachable. Nothing is a "correct" answer.
 3. **Grounded, then dramatic.** Ordinary student life — queues, deadlines,
    *dumsor*, mobile money — is the backdrop for a scandal that grows over one
-   academic year.
+   academic year. The protagonist is an **ordinary student** who finds a
+   **personal mystery** (a former occupant's hidden phone in their room) that
+   leads into the **larger campus controversy** (STORYLINE.md §1).
 4. **Short sessions on a phone.** Anything worth doing fits in 5–15 minutes and
    saves automatically.
 
@@ -216,7 +218,8 @@ asking which matters more.
 | **Personal development** | Four growing skills — **Focus**, **Charisma**, **Hustle**, **Resilience** — raised by doing related activities, unlocking dialogue options and easier checks. | Everywhere |
 
 **The phone** is the main menu during play: timetable, messages (group chats
-drive many missions), mobile-money wallet, map, objectives, settings. It
+drive many missions, and the personal mystery arrives as messages to a second,
+found phone), mobile-money wallet, map, objectives, settings. It
 replaces separate menus, which keeps the HUD clean on a small screen.
 
 Small, recurring setbacks keep it grounded: power cuts (*dumsor*) dim the
