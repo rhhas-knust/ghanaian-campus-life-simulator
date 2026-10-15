@@ -11,12 +11,12 @@
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <meta
       name="description"
-      content="Ghanaian Campus Life Simulator — walk a 3D Ghanaian university campus in your browser, on desktop or Android."
+      content="Campus Life: The Journey — walk the 3D campus of UCIS University, a fictional Ghanaian university, in your browser on desktop or Android."
     />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <title>Ghanaian Campus Life Simulator</title>
+    <title>Campus Life: The Journey</title>
   </head>
   <body>
     <!-- The WebGL canvas is created by the engine and appended here. -->
@@ -76,8 +76,9 @@
     <!-- Loading -->
     <div id="loading-screen" class="overlay overlay--title">
       <div class="panel">
-        <p class="eyebrow">Phase 1</p>
-        <h1 class="title">Ghanaian Campus Life Simulator</h1>
+        <p class="eyebrow">UCIS University</p>
+        <h1 class="title">Campus Life: The Journey</h1>
+        <p class="tagline">Your campus. Your choices. Your story.</p>
         <p class="loading-text" id="loading-text">Building the campus…</p>
         <div class="loading-bar"><div id="loading-bar-fill" class="loading-bar-fill"></div></div>
       </div>
@@ -86,8 +87,9 @@
     <!-- Start / click-to-play (also re-used to re-acquire pointer lock) -->
     <div id="start-screen" class="overlay overlay--title" hidden>
       <div class="panel">
-        <p class="eyebrow">Phase 1</p>
-        <h1 class="title">Ghanaian Campus Life Simulator</h1>
+        <p class="eyebrow">UCIS University</p>
+        <h1 class="title">Campus Life: The Journey</h1>
+        <p class="tagline">Your campus. Your choices. Your story.</p>
         <p class="subtitle">
           Walk in through the main gate and explore the courtyard, lecture halls, library, student
           centre and hostels.
@@ -104,7 +106,7 @@
     <div id="pause-screen" class="overlay" hidden>
       <div class="panel panel--pause">
         <h2 class="pause-title">Pause</h2>
-        <p class="pause-subtitle">Ghanaian Campus Life Simulator</p>
+        <p class="pause-subtitle">Campus Life: The Journey</p>
 
         <button id="resume-button" class="primary-button" type="button">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>

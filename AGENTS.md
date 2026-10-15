@@ -72,6 +72,7 @@ it with a glTF loader.
 | Change walking, camera, touch-look or quality presets | `src/config/settings.ts` |
 | Register a runtime asset (model, texture, image) | `src/config/assets.ts` + `public/assets/` |
 | Look up the concept art | `GAME_ART/` — reference only, never shipped |
+| Check how a planned system, character or mission should work | `GAME_DESIGN.md`, `CHARACTER_BIBLE.md`, `STORYLINE.md` — designs, not descriptions of current code |
 | Change how buildings are *generated* | `src/world/Buildings.ts` |
 | Change collision behaviour | `src/physics/CollisionSystem.ts` |
 | Change first/third-person framing | `src/player/CameraRig.ts` |

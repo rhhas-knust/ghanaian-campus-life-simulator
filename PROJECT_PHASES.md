@@ -4,6 +4,11 @@ The roadmap from a walkable campus to a campus life simulator. Only **Phase 1**
 is built. Later phases are deliberately sketchier than earlier ones — they will
 change once the artist's 3D assets exist and people have actually played.
 
+The game's systems, cast and story are designed in
+[GAME_DESIGN.md](GAME_DESIGN.md), [CHARACTER_BIBLE.md](CHARACTER_BIBLE.md) and
+[STORYLINE.md](STORYLINE.md). Their staged roadmap (GAME_DESIGN.md §12) maps
+onto the phases below; this file stays the source of truth for order.
+
 | Phase | Theme | Status |
 | --- | --- | --- |
 | 1 | Playable campus | **Built** — awaiting a test on real Android hardware |
