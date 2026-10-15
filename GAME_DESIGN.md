@@ -204,6 +204,9 @@ react to each other: helping Selasi may cost standing with KB.
 The tension between Integrity and Popularity is deliberate — the story keeps
 asking which matters more.
 
+**Friendships only, for now** (owner decision). Relationships cover friendship,
+rivalry and trust; there are no romance or dating options.
+
 ---
 
 ## 9. Student life systems — planned
@@ -299,5 +302,5 @@ enough (CHARACTER_BIBLE.md §4).
 ## 13. Out of scope
 
 Multiplayer, real-money purchases, accounts or any backend, real universities
-or real people, combat, explicit sexual content, and anything that needs a
-server to run.
+or real people, combat, romance (friendships only, for now), explicit sexual
+content, and anything that needs a server to run.

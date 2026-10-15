@@ -20,6 +20,9 @@ Phase 1 has a single procedural placeholder avatar.
   is part of campus life (chapel, fellowship, grace before meals) and is never
   the butt of a joke. Wrongdoing belongs to individuals who fall short of the
   university's ideals, never to the faith itself.
+- **Friendships, not romance (for now).** Bonds are friendship, rivalry,
+  family and mentorship. No romantic or dating storylines unless the owner
+  decides otherwise.
 - **No stereotypes as shortcuts.** Ethnicity, region, religion, class and
   gender never decide a character's role, intelligence or morality. The
   northern student is the top engineer; the wealthy student is not the villain;
@@ -308,6 +311,8 @@ respects Selasi.
 
 **Secret / conflict:** a smaller leak happened last year. She contained it
 quietly to protect accreditation. Mr. Narh knows, and uses it to keep her silent.
+She is also the unknown number texting Kojo's old phone — revealed only if she
+testifies (STORYLINE §4, *The Kojo mystery*).
 
 **Development:** testifies and accepts the consequences, or stays silent and
 lets Abiba take the blame.
@@ -351,7 +356,7 @@ the player.
 
 | Who | Role |
 | --- | --- |
-| **Kojo Badu** | KB's cousin; lived in A-214 until he was rusticated two years ago. Heard only through messages to his old phone until the optional meeting at the gate (STORYLINE S09). Not simply a victim: he did buy past questions once — just not the paper he was blamed for. Wants his name cleared so he can finish his degree. |
+| **Kojo Badu** | KB's cousin; lived in A-214 until he was rusticated two years ago. The player reaches him through a number the unknown sender provides; whether they ever meet in person depends on the player's choices (STORYLINE S09). He did not send the messages and does not know who did. Initial attitude −20 (wary). Not simply a victim: he did buy past questions once — just not the paper he was blamed for. Wants his name cleared so he can finish his degree. |
 | **Uncle Bright** | Gate porter. Signs the player in on day one; remembers late arrivals — and remembers Kojo. |
 | **Crestline Developments** | Fictional property company behind the hostel deal. Never shown as a real firm. |
 | **The Founders' Scholarship Board** | Committee that decides Abiba's future in Chapter 6. |
