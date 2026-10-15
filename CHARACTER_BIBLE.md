@@ -1,7 +1,8 @@
 # Character Bible — Campus Life: The Journey
 
 The initial cast for the main story. Everyone here is **fictional**; any
-resemblance to real people is unintended. UCIS University is fictional too.
+resemblance to real people is unintended. UCIS University (*Until Christ is
+Seen*) is fictional too.
 
 Companion documents: [GAME_DESIGN.md](GAME_DESIGN.md),
 [STORYLINE.md](STORYLINE.md).
@@ -15,6 +16,10 @@ Phase 1 has a single procedural placeholder avatar.
 
 - **Nobody is simply good or evil.** Every character has a real virtue, a real
   flaw and a reason for what they do.
+- **Respect the university's faith identity.** UCIS is church-founded. Faith
+  is part of campus life (chapel, fellowship, grace before meals) and is never
+  the butt of a joke. Wrongdoing belongs to individuals who fall short of the
+  university's ideals, never to the faith itself.
 - **No stereotypes as shortcuts.** Ethnicity, region, religion, class and
   gender never decide a character's role, intelligence or morality. The
   northern student is the top engineer; the wealthy student is not the villain;

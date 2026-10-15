@@ -47,8 +47,9 @@ Everything below was verified by running it, as noted.
 - [x] [GAME_DESIGN.md](GAME_DESIGN.md), [CHARACTER_BIBLE.md](CHARACTER_BIBLE.md)
       and [STORYLINE.md](STORYLINE.md) written for *Campus Life: The Journey*
 - [x] Owner decisions (2026-10-15):
-  - University name: **UCIS University**. Still to decide: what the letters
-    stand for. Check the name is not a real institution before release.
+  - University name: **UCIS University** — *Until Christ is Seen*, a
+    church-founded university. Check the name is not a real institution
+    before release.
   - Game title in the UI: **Campus Life: The Journey** — done on the title,
     loading and pause screens; the welcome board now reads *Welcome to UCIS
     University*.

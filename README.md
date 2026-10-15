@@ -9,7 +9,8 @@ built with **Three.js**, **TypeScript** and **Vite**, and published on
 
 **Live:** https://rhhas-knust.github.io/ghanaian-campus-life-simulator/
 
-Set at **UCIS University**, a fictional Ghanaian university. (The repository
+Set at **UCIS University** (*Until Christ is Seen*), a fictional, church-founded
+Ghanaian university. (The repository
 keeps its original name, `ghanaian-campus-life-simulator`, so the site URL does
 not change.)
 

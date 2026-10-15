@@ -11,9 +11,12 @@ The main story, its structure, choices and endings. Characters are defined in
 game yet. This document fixes the narrative structure; dialogue is written
 later, mission by mission.
 
-**Fiction notice:** UCIS University, Crestline Developments, the Founders'
-Scholarship and every person in the story are invented. No real university,
-company or individual is portrayed, or implied to be involved in any scandal.
+**Fiction notice:** UCIS University (*Until Christ is Seen*), Crestline
+Developments, the Founders' Scholarship and every person in the story are
+invented. No real university, church, company or individual is portrayed, or
+implied to be involved in any scandal. The story's wrongdoing belongs to
+individuals who betray the university's ideals; it never mocks or blames the
+faith the university was founded on.
 
 ---
 

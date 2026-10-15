@@ -30,9 +30,9 @@ is a design to build against, not a description of the game today.
 | Campus map, settings, quality presets | Phone menu, save/load |
 | Static GitHub Pages deployment | NPC schedules and crowds; audio |
 
-The setting is **UCIS University**, a fictional Ghanaian university. It is not
-modelled on any real institution, and no real university or person is depicted
-in the story. (What the letters stand for is still to be decided.)
+The setting is **UCIS University** — *Until Christ is Seen* — a fictional,
+church-founded Ghanaian university. It is not modelled on any real
+institution, and no real university or person is depicted in the story.
 
 ---
 
