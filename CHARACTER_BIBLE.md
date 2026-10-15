@@ -1,7 +1,7 @@
 # Character Bible — Campus Life: The Journey
 
 The initial cast for the main story. Everyone here is **fictional**; any
-resemblance to real people is unintended. Akoben University is fictional too.
+resemblance to real people is unintended. UCIS University is fictional too.
 
 Companion documents: [GAME_DESIGN.md](GAME_DESIGN.md),
 [STORYLINE.md](STORYLINE.md).
@@ -37,11 +37,11 @@ Phase 1 has a single procedural placeholder avatar.
 | | |
 | --- | --- |
 | Age / level | 17–20, Level 100 |
-| Programme | Chosen at creation: Engineering, Computer Science, Business Administration or Communication Studies |
+| Programme | Chosen at creation: Engineering, Computer Science, Business Administration, Communication Studies or Architecture |
 | Home | Chosen at creation (flavour only) |
 | Lives in | Hastech Hostels, Block A, room A-214 |
 
-A first-year arriving at Akoben University with an admission letter, one
+A first-year arriving at UCIS University with an admission letter, one
 suitcase and a family's expectations. Defined by the player's choices, not by a
 written personality. The story treats the player as observant and
 capable, with no fixed moral position.
@@ -196,7 +196,7 @@ lanyard. Denim jacket covered in pins, ankara skirt or wide-leg trousers.
 asks the uncomfortable question. **Weaknesses:** cuts corners, will publish a
 source's name if it makes the story, hates being wrong.
 
-**Background and ambition:** edits *The Akoben Echo*, the student news site.
+**Background and ambition:** edits *The UCIS Echo*, the student news site.
 Wants a national newsroom job and to prove the campus press matters.
 
 **Relationships:** wary of Selasi; investigating KB; needs Abiba's account;

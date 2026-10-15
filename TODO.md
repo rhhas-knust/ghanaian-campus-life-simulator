@@ -46,16 +46,16 @@ Everything below was verified by running it, as noted.
 
 - [x] [GAME_DESIGN.md](GAME_DESIGN.md), [CHARACTER_BIBLE.md](CHARACTER_BIBLE.md)
       and [STORYLINE.md](STORYLINE.md) written for *Campus Life: The Journey*
-- [ ] Owner review of the open questions:
-  - [ ] University name: keep **Akoben University**, or use **Hastech**
-        (already on the hostel signs) or another name? Check the chosen name is
-        not a real institution before release.
-  - [ ] Rename the game in the UI (page title, title screen) from "Ghanaian
-        Campus Life Simulator" to "Campus Life: The Journey"? Deferred — this
-        task did not change gameplay or UI.
-  - [ ] Confirm the four programmes, the six-chapter length and the four
-        endings.
-  - [ ] Confirm no voice acting (subtitled text only).
+- [x] Owner decisions (2026-10-15):
+  - University name: **UCIS University**. Still to decide: what the letters
+    stand for. Check the name is not a real institution before release.
+  - Game title in the UI: **Campus Life: The Journey** — done on the title,
+    loading and pause screens; the welcome board now reads *Welcome to UCIS
+    University*.
+  - **Six chapters** confirmed.
+  - **Five programmes**: Engineering, Computer Science, Business
+    Administration, Communication Studies and **Architecture**.
+  - **Text only, no voice acting for now.**
 - [ ] Commission character concept sheets and rigged `.glb` models per
       CHARACTER_BIBLE.md §4 — blocks roadmap stage D.
 - [ ] First buildable step when Phase 2 starts: roadmap stages A–C in

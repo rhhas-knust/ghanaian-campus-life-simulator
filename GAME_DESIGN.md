@@ -20,7 +20,8 @@ is a design to build against, not a description of the game today.
 
 | Implemented (Phase 1) | Planned |
 | --- | --- |
-| Walkable 3D campus traced from the master plan | Cinematic opening, title screen with the game's name |
+| Game title and UCIS University name on the title, loading and pause screens and the welcome sign | Cinematic opening |
+| Walkable 3D campus traced from the master plan | — |
 | First- and third-person cameras, toggle | Character creation and avatar customisation |
 | One fixed procedural student avatar | Rigged, animated characters (player and NPCs) |
 | Keyboard/mouse and touch controls | Dialogue, choices, relationships, reputation |
@@ -29,9 +30,9 @@ is a design to build against, not a description of the game today.
 | Campus map, settings, quality presets | Phone menu, save/load |
 | Static GitHub Pages deployment | NPC schedules and crowds; audio |
 
-The fictional setting is **Akoben University**, named after the Adinkra symbol
-of the war horn — a call to readiness. It is not modelled on any real
-institution, and no real university or person is depicted in the story.
+The setting is **UCIS University**, a fictional Ghanaian university. It is not
+modelled on any real institution, and no real university or person is depicted
+in the story. (What the letters stand for is still to be decided.)
 
 ---
 
@@ -103,8 +104,21 @@ Character creation runs once, after the opening cinematic (STORYLINE.md §2).
 | Face | 6 presets | Cosmetic |
 | Hair | Low cut, fade, twists, locs, cornrows, braids, afro puff, headwrap | Cosmetic |
 | Outfit | Starter wardrobe of 6; more bought or earned | Cosmetic; some NPCs react to Friday wear |
-| Programme | Engineering, Computer Science, Business Administration, Communication Studies | Sets timetable, lecture locations, one exclusive side story and a small stat bias |
+| Programme | Engineering, Computer Science, Business Administration, Communication Studies, Architecture | Sets timetable, lecture locations, one exclusive side story, a small stat bias and occasional extra dialogue options |
 | Home | Coastal city, northern town, Volta, Ashanti, abroad-raised | Flavour lines in dialogue only — no stat effect |
+
+**Programmes** (five, confirmed):
+
+| Programme | Home building | Skill bias | Story angle |
+| --- | --- | --- | --- |
+| Engineering | Faculty of Engineering | Focus | Access to Dr. Sarpong's lab and exams office |
+| Computer Science | Lecture Hall 2 | Hustle | Can trace the group chat's file uploads |
+| Business Administration | Lecture Hall 1 | Charisma | Reads the money trail more easily |
+| Communication Studies | Lecture Hall 3 | Charisma | Closer to Esi and *The UCIS Echo* |
+| Architecture | Lecture Hall 3 (design studios) | Focus | Can read Crestline's site plans and survey pegs |
+
+Each programme gets one exclusive side story (STORYLINE.md S07) and a few
+alternative dialogue options; none locks the player out of an ending.
 
 The Phase 1 procedural avatar is a placeholder. Customisation needs the rigged
 character pipeline in CHARACTER_BIBLE.md §4.
@@ -155,14 +169,15 @@ pause menu; the third-person camera avoids walls; touch-look drift fix.
   TypeScript. Nodes carry speaker, text, optional choices, conditions and
   effects.
 - **Choices:** 2–4 per decision, short enough to read on a phone. Each choice
-  is visibly tagged only when it is a **major decision** (a small
-  horn/Akoben icon), so players know when something big is at stake.
+  is visibly tagged only when it is a **major decision** (a small icon), so
+  players know when something big is at stake.
 - **Conditions** read flags, relationship values, reputation, programme,
   money and time.
 - **Effects** set flags, change relationships or reputation, give items or
   money, start or fail missions.
-- **Presentation:** subtitled text only (no voice acting planned), speaker
-  name and portrait, tap to advance, auto-save after any major decision.
+- **Presentation:** text only — **no voice acting for now** (it may be
+  revisited later). Speaker name and portrait, tap to advance, auto-save after
+  any major decision.
 - **Language:** English as the base, with natural Ghanaian English and
   occasional Twi, Ga, Ewe and Pidgin phrases that are understandable in context.
   Localisation is a later polish item.

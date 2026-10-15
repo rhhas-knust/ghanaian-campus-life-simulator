@@ -1,4 +1,6 @@
-# Ghanaian Campus Life Simulator
+# Campus Life: The Journey
+
+> *Your campus. Your choices. Your story.*
 
 A 3D Ghanaian university campus you can walk around in a browser — on a
 desktop with keyboard and mouse, or on an Android phone with touch controls —
@@ -7,13 +9,17 @@ built with **Three.js**, **TypeScript** and **Vite**, and published on
 
 **Live:** https://rhhas-knust.github.io/ghanaian-campus-life-simulator/
 
+Set at **UCIS University**, a fictional Ghanaian university. (The repository
+keeps its original name, `ghanaian-campus-life-simulator`, so the site URL does
+not change.)
+
 **Phase 1** is the campus itself: walk in through the security gate, explore
 the courtyard, lecture halls, library, student centre, cafeteria, hostels and
 sports fields, in first or third person, and read the signs. There are no
 missions, NPCs or economy yet — those are later phases, mapped out in
 [PROJECT_PHASES.md](PROJECT_PHASES.md).
 
-**Design documents** for the full game, *Campus Life: The Journey* — systems,
+**Design documents** for the full game — systems,
 cast and story, none of it built yet: [GAME_DESIGN.md](GAME_DESIGN.md),
 [CHARACTER_BIBLE.md](CHARACTER_BIBLE.md), [STORYLINE.md](STORYLINE.md).
 

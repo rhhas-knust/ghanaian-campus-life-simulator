@@ -879,11 +879,11 @@ export const SIGNS: readonly SignDef[] = [
     at: [1092, 978],
     rotationY: -45,
     interactionRadius: 4.5,
-    labels: ['AKWAABA', 'WELCOME TO CAMPUS'],
+    labels: ['AKWAABA', 'WELCOME TO UCIS UNIVERSITY'],
     interaction: {
       promptLabel: 'Read the campus sign',
       eyebrow: 'Campus Sign',
-      title: 'Akwaaba — Welcome to Campus',
+      title: 'Akwaaba — Welcome to UCIS University',
       body: [
         'Straight ahead, past the roundabout, is the central courtyard and its monument. Every part of campus is reached from the ring road around it.',
         'Open the campus map from the pause menu at any time.',

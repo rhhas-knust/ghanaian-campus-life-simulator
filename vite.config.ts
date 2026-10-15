@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 
 /**
- * Vite configuration for the Ghanaian Campus Life Simulator.
+ * Vite configuration for Campus Life: The Journey.
  *
  * `base` MUST match the GitHub Pages project-site sub-directory, otherwise every
  * bundled asset 404s once deployed:

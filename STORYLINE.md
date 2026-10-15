@@ -11,7 +11,7 @@ The main story, its structure, choices and endings. Characters are defined in
 game yet. This document fixes the narrative structure; dialogue is written
 later, mission by mission.
 
-**Fiction notice:** Akoben University, Crestline Developments, the Founders'
+**Fiction notice:** UCIS University, Crestline Developments, the Founders'
 Scholarship and every person in the story are invented. No real university,
 company or individual is portrayed, or implied to be involved in any scandal.
 
@@ -19,7 +19,7 @@ company or individual is portrayed, or implied to be involved in any scandal.
 
 ## 1. Premise
 
-A first-year student arrives at Akoben University for one academic year. Within
+A first-year student arrives at UCIS University for one academic year. Within
 weeks, a midsemester exam paper leaks and the university's scholarship students
 are blamed. Behind it is a plan to quietly sell the campus sports field to a
 private hostel developer — and the people the player befriends are each more
@@ -41,7 +41,7 @@ A 60–90 second scripted sequence on the existing campus. A **Skip** button is
 visible from the first frame; skipping jumps straight to character creation.
 
 1. **Dawn, a trotro on the road outside the fence.** Phone notification:
-   *"Congratulations — you have been admitted to Akoben University."*
+   *"Congratulations — you have been admitted to UCIS University."*
 2. **The gate.** Students dragging suitcases; Uncle Bright waving cars through
    the raised barriers.
 3. **Sweep over the campus:** courtyard monument, lecture halls, the four
@@ -58,8 +58,10 @@ new character art is required for a first version.
 ### Character creation
 
 As specified in GAME_DESIGN.md §4: name, form of address, appearance,
-programme, home. The chosen **programme** decides the player's timetable,
-first lecture location and one exclusive side story.
+programme (one of five: Engineering, Computer Science, Business
+Administration, Communication Studies, Architecture), home. The chosen
+**programme** decides the player's timetable, first lecture location and one
+exclusive side story.
 
 ### M01 — Akwaaba (first playable mission)
 
@@ -188,7 +190,7 @@ variants for which friends stood by the player.
 
 | Ending | Conditions | Result |
 | --- | --- | --- |
-| **E1 — The Horn Sounds** (the whistle-blower) | All evidence presented (C9), at least two witnesses, Integrity ≥ 60 | Mr. Narh suspended, deal cancelled, field saved, Abiba cleared. Dr. Sarpong faces her own consequences. The player is respected, and a few people never forgive them. |
+| **E1 — Truth Out Loud** (the whistle-blower) | All evidence presented (C9), at least two witnesses, Integrity ≥ 60 | Mr. Narh suspended, deal cancelled, field saved, Abiba cleared. Dr. Sarpong faces her own consequences. The player is respected, and a few people never forgive them. |
 | **E2 — Comfortable Silence** (the insider) | Accepted Mr. Narh's offer (C9) | Money, a campus job, a smooth year two. The field is fenced off. Abiba keeps her scholarship but never speaks to the player again. |
 | **E3 — Head Down** (the survivor) | Avoided most of the story; few major choices taken | Strong grades possible. Esi publishes a half-story; Mr. Narh is moved sideways; the deal stalls. Abiba loses her scholarship. |
 | **E4 — Rusticated** (the fall) | `bought_leaked_paper` and never confessed, and the evidence surfaced | The player is suspended for a semester. The epilogue sets up a redemption path for a sequel or New Game+. |
@@ -211,7 +213,7 @@ game; each can change an ending variant or a witness.
 | S04 | Block Rivalry | Yaw | Ch. 1 | Inter-block football; win or lose, Yaw's respect grows |
 | S05 | Byline | Esi | Ch. 3 | Help Esi verify a story; teaches that sources can be wrong |
 | S06 | The Lost ID Card | Uncle Bright | Any | Return a lost card around campus; small reputation reward |
-| S07 | Programme thread | Lecturer for the player's programme | Ch. 2 | One exclusive story per programme (e.g. Engineering: help Dr. Sarpong's lab, and see a locked exams cabinet) |
+| S07 | Programme thread | Lecturer for the player's programme | Ch. 2 | One exclusive story per programme. Engineering: help in Dr. Sarpong's lab and glimpse a locked exams cabinet. Computer Science: fix the hostel Wi-Fi and spot who uploads to the group chat. Business: audit a club's accounts and learn to follow money. Communication: cover a campus event for Esi. Architecture: measure the football field for a studio project and notice the survey pegs do not match any approved drainage plan |
 | S08 | Lights Out | Hostel group chat | Ch. 4 | *Dumsor* during exams; organise a study session by solar lamps |
 
 ---
@@ -234,7 +236,7 @@ deadline; missing it follows the *Missed* outcome instead of failing.
 | M08 | 4 | Campaign Trail | Choose a side in the SRC election (C4); learn KB's real reason if trusted | M07 | `backed_*`; KB evidence if `!kb_accused` |
 | M09 | 4 | The Debate | Attend the courtyard debate; uncover Selasi's donation | M08 | `knows_selasi_donation` |
 | M10 | 4 | Election Night ⏱ | Decide on Selasi's secret (C5); the vote | M09 | Election winner; C5 flags |
-| M11 | 5 | Survey Pegs | Stand with Yaw against the surveyors; find the Crestline plan | M10 | `knows_deal`; Yaw +25 |
+| M11 | 5 | Survey Pegs | Stand with Yaw against the surveyors; find the Crestline plan (Architecture students can read it on the spot) | M10 | `knows_deal`; Yaw +25 |
 | M12 | 5 | Follow the Money | Get the scholarship-fund documents (C6) | M11 | `has_documents`; possible `caught_admin` |
 | M13 | 5 | Betrayal | The betrayal (§5) lands; respond (C7) | M12 | Betrayer set; C7 flags |
 | M14 | 6 | Witnesses | Persuade up to three witnesses (C8) | M13 | Witness list |
