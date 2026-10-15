@@ -42,6 +42,26 @@ Everything below was verified by running it, as noted.
       (Hostel A vs B design; Great Hall vs monument in the courtyard; whether
       the two added H buildings stay where they are).
 
+## Design foundation (documents only — nothing implemented)
+
+- [x] [GAME_DESIGN.md](GAME_DESIGN.md), [CHARACTER_BIBLE.md](CHARACTER_BIBLE.md)
+      and [STORYLINE.md](STORYLINE.md) written for *Campus Life: The Journey*
+- [ ] Owner review of the open questions:
+  - [ ] University name: keep **Akoben University**, or use **Hastech**
+        (already on the hostel signs) or another name? Check the chosen name is
+        not a real institution before release.
+  - [ ] Rename the game in the UI (page title, title screen) from "Ghanaian
+        Campus Life Simulator" to "Campus Life: The Journey"? Deferred — this
+        task did not change gameplay or UI.
+  - [ ] Confirm the four programmes, the six-chapter length and the four
+        endings.
+  - [ ] Confirm no voice acting (subtitled text only).
+- [ ] Commission character concept sheets and rigged `.glb` models per
+      CHARACTER_BIBLE.md §4 — blocks roadmap stage D.
+- [ ] First buildable step when Phase 2 starts: roadmap stages A–C in
+      GAME_DESIGN.md §12 (game state, dialogue, opening + M01). They need no
+      new art.
+
 ## Next, within Phase 1 scope
 
 - [ ] Run the smoke test in CI (it exists and passes; it is not wired into

@@ -13,6 +13,10 @@ sports fields, in first or third person, and read the signs. There are no
 missions, NPCs or economy yet — those are later phases, mapped out in
 [PROJECT_PHASES.md](PROJECT_PHASES.md).
 
+**Design documents** for the full game, *Campus Life: The Journey* — systems,
+cast and story, none of it built yet: [GAME_DESIGN.md](GAME_DESIGN.md),
+[CHARACTER_BIBLE.md](CHARACTER_BIBLE.md), [STORYLINE.md](STORYLINE.md).
+
 ---
 
 ## Contents
