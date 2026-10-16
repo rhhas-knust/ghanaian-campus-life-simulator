@@ -57,6 +57,16 @@ Everything below was verified by running it, as noted.
   - **Five programmes**: Engineering, Computer Science, Business
     Administration, Communication Studies and **Architecture**.
   - **Text only, no voice acting for now.**
+- [x] Protagonist direction **D** confirmed: an ordinary student whose
+      personal mystery (Kojo Badu's hidden phone in room A-214) leads into the
+      larger campus controversy. Written into STORYLINE §1, CHARACTER_BIBLE and
+      GAME_DESIGN §1.
+- [x] Story decisions (owner):
+  - Kojo's leak stays **two years ago** and stays mysterious: an unknown
+    sender, and an origin confirmed only in the best ending (STORYLINE §4).
+  - Meeting Kojo **depends on the player's choices** — in person, by message
+    only, or never (STORYLINE S09 outcomes).
+  - **Friendships only for now** — no romance (GAME_DESIGN §8, §13).
 - [ ] Commission character concept sheets and rigged `.glb` models per
       CHARACTER_BIBLE.md §4 — blocks roadmap stage D.
 - [ ] First buildable step when Phase 2 starts: roadmap stages A–C in

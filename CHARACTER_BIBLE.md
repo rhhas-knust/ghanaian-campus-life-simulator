@@ -20,6 +20,9 @@ Phase 1 has a single procedural placeholder avatar.
   is part of campus life (chapel, fellowship, grace before meals) and is never
   the butt of a joke. Wrongdoing belongs to individuals who fall short of the
   university's ideals, never to the faith itself.
+- **Friendships, not romance (for now).** Bonds are friendship, rivalry,
+  family and mentorship. No romantic or dating storylines unless the owner
+  decides otherwise.
 - **No stereotypes as shortcuts.** Ethnicity, region, religion, class and
   gender never decide a character's role, intelligence or morality. The
   northern student is the top engineer; the wealthy student is not the villain;
@@ -47,9 +50,15 @@ Phase 1 has a single procedural placeholder avatar.
 | Lives in | Hastech Hostels, Block A, room A-214 |
 
 A first-year arriving at UCIS University with an admission letter, one
-suitcase and a family's expectations. Defined by the player's choices, not by a
-written personality. The story treats the player as observant and
-capable, with no fixed moral position.
+suitcase and a family's expectations. An **ordinary student**: no secret
+lineage, no family connection to the scandal, no chosen-one destiny. Defined by
+the player's choices, not by a written personality. The story treats the
+player as observant and capable, with no fixed moral position.
+
+**Personal hook:** the player's room, A-214, used to be Kojo Badu's. His
+hidden phone starts the player's personal mystery. Because the hook comes from
+the room rather than the player's background, every character-creation choice
+works with the story.
 
 ---
 
@@ -142,8 +151,8 @@ Wants to win the SRC presidency to prove he is more than his father's money.
 **Relationships:** rival to Selasi; old friends with Yaw; looks down on Nii,
 then needs him; underestimates Abiba.
 
-**Secret / conflict:** his cousin was rusticated two years ago in an earlier
-leak he believes was a set-up. KB is quietly collecting evidence. Worse, his
+**Secret / conflict:** his cousin **Kojo Badu** (his mother's sister's son)
+was rusticated two years ago in an earlier leak KB believes was a set-up. KB is quietly collecting evidence. Worse, his
 father's firm supplies materials to Crestline Developments — the company behind
 the deal — so exposing the truth may hurt his own family.
 
@@ -302,6 +311,8 @@ respects Selasi.
 
 **Secret / conflict:** a smaller leak happened last year. She contained it
 quietly to protect accreditation. Mr. Narh knows, and uses it to keep her silent.
+She is also the unknown number texting Kojo's old phone — revealed only if she
+testifies (STORYLINE §4, *The Kojo mystery*).
 
 **Development:** testifies and accepts the consequences, or stays silent and
 lets Abiba take the blame.
@@ -345,7 +356,8 @@ the player.
 
 | Who | Role |
 | --- | --- |
-| **Uncle Bright** | Gate porter. Signs the player in on day one; remembers late arrivals. |
+| **Kojo Badu** | KB's cousin; lived in A-214 until he was rusticated two years ago. The player reaches him through a number the unknown sender provides; whether they ever meet in person depends on the player's choices (STORYLINE S09). He did not send the messages and does not know who did. Initial attitude −20 (wary). Not simply a victim: he did buy past questions once — just not the paper he was blamed for. Wants his name cleared so he can finish his degree. |
+| **Uncle Bright** | Gate porter. Signs the player in on day one; remembers late arrivals — and remembers Kojo. |
 | **Crestline Developments** | Fictional property company behind the hostel deal. Never shown as a real firm. |
 | **The Founders' Scholarship Board** | Committee that decides Abiba's future in Chapter 6. |
 | **Crowd students** | Generic NPCs, no individual stories. |
@@ -357,6 +369,8 @@ the player.
 | Between | Relationship | Pressure point |
 | --- | --- | --- |
 | Player – Nii | Roommates, instant friends | Nii's secret role in the leak |
+| Player – Kojo (offstage) | Strangers linked by a room and a phone | Can the player trust a rusticated student's story? |
+| KB – Kojo | Cousins | KB's hidden investigation is for Kojo |
 | Player – Yaw | Block A vs Block B rivals | Becomes alliance when the field is threatened |
 | Abiba – Dr. Sarpong | Student and champion | Sarpong's cover-up could cost Abiba her scholarship |
 | KB – Selasi | Rival SRC candidates | Both hide a Crestline connection |

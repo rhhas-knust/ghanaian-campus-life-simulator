@@ -22,11 +22,25 @@ faith the university was founded on.
 
 ## 1. Premise
 
-A first-year student arrives at UCIS University for one academic year. Within
-weeks, a midsemester exam paper leaks and the university's scholarship students
-are blamed. Behind it is a plan to quietly sell the campus sports field to a
-private hostel developer — and the people the player befriends are each more
-tangled up in it than they admit.
+An **ordinary first-year student** arrives at UCIS University for one academic
+year. On the first night, a phone buzzes under a loose floor tile in their
+hostel room. It belongs to **Kojo Badu**, the student who lived in A-214 two
+years ago and was rusticated over an exam leak he says he did not commit.
+Weeks later it lights up with a message from a number nobody recognises:
+*"They're doing it again."*
+
+That **personal mystery** — who Kojo was, what really happened to him, and
+who is still texting a dead student's phone —
+pulls the player, step by step, into a **larger campus controversy**: a new
+midsemester leak, blamed on the university's scholarship students, that covers
+a plan to quietly sell the sports field to a private hostel developer. The
+people the player befriends are each more tangled up in it than they admit.
+
+**Protagonist arc (confirmed direction):** ordinary student → personal mystery
+→ campus-wide controversy. The player has no special lineage or destiny; they
+are drawn in because of where they sleep, what they find and what they choose
+to do about it. The mystery comes from the room, not the player's family, so it
+works for every character-creation choice.
 
 **Central question:** *what will you risk for the truth — your grades, your
 friends, your future?*
@@ -80,8 +94,8 @@ places that already exist in the Phase 1 build.
 | 5 | Find room **A-214** and meet **Nii** | Story NPC dialogue |
 | 6 | Nii adds you to the hostel group chat | The phone |
 
-**Outcome:** the campus opens fully; Day 1 ends at sleep. Flags:
-`met_nii`, `has_student_id`.
+**Outcome:** the campus opens fully. Day 1 ends at sleep — and something
+buzzes under the floor. Flags: `met_nii`, `has_student_id`.
 
 ---
 
@@ -107,19 +121,24 @@ a different branch rather than ending the game.
 
 ### Chapter summaries
 
-**1 · Freshers' Week.** M01, then the first lecture. The player meets Abiba in
+**1 · Freshers' Week.** M01, then the first lecture. The player finds Kojo's
+phone under the floor of A-214; Nii gets it charging. The player meets Abiba in
 the Library, Selasi recruiting volunteers in the courtyard, and KB throwing a
 welcome party at the Student Centre. Yaw's Block B mocks Block A's freshers.
 
 **2 · The Grind.** Money runs short; Hajia Zainab offers work or a loan. Nii's
 "Past Questions 🔥" chat becomes everyone's lifeline. Esi interviews the
-player for a "freshers' first month" piece and leaves a card. Surveyors'
+player for a "freshers' first month" piece and leaves a card. Kojo's phone
+receives its first message in two years, from an unknown number: *"They're
+doing it again."* The player decides whether to answer (C0). Surveyors'
 pegs appear on the football field; Yaw is told it is "drainage work".
 
 **3 · The Leak.** The night before midsems, a file in Nii's chat is the real
 paper. The player's choice here (M05) is the game's first major decision.
-After the exam, scholarship students — Abiba first — are accused. Esi starts
-digging; KB, loud and well connected, looks guilty.
+After the exam, scholarship students — Abiba first — are accused, and because
+the chat is run from A-214 the player is questioned too. The leak follows the
+same pattern Kojo described. Esi starts digging; KB, loud and well connected,
+looks guilty.
 
 **4 · Campaign Season.** KB and Selasi run for SRC president. Both want the
 player. The debate at the courtyard turns on the leak. Election night ends with
@@ -141,7 +160,9 @@ player must gather witnesses and evidence, then sit their own final exams.
 1. **Ch. 3 — The channel.** The leak spread through Nii's chat. He knew by the
    night of the exam and kept quiet.
 2. **Ch. 4 — The red herring.** KB, the obvious suspect, has been collecting
-   evidence himself — his cousin was rusticated in a leak two years ago.
+   evidence himself. His cousin is **Kojo Badu** — and if KB sees the phone, he
+   recognises it. The personal mystery and the campus scandal are the same
+   story.
 3. **Ch. 4 — The compromise.** Selasi's campaign took Crestline money through a
    front company, and she knew.
 4. **Ch. 5 — The motive.** The leak was designed to make scholarship students
@@ -153,6 +174,25 @@ player must gather witnesses and evidence, then sit their own final exams.
 6. **Ch. 6 — The family tie.** KB's father's firm supplies Crestline. Bringing
    down the deal will hurt KB's own family — and he has to choose.
 
+### The Kojo mystery (writers only)
+
+Owner decision: Kojo's leak stays **two years ago**, and its truth stays
+**mysterious** — most playthroughs end without every answer.
+
+- **The unknown sender.** The number never picks up calls. If the player
+  reaches Kojo, he swears he did not send the messages — he hid the phone under
+  the tile the night his room was searched and never got it back. The sender
+  is **Dr. Sarpong**: she knew Kojo had been wronged, and texted the one number
+  she had when she saw the pattern starting again. She did not know who held
+  the phone. This is revealed **only if she testifies** (picked as a witness at M14); otherwise the
+  sender is never named, and the epilogue ends with one last message from the
+  same number: *"Thank you."*
+- **The first leak.** The paper Kojo was blamed for was a printing-room copy
+  that was never issued to students, so it came from inside. The evidence
+  points to Mr. Narh trying the scapegoat method for the first time, but this
+  is **confirmed only in E1 when both Kojo (`met_kojo`) and Dr. Sarpong
+  testify**. In every other ending it stays an open question.
+
 ---
 
 ## 5. Major choices and consequences
@@ -163,6 +203,7 @@ without new branches.
 
 | ID | When | Choice | Main consequences |
 | --- | --- | --- | --- |
+| C0 | M04 | **Answer the unknown number** / hand the phone in to Uncle Bright / ignore it | Answer: `answered_phone`; the sender replies with Kojo's new number and nothing else. Kojo's account and old evidence arrive over Chapters 2–4, and S09 opens. Hand in: `phone_handed_in`; the phone reaches the Administration Block — Mr. Narh learns someone found it, and the player becomes a quiet target. Ignore: messages keep arriving; the player can answer any time before M08 |
 | C1 | M05 | **Open the leaked paper** / delete it / screenshot it for Esi / report it to Dr. Sarpong | Open: `bought_leaked_paper`, Integrity −20, easy midsem grade, risk of the Fall ending. Screenshot: `esi_source`, Esi +20. Report: `reported_leak`, Sarpong +15, Nii −15 |
 | C2 | M06 | Vouch for Abiba publicly / privately / stay silent | Public: Abiba +30, Popularity −10, `vouched_abiba`. Silent: Abiba −30 |
 | C3 | M07 | Name KB to Esi as the suspect / tell her you doubt it / say nothing | Naming KB: KB −40, Esi publishes too early, `kb_accused`. Doubting: unlocks KB's evidence in M08 |
@@ -201,6 +242,14 @@ variants for which friends stood by the player.
 **Partial outcomes** are possible: E1 with too few witnesses becomes a "pyrrhic"
 variant where Mr. Narh survives but the deal dies.
 
+**The personal thread resolves separately.** In any ending except E2, if
+`answered_phone` and Kojo's evidence reached the hearing or Esi, Kojo's
+rustication is reopened; if he also testified in person (`met_kojo`), he is
+reinstated. So even E3 can end with the player's personal mystery solved while
+the public scandal is not. Who leaked the paper two years ago is confirmed only
+as described in §4, *The Kojo mystery*. In E2 the player hands Kojo's
+phone to Mr. Narh as part of the deal.
+
 ---
 
 ## 7. Side stories (optional)
@@ -218,6 +267,15 @@ game; each can change an ending variant or a witness.
 | S06 | The Lost ID Card | Uncle Bright | Any | Return a lost card around campus; small reputation reward |
 | S07 | Programme thread | Lecturer for the player's programme | Ch. 2 | One exclusive story per programme. Engineering: help in Dr. Sarpong's lab and glimpse a locked exams cabinet. Computer Science: fix the hostel Wi-Fi and spot who uploads to the group chat. Business: audit a club's accounts and learn to follow money. Communication: cover a campus event for Esi. Architecture: measure the football field for a studio project and notice the survey pegs do not match any approved drainage plan |
 | S08 | Lights Out | Hostel group chat | Ch. 4 | *Dumsor* during exams; organise a study session by solar lamps |
+| S09 | Outside the Fence | Kojo (by message) | Ch. 3, `answered_phone` | Kojo's own account — including that he *did* buy past questions once, just not the paper he was blamed for. Whether the player meets him depends on earlier choices (below) |
+
+**S09 outcomes.** Meeting Kojo is earned, not guaranteed:
+
+| Route | Needs | Result |
+| --- | --- | --- |
+| In person | `answered_phone`; Kojo ≥ 30 (kept his secrets, never shared his number); the player goes to the gate after dark, where Uncle Bright remembers him | `met_kojo`. Kojo hands over his original evidence and can testify at M15 as a witness |
+| Messages only | `answered_phone`, but Kojo < 30, or the player misses the meeting or is turned back at the gate | Kojo sends a written statement: evidence, but not a witness |
+| Never | `phone_handed_in`, or the messages were never answered by M08 | No contact. KB can still tell Kojo's story second-hand at M08 (`kojo_identified`), but Kojo's case is not reopened |
 
 ---
 
@@ -230,13 +288,13 @@ deadline; missing it follows the *Missed* outcome instead of failing.
 | --- | --- | --- | --- | --- | --- |
 | M00 | Opening | Arrival | Watch or skip the opening; create a character | New game | Character saved |
 | M01 | 1 | Akwaaba | Gate → lodge → campus sign → Admin (ID) → hostel; meet Nii | M00 | `met_nii`, `has_student_id`; campus opens |
-| M02 | 1 | First Lecture | Find your first lecture; meet Abiba in the Library; visit KB's welcome party | M01 | `met_abiba`, `met_kb`, `met_selasi`; S03, S04 unlocked |
+| M02 | 1 | First Lecture | Find the buzzing phone under A-214's floor and get it charged; find your first lecture; meet Abiba in the Library; visit KB's welcome party | M01 | `found_kojo_phone`, `met_abiba`, `met_kb`, `met_selasi`; S03, S04 unlocked |
 | M03 | 2 | The Group Chat | Earn enough ₵ for the week; get added to "Past Questions 🔥"; spot the pegs on the field | M02 | `in_pq_chat`; S01, S02 unlocked |
-| M04 | 2 | First Byline | Give Esi an interview; notice the unusual "drainage work" | M03 | `met_esi`; Esi +10 |
+| M04 | 2 | First Byline | Give Esi an interview; notice the unusual "drainage work"; Kojo's phone receives *"They're doing it again"* from an unknown number (C0) | M03 | `met_esi`; Esi +10; C0 flags |
 | M05 | 3 | Paper Trail ⏱ | The night before midsems, decide what to do with the file (C1) | M04, night before exam | C1 flags; Missed: treated as "delete" |
 | M06 | 3 | The Accusation | Midsem results; scholarship students accused; respond (C2) | M05 | C2 flags; Abiba's status |
 | M07 | 3 | Echo | Help Esi trace the leak; decide what to say about KB (C3) | M06 | C3 flags; KB revealed as a suspect |
-| M08 | 4 | Campaign Trail | Choose a side in the SRC election (C4); learn KB's real reason if trusted | M07 | `backed_*`; KB evidence if `!kb_accused` |
+| M08 | 4 | Campaign Trail | Choose a side in the SRC election (C4); learn KB's real reason if trusted — he recognises Kojo's phone | M07 | `backed_*`; `kojo_identified`; KB evidence if `!kb_accused` |
 | M09 | 4 | The Debate | Attend the courtyard debate; uncover Selasi's donation | M08 | `knows_selasi_donation` |
 | M10 | 4 | Election Night ⏱ | Decide on Selasi's secret (C5); the vote | M09 | Election winner; C5 flags |
 | M11 | 5 | Survey Pegs | Stand with Yaw against the surveyors; find the Crestline plan (Architecture students can read it on the spot) | M10 | `knows_deal`; Yaw +25 |
@@ -256,6 +314,10 @@ Kept short on purpose; dialogue may set extra local flags.
 | Flag | Set in | Read by |
 | --- | --- | --- |
 | `met_nii`, `has_student_id` | M01 | M02 onwards |
+| `found_kojo_phone` | M02 | M04, S09 |
+| `answered_phone`, `phone_handed_in` | M04 (C0) | S09, M08, M15, endings |
+| `met_kojo` | S09 | M15, endings, epilogue |
+| `kojo_identified` | M08 | M12, M14 |
 | `in_pq_chat` | M03 | M05 |
 | `bought_leaked_paper`, `reported_leak`, `esi_source` | M05 | M06, M07, M15, E4 |
 | `vouched_abiba` | M06 | M14, endings |
