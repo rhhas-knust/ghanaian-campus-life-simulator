@@ -193,8 +193,10 @@ deploy.
 ## What this deployment is not
 
 - **No backend.** Nothing is submitted anywhere. There is no API to call.
-- **No database.** The only persistence is `localStorage` for graphics quality
-  and look sensitivity, on the player's own device.
+- **No database.** The only persistence is `localStorage` on the player's own
+  device: settings, and the story save (`gcls.story.v1`). A new deploy keeps
+  existing saves; a save from an incompatible future format is ignored and
+  the player starts a new story rather than the game failing.
 - **No paid service.** Public GitHub Pages is free; the only possible cost is a
   paid plan if you keep the repository private.
 - **No secrets.** The workflow uses the automatic `GITHUB_TOKEN` through the

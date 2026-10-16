@@ -23,6 +23,18 @@ export interface CampusDebugApi {
   getStats(): BatchStats & { colliders: number; interactables: number };
   /** Current state machine phase. */
   getPhase(): string;
+  /** The story so far, or `null` before character creation. */
+  getStory(): {
+    name: string;
+    programme: string;
+    missionId: string | null;
+    objective: string;
+    step: number;
+    day: number;
+    clock: string;
+    flags: string[];
+    relationships: Record<string, number>;
+  } | null;
   /** `id` of the interactable currently in range, or `null`. */
   getFocusId(): string | null;
   /** Moves the player. Collision still applies on the next frame. */

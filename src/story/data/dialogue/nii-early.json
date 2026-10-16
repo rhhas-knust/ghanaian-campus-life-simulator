@@ -1,0 +1,10 @@
+{
+  "id": "nii-early",
+  "start": "id",
+  "nodes": {
+    "id": {
+      "speaker": "nii",
+      "text": "You're a fresher? Go and collect your student ID at Admin first. Without it, the porters will think you came to steal buckets."
+    }
+  }
+}

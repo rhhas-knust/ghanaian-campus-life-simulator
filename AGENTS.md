@@ -8,9 +8,12 @@ Read this before touching code.
 A browser-based first-person 3D Ghanaian university campus: Three.js +
 TypeScript + Vite, deployed as a static site to GitHub Pages.
 
-**Phase 1 is a walkable campus, not a full game.** Do not start Phase 2 work
-(NPCs, missions, interiors, glTF loading, a backend) unless you have been asked
-to. The phases are in [PROJECT_PHASES.md](PROJECT_PHASES.md).
+**Phase 1 is a walkable campus; Phase 2 has started with the story opening
+only** — game state, dialogue, the arrival cinematic, character creation and
+mission M01 (GAME_DESIGN.md §12, stages A–C), because the owner asked for it.
+Do not start the rest of Phase 2 or later work (more missions, interiors, glTF
+loading, crowds, life systems, a backend) unless you have been asked to. The
+phases are in [PROJECT_PHASES.md](PROJECT_PHASES.md).
 
 **The art lives in [`GAME_ART/`](GAME_ART/README.md). Read
 [`GAME_ART/ART_DIRECTION.md`](GAME_ART/ART_DIRECTION.md) before changing
@@ -58,6 +61,11 @@ Likewise:
   configuration, not state.)
 - `PlayerController` owns the body. `CameraRig` frames it and `Avatar` draws
   it; the player knows nothing about either.
+- **`src/story/` is data and logic only: no Three.js, no DOM.** A mission step
+  is a flag; the director works out the objective from the flags; the dialogue
+  runner applies effects to `StoryState`. `Game.ts` is the only place the story
+  meets the world (interactions, HUD, beacon, save). `DialogueBox` and
+  `PhoneMenu` are told what to show, like the HUD.
 
 This is what makes it realistic to delete `Buildings.ts` in Phase 2 and replace
 it with a glTF loader.
@@ -71,6 +79,11 @@ it with a glTF loader.
 | Change a colour or add a material | `src/config/palette.ts` |
 | Change walking, camera, touch-look or quality presets | `src/config/settings.ts` |
 | Register a runtime asset (model, texture, image) | `src/config/assets.ts` + `public/assets/` |
+| Write or change a conversation | `src/story/data/dialogue/*.json` — never put dialogue in TypeScript |
+| Change who stands where, or which conversation they start | `src/story/data/cast.ts` |
+| Add or change a mission step | `src/story/data/missions.ts` (a step = a flag) |
+| Add a phone message thread | `src/story/data/messages.json` |
+| Change the arrival cinematic | `src/story/data/opening.ts` (shots in master-plan pixels) |
 | Look up the concept art | `GAME_ART/` — reference only, never shipped |
 | Check how a planned system, character or mission should work | `GAME_DESIGN.md`, `CHARACTER_BIBLE.md`, `STORYLINE.md` — designs, not descriptions of current code |
 | Change how buildings are *generated* | `src/world/Buildings.ts` |
@@ -127,7 +140,7 @@ that consumes it, rather than special-casing inside an existing one.
 ```bash
 npm run verify
 npm run preview &
-npm run test:smoke   # 39 checks; needs playwright, see README
+npm run test:smoke   # 62 checks; needs playwright, see README
 # then actually walk around — in both camera modes
 ```
 
@@ -138,6 +151,7 @@ a wall. The `?debug=1` API exists so you can assert on real state:
 __campusDebug.getPlayer()   // { x, z, yawDegrees, pitch, speed }
 __campusDebug.getCamera()   // { mode, x, y, z }
 __campusDebug.getStats()    // batches, triangles, colliders, interactables
+__campusDebug.getStory()    // mission, objective, step, flags, relationships
 __campusDebug.teleport(x, z, yawDegrees)
 ```
 
@@ -168,7 +182,16 @@ Watch `getStats().batches`. If it jumps, something stopped batching.
 - **SwiftShader runs the game at ~9 fps**, and the game caps simulated time
   per frame, so a key held for one second in a headless test moves the player
   much less than one second's worth. Hold keys longer in tests rather than
-  loosening the frame cap.
+  loosening the frame cap. For the same reason, poll for a phase or a focus
+  (`waitForPhase`, `waitForFocus` in the smoke test) instead of sleeping a
+  fixed few hundred milliseconds — and leave the desktop page paused before
+  the touch checks, or the two pages share the CPU.
+- **The keyboard handler swallows W, E, Space and Tab.** It skips text
+  inputs (`isTextEntry` in `KeyboardMouseInput.ts`); without that, nobody
+  could type a name with a W or an E in it in character creation.
+- **Dialogue placeholder figures are one merged mesh each.** Do not build NPCs
+  out of separate meshes like the avatar: four characters would cost more draw
+  calls than half the campus.
 
 ## Commit and PR
 

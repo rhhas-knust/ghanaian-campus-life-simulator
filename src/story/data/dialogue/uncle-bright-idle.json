@@ -1,0 +1,10 @@
+{
+  "id": "uncle-bright-idle",
+  "start": "gate",
+  "nodes": {
+    "gate": {
+      "speaker": "uncle-bright",
+      "text": "The gate closes at ten o'clock, {name}. After that, it's me you'll be begging."
+    }
+  }
+}

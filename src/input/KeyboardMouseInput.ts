@@ -1,6 +1,6 @@
 /**
  * Desktop input: WASD/arrows to walk, mouse to look, E to interact, V to
- * switch camera, Esc/P to pause.
+ * switch camera, Tab for the phone, Esc/P to pause.
  *
  * Mouse look uses the Pointer Lock API, which is the only way to get unbounded
  * relative mouse movement in a browser. Pointer lock has two consequences we
@@ -24,6 +24,7 @@ const SPRINT_KEYS = new Set(['ShiftLeft', 'ShiftRight']);
 const INTERACT_KEYS = new Set(['KeyE', 'Enter', 'Space']);
 const PAUSE_KEYS = new Set(['Escape', 'KeyP']);
 const CAMERA_KEYS = new Set(['KeyV', 'KeyC']);
+const PHONE_KEYS = new Set(['Tab']);
 
 export interface KeyboardMouseOptions {
   /** Element pointer lock is requested on. */
@@ -102,6 +103,11 @@ export class KeyboardMouseInput {
     if (event.repeat) {
       return;
     }
+    // Typing a name in character creation must not walk, interact or switch
+    // the camera — and must be allowed to reach the text box.
+    if (isTextEntry(event.target)) {
+      return;
+    }
 
     if (PAUSE_KEYS.has(event.code)) {
       // Esc also exits pointer lock on its own; `pointerlockchange` would then
@@ -113,6 +119,13 @@ export class KeyboardMouseInput {
 
     if (CAMERA_KEYS.has(event.code)) {
       this.state.queueCameraToggle();
+      event.preventDefault();
+      return;
+    }
+
+    if (PHONE_KEYS.has(event.code)) {
+      this.state.queuePhone();
+      // Tab would otherwise move focus around the hidden menus.
       event.preventDefault();
       return;
     }
@@ -199,4 +212,11 @@ export class KeyboardMouseInput {
     this.state.keyboard.right = right;
     this.state.keyboard.sprint = sprint;
   }
+}
+
+function isTextEntry(target: EventTarget | null): boolean {
+  if (target instanceof HTMLInputElement) {
+    return target.type === 'text' || target.type === 'search';
+  }
+  return target instanceof HTMLTextAreaElement || (target instanceof HTMLElement && target.isContentEditable);
 }

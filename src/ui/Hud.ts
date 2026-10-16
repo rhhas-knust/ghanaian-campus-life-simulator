@@ -8,7 +8,7 @@
  */
 
 import type { CameraMode } from '../config/settings';
-import type { Interactable } from '../types';
+import type { Interactable, Vec2Tuple } from '../types';
 import { requireElement } from './dom';
 import { Minimap } from './Minimap';
 
@@ -27,6 +27,11 @@ export interface HudElements {
   readonly joystickKnob: HTMLElement;
   readonly lookSurface: HTMLElement;
   readonly interactButton: HTMLButtonElement;
+  readonly phoneButton: HTMLButtonElement;
+  readonly phoneBadge: HTMLElement;
+  readonly objective: HTMLElement;
+  readonly objectiveHeading: HTMLElement;
+  readonly objectiveText: HTMLElement;
 }
 
 export class Hud {
@@ -36,6 +41,8 @@ export class Hud {
   private currentZone = '';
   private currentFocusId: string | null = null;
   private currentMode: CameraMode | null = null;
+  private currentObjective = '';
+  private objectiveTarget: Vec2Tuple | null = null;
 
   constructor() {
     this.elements = {
@@ -53,6 +60,11 @@ export class Hud {
       joystickKnob: requireElement('touch-joystick-knob'),
       lookSurface: requireElement('touch-look'),
       interactButton: requireElement<HTMLButtonElement>('touch-interact'),
+      phoneButton: requireElement<HTMLButtonElement>('phone-button'),
+      phoneBadge: requireElement('phone-badge'),
+      objective: requireElement('objective'),
+      objectiveHeading: requireElement('objective-heading'),
+      objectiveText: requireElement('objective-text'),
     };
   }
 
@@ -99,7 +111,32 @@ export class Hud {
   }
 
   updateMinimap(x: number, z: number, yaw: number, force = false): void {
-    this.minimap?.update(x, z, yaw, force);
+    this.minimap?.update(x, z, yaw, force, this.objectiveTarget);
+  }
+
+  /** The current objective card, and the marker it puts on the minimap. */
+  setObjective(heading: string, text: string, target: Vec2Tuple | null): void {
+    this.objectiveTarget = target;
+    const key = `${heading}\n${text}`;
+    if (key === this.currentObjective) {
+      return;
+    }
+    this.currentObjective = key;
+    this.elements.objectiveHeading.textContent = heading;
+    this.elements.objectiveText.textContent = text;
+    this.elements.objective.hidden = false;
+  }
+
+  /** A dot on the phone button when there is something unread. */
+  setPhoneBadge(visible: boolean): void {
+    if (this.elements.phoneBadge.hidden === !visible) {
+      return;
+    }
+    this.elements.phoneBadge.hidden = !visible;
+  }
+
+  onPhoneClicked(handler: () => void): void {
+    this.elements.phoneButton.addEventListener('click', handler);
   }
 
   /** `null` hides the prompt. The key hint differs between touch and desktop. */

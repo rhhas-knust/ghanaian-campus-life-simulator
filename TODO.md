@@ -42,7 +42,7 @@ Everything below was verified by running it, as noted.
       (Hostel A vs B design; Great Hall vs monument in the courtyard; whether
       the two added H buildings stay where they are).
 
-## Design foundation (documents only — nothing implemented)
+## Design foundation (documents)
 
 - [x] [GAME_DESIGN.md](GAME_DESIGN.md), [CHARACTER_BIBLE.md](CHARACTER_BIBLE.md)
       and [STORYLINE.md](STORYLINE.md) written for *Campus Life: The Journey*
@@ -69,9 +69,37 @@ Everything below was verified by running it, as noted.
   - **Friendships only for now** — no romance (GAME_DESIGN §8, §13).
 - [ ] Commission character concept sheets and rigged `.glb` models per
       CHARACTER_BIBLE.md §4 — blocks roadmap stage D.
-- [ ] First buildable step when Phase 2 starts: roadmap stages A–C in
-      GAME_DESIGN.md §12 (game state, dialogue, opening + M01). They need no
-      new art.
+
+## Phase 2 — story foundation (stages A–C)
+
+Started at the owner's request ("Story opening first"). Verified as noted;
+none of it has been played on a real phone yet.
+
+- [x] Game state: flags, relationships, reputation, clock, save/continue in
+      local storage — smoke test (save written; reload offers Continue and
+      restores the story)
+- [x] Objective tracker: HUD card, minimap marker, campus-map marker, floating
+      beacon — checked visually in screenshots
+- [x] Phone: objectives, messages, profile; `Tab` and the phone button —
+      smoke test (opens, shows the objective, closes) and screenshots
+- [x] Dialogue: JSON conversations validated at start-up, choices,
+      conditions, effects — smoke test (Uncle Bright: choices with the
+      player's name, relationship +5, mission step)
+- [x] M00 arrival cinematic with Skip — smoke test (opens, Skip visible,
+      Skip goes to creation); every shot checked in screenshots
+- [x] Character creation: name, address, programme, home — smoke test on
+      desktop and touch
+- [x] M01 "Akwaaba" played to the end in headless Chromium: all seven steps,
+      the night card, day 2 free roam, reload and Continue
+- [ ] **Play the story on a real Android phone**: typing a name with the
+      on-screen keyboard in fullscreen landscape, reading the dialogue box and
+      phone at arm's length, tapping replies
+- [ ] M02 "First Lecture" — finding Kojo's phone under the floor of A-214
+- [ ] Interiors, starting with room A-214 (currently a story card)
+- [ ] Rigged characters to replace the standing placeholders (stage D)
+- [ ] Owner check: the registry clerk **Mrs. Agyeman** is a new minor
+      character, added for M01 step 4; and M01's signpost step now comes
+      before the Administration Block (STORYLINE §2)
 
 ## Next, within Phase 1 scope
 

@@ -1,0 +1,58 @@
+{
+  "id": "m01-nii",
+  "start": "hey",
+  "nodes": {
+    "hey": {
+      "speaker": "nii",
+      "text": "Ei! You're the new A-214? Chale, finally! I'm Nii — your roommate. Level 200, Computer Science.",
+      "choices": [
+        {
+          "text": "Nice to meet you, Nii. I'm {name}.",
+          "next": "water",
+          "effects": [{ "type": "relationship", "who": "nii", "delta": 5 }]
+        },
+        { "text": "Is the room at least clean?", "next": "clean" },
+        {
+          "text": "Computer Science too! Level 100.",
+          "if": { "programme": "computer-science" },
+          "next": "colleague",
+          "effects": [{ "type": "relationship", "who": "nii", "delta": 10 }]
+        }
+      ]
+    },
+    "water": {
+      "speaker": "nii",
+      "text": "You'll like it here, {name}. Tip number one: the water comes at five a.m. Set an alarm. Serious.",
+      "next": "chat"
+    },
+    "clean": {
+      "speaker": "nii",
+      "text": "Clean? Define clean. …It's clean-ish. I did my best, chale.",
+      "next": "chat"
+    },
+    "colleague": {
+      "speaker": "nii",
+      "text": "Ah, a colleague! I'll show you where the good past questions are. Ehn — I mean the library. The library.",
+      "next": "chat"
+    },
+    "chat": {
+      "speaker": "nii",
+      "text": "Let me add you to the Block A group chat. Everything happens there — water times, parties, who's selling what.",
+      "next": "added"
+    },
+    "added": {
+      "speaker": "nii",
+      "text": "Done. Check your phone.",
+      "effects": [
+        { "type": "flag", "flag": "joined_group_chat" },
+        { "type": "flag", "flag": "met_nii" },
+        { "type": "flag", "flag": "met:nii" }
+      ],
+      "next": "tile"
+    },
+    "tile": {
+      "speaker": "nii",
+      "text": "Room's upstairs, through the gateway. Old room, old floor — one of the tiles by your bed is loose, so mind your feet."
+    }
+  }
+}

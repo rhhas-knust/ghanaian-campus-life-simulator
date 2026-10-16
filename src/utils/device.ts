@@ -71,3 +71,12 @@ export function writeStoredValue(key: string, value: string): void {
     // Private browsing, blocked cookies, quota — none of it is worth a crash.
   }
 }
+
+/** Deletes a stored value, silently giving up when storage is unavailable. */
+export function removeStoredValue(key: string): void {
+  try {
+    window.localStorage.removeItem(key);
+  } catch {
+    // Same as above: nothing worth crashing over.
+  }
+}

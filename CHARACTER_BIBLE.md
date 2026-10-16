@@ -357,7 +357,8 @@ the player.
 | Who | Role |
 | --- | --- |
 | **Kojo Badu** | KB's cousin; lived in A-214 until he was rusticated two years ago. The player reaches him through a number the unknown sender provides; whether they ever meet in person depends on the player's choices (STORYLINE S09). He did not send the messages and does not know who did. Initial attitude −20 (wary). Not simply a victim: he did buy past questions once — just not the paper he was blamed for. Wants his name cleared so he can finish his degree. |
-| **Uncle Bright** | Gate porter. Signs the player in on day one; remembers late arrivals — and remembers Kojo. |
+| **Uncle Bright** | Gate porter. Signs the player in on day one; remembers late arrivals — and remembers Kojo. Initial attitude +10. Placeholder look: khaki uniform, grey hair. |
+| **Mrs. Agyeman** | Registry clerk at the Administration Block. Issues the player's student ID in M01; brisk, fond of rules and photocopies, soft under it. She hesitates over the room number A-214 — she remembers what happened to its last occupant, and says nothing. Initial attitude 0; accent colour purple. |
 | **Crestline Developments** | Fictional property company behind the hostel deal. Never shown as a real firm. |
 | **The Founders' Scholarship Board** | Committee that decides Abiba's future in Chapter 6. |
 | **Crowd students** | Generic NPCs, no individual stories. |

@@ -38,6 +38,45 @@ function check(name, pass, detail = '') {
   console.log(`${pass ? 'PASS' : 'FAIL'}  ${name}${detail ? ' :: ' + detail : ''}`);
 }
 
+/** Polls the debug API until the game reaches `phase`; SwiftShader is slow to get there. */
+async function waitForPhase(target, phase, timeout = 8000) {
+  const end = Date.now() + timeout;
+  while (Date.now() < end) {
+    if ((await target.evaluate(() => window.__campusDebug.getPhase())) === phase) {
+      return true;
+    }
+    await target.waitForTimeout(120);
+  }
+  return false;
+}
+
+/** Polls until the interaction prompt targets `id` (or anything, if `id` is omitted). */
+async function waitForFocus(target, id, timeout = 5000) {
+  const end = Date.now() + timeout;
+  let focus = null;
+  while (Date.now() < end) {
+    focus = await target.evaluate(() => window.__campusDebug.getFocusId());
+    if (focus === id) {
+      break;
+    }
+    await target.waitForTimeout(120);
+  }
+  return focus;
+}
+
+/** New Story → arrival cinematic → Skip → character creation → Begin. */
+async function startNewStory(target, { name, programme, label }) {
+  await target.click('#start-button');
+  check(`${label}new story opens the arrival cinematic`, await waitForPhase(target, 'cinematic'));
+  check(`${label}Skip button visible from the first frame`, await target.isVisible('#cinematic-skip'));
+  await target.click('#cinematic-skip');
+  check(`${label}Skip goes to character creation`, await waitForPhase(target, 'creating') && (await target.isVisible('#creation-screen')));
+  await target.fill('#creation-name', name);
+  await target.click(`label.creation-option:has(input[value="${programme}"])`);
+  await target.click('#creation-confirm');
+  return waitForPhase(target, 'playing');
+}
+
 // SwiftShader so this runs on a CI box with no GPU.
 const browser = await chromium.launch({
   args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--no-sandbox'],
@@ -59,9 +98,13 @@ check('world generated and batched', stats.batches > 20 && stats.batches < 60 &&
 check('colliders registered', stats.colliders > 200, `${stats.colliders}`);
 check('interactables registered (signs + plaques)', stats.interactables >= 12, `${stats.interactables}`);
 
-await page.click('#start-button');
-await page.waitForTimeout(400);
-check('phase is playing after start', (await debug(() => window.__campusDebug.getPhase())) === 'playing');
+check('title screen offers a new story', (await page.textContent('#start-button')) === 'New Story');
+check('phase is playing after character creation', await startNewStory(page, { name: 'Esi', programme: 'communication', label: '' }));
+{
+  const story = await debug(() => window.__campusDebug.getStory());
+  check('story starts at M01 with the created student', story?.missionId === 'm01' && story.name === 'Esi' && story.programme === 'communication', JSON.stringify(story));
+  check('objective card shows the first step', /Uncle Bright/.test((await page.textContent('#objective-text')) ?? ''));
+}
 check('HUD visible', await page.isVisible('#hud'));
 check('location pill shows the gate at spawn', (await page.textContent('#location-label')) === 'Main Gate');
 
@@ -103,18 +146,50 @@ check('W walks forward, into campus (-Z)', after.z < before.z - 1.5, `z ${before
 {
   const [sx, sz] = plan(1092, 978);
   await debug(({ x, z }) => window.__campusDebug.teleport(x, z, -42.6), { x: sx - 2.3, z: sz + 2.5 });
-  await page.waitForTimeout(300);
-  const focus = await debug(() => window.__campusDebug.getFocusId());
+  const focus = await waitForFocus(page, 'sign:campus-welcome-sign');
   const phase = await debug(() => window.__campusDebug.getPhase());
   check('prompt targets the campus sign', focus === 'sign:campus-welcome-sign', `${focus} (phase ${phase})`);
   check('prompt element visible', await page.isVisible('#interaction-prompt'));
   await page.keyboard.press('e');
-  await page.waitForTimeout(300);
-  check('E opens the sign', (await debug(() => window.__campusDebug.getPhase())) === 'reading');
+  check('E opens the sign', await waitForPhase(page, 'reading'));
   check('sign content rendered', /Akwaaba/.test((await page.textContent('#info-title')) ?? ''));
   await page.click('#info-close');
   await page.waitForTimeout(250);
   check('closing the sign resumes play', (await debug(() => window.__campusDebug.getPhase())) === 'playing');
+}
+
+// Story: talk to Uncle Bright, make a choice, finish the conversation.
+{
+  const [bx, bz] = plan(972, 961);
+  await debug(({ x, z }) => window.__campusDebug.teleport(x, z, 90), { x: bx, z: bz });
+  check('prompt targets Uncle Bright', (await waitForFocus(page, 'npc:uncle-bright')) === 'npc:uncle-bright');
+  await page.keyboard.press('e');
+  check('E starts a conversation', await waitForPhase(page, 'dialogue') && (await page.isVisible('#dialogue')));
+  check('dialogue shows the speaker', (await page.textContent('#dialogue-name')) === 'Uncle Bright');
+  let sawChoices = false;
+  for (let line = 0; line < 10 && (await debug(() => window.__campusDebug.getPhase())) === 'dialogue'; line += 1) {
+    if ((await page.locator('.dialogue-choice').count()) > 0) {
+      sawChoices = sawChoices || /Esi/.test(await page.textContent('#dialogue-choices'));
+      await page.keyboard.press('1');
+    } else {
+      await page.click('#dialogue-panel');
+    }
+    await page.waitForTimeout(450);
+  }
+  const story = await debug(() => window.__campusDebug.getStory());
+  check('choices show, with the player name filled in', sawChoices);
+  check('conversation ends back in play', await waitForPhase(page, 'playing'));
+  check('the polite reply raised Uncle Bright\'s opinion', story.relationships['uncle-bright'] === 15, JSON.stringify(story.relationships));
+  // The sign was read earlier, so that step is already done: on to the signpost.
+  check('signing in, plus the sign read earlier, moves M01 to step 3', story.flags.includes('signed_in') && story.step === 3, `step ${story.step}: ${story.objective}`);
+
+  await page.keyboard.press('Tab');
+  check('Tab opens the phone', await waitForPhase(page, 'phone') && (await page.isVisible('#phone-screen')));
+  check('phone shows the current objective', /signpost/i.test((await page.textContent('#phone-page')) ?? ''));
+  await page.keyboard.press('Tab');
+  check('Tab closes the phone', await waitForPhase(page, 'playing'));
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('gcls.story.v1') ?? 'null'));
+  check('progress is saved to the device', saved?.profile?.name === 'Esi' && saved.flags.includes('signed_in'));
 }
 
 // Camera modes.
@@ -172,6 +247,22 @@ check('low quality rebuild succeeds', lowStats.batches > 20, JSON.stringify(lowS
 check('low preset is lighter', lowStats.triangles < stats.triangles, `${stats.triangles} -> ${lowStats.triangles}`);
 check('position survives a quality change', Math.abs(afterQuality.x - beforeQuality.x) < 0.5 && Math.abs(afterQuality.z - beforeQuality.z) < 0.5);
 
+// Continue: a reload offers the saved story and puts the player back in it.
+{
+  await page.keyboard.press('Escape');
+  await page.reload({ waitUntil: 'load' });
+  await page.waitForSelector('#start-screen:not([hidden])', { timeout: 90000 });
+  check('a saved story offers Continue', (await page.textContent('#start-button')) === 'Continue Story' && (await page.isVisible('#new-story-button')));
+  await page.click('#start-button');
+  const continued = await waitForPhase(page, 'playing');
+  const story = await debug(() => window.__campusDebug.getStory());
+  check('Continue restores the story without the cinematic', continued && story?.name === 'Esi' && story.flags.includes('signed_in'), JSON.stringify(story));
+  // Leave the desktop page paused: a second page rendering in the background
+  // halves the software renderer's frame rate for the touch checks below.
+  await page.keyboard.press('Escape');
+  await waitForPhase(page, 'paused');
+}
+
 // ================================================================ touch
 const mobile = await browser.newContext({ viewport: { width: 800, height: 360 }, deviceScaleFactor: 2.6, isMobile: true, hasTouch: true });
 const mpage = await mobile.newPage();
@@ -180,7 +271,8 @@ mpage.on('pageerror', (e) => mobileErrors.push(e.message));
 mpage.on('console', (m) => { if (m.type() === 'error') mobileErrors.push(m.text()); });
 await mpage.goto(BASE + '?debug=1', { waitUntil: 'load' });
 await mpage.waitForSelector('#start-screen:not([hidden])', { timeout: 90000 });
-await mpage.click('#start-button');
+check('touch: character creation reaches play', await startNewStory(mpage, { name: 'Yaw', programme: 'architecture', label: 'touch: ' }));
+// Let a few frames run so the HUD has been updated at least once.
 await mpage.waitForTimeout(500);
 check('touch: joystick and interact button shown', (await mpage.isVisible('#touch-joystick')) && (await mpage.isVisible('#touch-interact')));
 check('touch: crosshair hidden', !(await mpage.isVisible('#crosshair')));

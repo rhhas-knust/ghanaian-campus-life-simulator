@@ -16,13 +16,20 @@ not change.)
 
 **Phase 1** is the campus itself: walk in through the security gate, explore
 the courtyard, lecture halls, library, student centre, cafeteria, hostels and
-sports fields, in first or third person, and read the signs. There are no
-missions, NPCs or economy yet — those are later phases, mapped out in
-[PROJECT_PHASES.md](PROJECT_PHASES.md).
+sports fields, in first or third person, and read the signs.
 
-**Design documents** for the full game — systems,
-cast and story, none of it built yet: [GAME_DESIGN.md](GAME_DESIGN.md),
+**Phase 2 has started with the story opening** (roadmap stages A–C): **New
+Story** plays a skippable arrival cinematic, then character creation, then the
+first mission, **M01 "Akwaaba"** — sign in at the gate, collect your student ID,
+meet your roommate Nii and join the hostel group chat. Conversations have
+choices, the phone holds your objectives and messages, and progress is saved
+on the device. After M01 the campus is free to explore; Mission 2 is not built
+yet. Buildings cannot be entered yet either — interiors are a later stage.
+
+**Design documents** for the full game — systems, cast and story; most of it
+not built yet: [GAME_DESIGN.md](GAME_DESIGN.md),
 [CHARACTER_BIBLE.md](CHARACTER_BIBLE.md), [STORYLINE.md](STORYLINE.md).
+What is built and what is planned: [PROJECT_PHASES.md](PROJECT_PHASES.md).
 
 ---
 
@@ -31,6 +38,7 @@ cast and story, none of it built yet: [GAME_DESIGN.md](GAME_DESIGN.md),
 - [Quick start](#quick-start)
 - [Controls](#controls)
 - [What is in Phase 1](#what-is-in-phase-1)
+- [The story so far](#the-story-so-far)
 - [Art and how it is used](#art-and-how-it-is-used)
 - [Architecture](#architecture)
 - [Editing the campus](#editing-the-campus)
@@ -79,23 +87,27 @@ controls on real hardware.
 | --- | --- |
 | Left thumbstick | Walk. Push gently to stroll, fully to walk at full speed. |
 | Drag on the right half of the screen | Look around |
-| **INTERACT** button (bottom right) | Read a sign or plaque — lights up when one is in range |
+| **INTERACT** button (bottom right) | Talk to someone, or read a sign or plaque — lights up when one is in range |
+| Tap the conversation box | Next line; tap a reply to choose it |
+| Phone button (top left, next to pause) | Objectives, messages and your profile |
 | Camera button (under the minimap) | Switch between first-person and third-person view |
 | Pause button (top left) | Pause menu: campus map, view, settings |
 
-Tapping **Enter Campus** on a phone also switches to fullscreen and, where the
-browser allows it, locks to landscape.
+Tapping **New Story** or **Continue Story** on a phone also switches to
+fullscreen and, where the browser allows it, locks to landscape.
 
 ### Desktop
 
 | Key | Action |
 | --- | --- |
 | `W` `A` `S` `D` / arrow keys | Walk and strafe |
-| Mouse | Look around (click **Enter Campus** to capture the mouse) |
+| Mouse | Look around (the mouse is captured once you start playing) |
 | `Shift` | Run |
-| `E`, `Enter` or `Space` | Read a sign or plaque |
+| `E`, `Enter` or `Space` | Talk, read a sign or plaque, or go to the next line of a conversation |
+| `1` – `4` | Pick a reply in a conversation |
+| `Tab` | Open / close the phone |
 | `V` or `C` | Switch first-person / third-person view |
-| `Esc` or `P` | Pause / resume (and close the map) |
+| `Esc` or `P` | Pause / resume (and close the map or phone; skips the cinematic) |
 
 ### Pause menu
 
@@ -103,8 +115,8 @@ browser allows it, locks to landscape.
 - **Campus Map** — the artist's master plan, with a "you are here" marker.
 - **View** — first or third person.
 - **Settings**: graphics quality (Low / Medium / High, rebuilt in place, you
-  keep your position), look sensitivity, **invert up/down look**, and **level
-  the view when walking**.
+  keep your position), look sensitivity, **invert up/down look**, **level
+  the view when walking**, and **Start a new story** (asks twice).
 
 All settings are saved on the device and survive a reload.
 
@@ -163,6 +175,44 @@ Traced from the master plan in `GAME_ART/campus-map/`:
 
 ---
 
+## The story so far
+
+Phase 2, roadmap stages A–C of [GAME_DESIGN.md](GAME_DESIGN.md) §12. Story
+text follows [STORYLINE.md](STORYLINE.md) §2.
+
+- **Title screen.** **New Story**, or **Continue Story** when there is a save
+  (with a second button to start over, which asks twice).
+- **M00 "Arrival"** — a ~45-second camera flight over the real campus with
+  captions: the admission notification, the gate, the courtyard, the hostels,
+  Mr. Narh watching the football field, and the title card. **Skip** is
+  on screen from the first frame.
+- **Character creation** — name (with an Akan day-name suggestion), how you
+  are addressed (he / she / they), programme (Engineering, Computer Science,
+  Business Administration, Communication Studies, Architecture) and home.
+  Appearance waits for the rigged 3D characters (stage D).
+- **M01 "Akwaaba"**, seven steps: sign in with **Uncle Bright** at the
+  porter's lodge → read the AKWAABA board → check the courtyard signpost →
+  collect your student ID from **Mrs. Agyeman** at the Administration Block →
+  meet **Nii** at the Block A gateway → read the Block A group chat on your
+  phone → go up to room A-214 and sleep. Day one ends with something buzzing
+  under the floor.
+- **Conversations** are data — one JSON file each in
+  `src/story/data/dialogue/` — with 2–4 replies, conditions (some lines only
+  exist for one programme) and effects on flags, relationships and
+  reputation. Text only; no voice acting.
+- **Objectives** on a card under the pause button, as a gold marker on the
+  minimap and the campus map, and as a gold diamond floating over the target.
+- **The phone**: the mission checklist, message threads (admissions, Mum, the
+  Block A group chat) and a profile with your reputation and the people you
+  have met.
+- **Saving**: automatic, in the browser's local storage, after every
+  conversation, mission step, sleep and pause. There is one save slot per
+  browser; clearing site data starts again.
+- **Placeholder characters**: simple standing figures, one draw call each,
+  until the rigged models exist.
+
+---
+
 ## Art and how it is used
 
 The artist's concept art is in **[`GAME_ART/`](GAME_ART/README.md)**, with the
@@ -208,6 +258,26 @@ src/
 │   ├── Game.ts              State machine and the wiring between subsystems
 │   └── debug.ts             Opt-in `?debug=1` inspection API
 │
+├── story/                   ── Story data and logic. No Three.js, no DOM. ──
+│   ├── data/
+│   │   ├── dialogue/*.json    One conversation per file
+│   │   ├── messages.json      Phone message threads
+│   │   ├── cast.ts            Who stands where, and what they say
+│   │   ├── missions.ts        Mission steps, as flags to set
+│   │   ├── opening.ts         The arrival cinematic's camera shots
+│   │   └── places.ts          Story places (the stairs to A-214), story cards
+│   ├── StoryState.ts          Flags, relationships, reputation, clock, save format
+│   ├── StoryDirector.ts       Current objective, worked out from the flags
+│   ├── dialogue.ts            JSON validation and the dialogue runner
+│   ├── messages.ts            Phone threads
+│   ├── save.ts                The one localStorage save slot
+│   └── types.ts               Programmes, homes, conditions, effects
+│
+├── actors/                  ── Story things in the 3D world. ──
+│   ├── NpcFigures.ts          Placeholder characters, one draw call each
+│   ├── ObjectiveBeacon.ts     The floating objective marker
+│   └── storyPlacements.ts     Cast + places -> interactables and colliders
+│
 ├── world/                   ── Reads config/, emits geometry + colliders. ──
 │   ├── WorldBuilder.ts        Orchestrator; owns batching and the sign atlas
 │   ├── context.ts             The contract every world module implements
@@ -224,6 +294,7 @@ src/
 ├── player/
 │   ├── PlayerController.ts  Body: position, look, velocity, auto-level
 │   ├── CameraRig.ts         First/third-person framing, wall avoidance
+│   ├── CinematicCamera.ts   Camera flights for the arrival cinematic
 │   └── Avatar.ts            Third-person student model and walk cycle
 ├── physics/CollisionSystem.ts       Circle vs rotated box/circle
 ├── interaction/InteractionSystem.ts Proximity + facing focus selection
@@ -237,6 +308,10 @@ src/
 │   ├── Hud.ts               Pause, location pill, camera button, prompt, hints
 │   ├── Minimap.ts           Round minimap drawn from the layout data
 │   ├── Overlays.ts          Loading / start / pause / map / sign reader
+│   ├── CinematicOverlay.ts  Captions, title card and Skip
+│   ├── CharacterCreation.ts Name, address, programme, home
+│   ├── DialogueBox.ts       Speaker, line and replies
+│   ├── PhoneMenu.ts         Objectives, messages, profile
 │   ├── controls.ts          Control hints as data
 │   ├── dom.ts               DOM helpers (textContent only, never innerHTML)
 │   └── styles.css           The whole UI layer
@@ -258,6 +333,30 @@ is its whole world. `CollisionSystem` sees rectangles and circles, not
 buildings. `CameraRig` reads the player; the player knows nothing about the
 camera. That is what lets the camera mode change without movement changing,
 and what will let `Buildings.ts` be swapped for a glTF loader in Phase 2.
+
+The story follows the same rule. `src/story/` is plain data and logic: it
+never touches Three.js or the DOM. A mission step is just a flag to set, so the
+mission code does not know what a sign or a phone is. `Game.ts` is the one
+place where the story meets the world: an interaction becomes a conversation
+or a flag, and every story change is pushed out to the HUD, the beacon and the
+save.
+
+### Editing the story
+
+- **A conversation:** add or edit a JSON file in `src/story/data/dialogue/`.
+  Nodes have a `speaker` (a cast id, or `player`), `text`, and then `next`,
+  `choices` or neither (the conversation ends). `{name}`, `{programme}` and
+  `{home}` are filled in. Effects: `{ "type": "flag", "flag": "…" }`,
+  `{ "type": "relationship", "who": "nii", "delta": 5 }`,
+  `{ "type": "reputation", "axis": "integrity", "delta": -10 }`. A choice can
+  carry `"if": { "flag": "…", "notFlag": "…", "programme": "…" }` and
+  `"major": true`. Files are checked when the game starts; a broken link
+  names the file and node.
+- **Who says it:** `talks` in `src/story/data/cast.ts` — the first entry
+  whose condition holds is the conversation that starts.
+- **A mission step:** `src/story/data/missions.ts`. A step is done when its
+  flag is set; reading anything sets `seen:<interactable id>`.
+- **A phone message:** `src/story/data/messages.json`.
 
 ---
 
@@ -303,6 +402,7 @@ Target: a mid-range Android phone at 30+ fps.
 | | High / Medium | Low |
 | --- | --- | --- |
 | Draw calls (campus) | ~38 | ~38 |
+| Draw calls (story characters, objective marker) | +4 | +4 |
 | Triangles | ~70,000 | ~46,000 |
 | Pixel ratio cap | 2.0 / 1.5 | 1.0 |
 | Shadows | yes, following the player | off |
@@ -320,8 +420,11 @@ How:
    so they stay sharp near you at a fixed cost.
 4. **Pixel-ratio capping** — a 3x-density phone screen would otherwise render
    nine times the pixels.
+5. **Story characters are one mesh each.** A placeholder figure is merged
+   into a single vertex-coloured mesh sharing one material, instead of the
+   dozen meshes the player's avatar uses.
 
-Download: ~166 KB of gzipped JavaScript (Three.js split into its own cacheable
+Download: ~180 KB of gzipped JavaScript (Three.js split into its own cacheable
 chunk) plus a 68 KB title image. The 140 KB campus map image only downloads the
 first time the map is opened.
 
@@ -340,11 +443,13 @@ CI runs the same checks, and the Pages deploy does not publish if any fail.
 ### Browser smoke test
 
 `scripts/smoke-test.mjs` drives the real production build in headless
-Chromium and asserts on game state — **39 checks**: world generation, walking,
-collision at the Library, reading the campus sign, both camera modes and
-third-person wall avoidance, pause, the campus map, the quality rebuild, and on
-a phone-sized touch screen the joystick, the swipe fix, vertical look and the
-camera button.
+Chromium and asserts on game state — **62 checks**: world generation, the
+arrival cinematic and Skip, character creation, walking, collision at the
+Library, reading the campus sign, a full conversation with Uncle Bright
+(choices, relationship change, mission progress), the phone, the save and
+**Continue**, both camera modes and third-person wall avoidance, pause, the
+campus map, the quality rebuild, and on a phone-sized touch screen the story
+start, the joystick, the swipe fix, vertical look and the camera button.
 
 ```bash
 npm i -D playwright && npx playwright install chromium   # first time only
@@ -363,7 +468,12 @@ feels or performs on a real phone.
 ### Manual test pass
 
 - [ ] Loading bar completes; the start screen shows the courtyard art
-- [ ] **Enter Campus** starts play (fullscreen + landscape on a phone)
+- [ ] **New Story** plays the cinematic (fullscreen + landscape on a phone);
+      **Skip** works
+- [ ] Character creation: the name box takes typing on a phone keyboard
+- [ ] Play M01 to the end: Uncle Bright, the board, the signpost, Mrs.
+      Agyeman, Nii, the group chat, sleeping in A-214
+- [ ] Reload: **Continue Story** puts you back where you were
 - [ ] Walk in through the gate; the AKWAABA board shows a prompt
 - [ ] You cannot walk through buildings, the fence, trees, posts or cars
 - [ ] The location pill and minimap update as you move
@@ -381,7 +491,9 @@ Add `?debug=1` to the URL to get `window.__campusDebug`:
 __campusDebug.getPlayer()    // { x, z, yawDegrees, pitch, speed }
 __campusDebug.getCamera()    // { mode, x, y, z }
 __campusDebug.getStats()     // batches, triangles, colliders, interactables
-__campusDebug.getPhase()     // 'loading' | 'ready' | 'playing' | 'paused' | 'reading'
+__campusDebug.getPhase()     // 'loading' | 'ready' | 'cinematic' | 'creating' | 'playing'
+                             // | 'paused' | 'reading' | 'dialogue' | 'phone'
+__campusDebug.getStory()     // name, mission, objective, step, day, clock, flags, relationships
 __campusDebug.getFocusId()   // id of the interactable in range, or null
 __campusDebug.getZoneName()  // the HUD place name
 __campusDebug.teleport(x, z, yawDegrees)
@@ -405,8 +517,13 @@ Deliberate Phase 1 boundaries:
   verandahs (they are inside the building colliders), no interiors.
 - **Buildings are procedural placeholders** that follow the art; real models
   are Phase 2.
-- **No NPCs, vehicles moving, missions, time of day, inventory, audio or save
-  file.**
+- **No crowds, moving vehicles, time of day (the clock runs, the sky does not
+  change), inventory or audio.** Story characters stand still at their posts.
+- **Only M01 is playable.** After it the campus is free roam until Mission 2
+  is built.
+- **No interiors**: rooms, including A-214, are reached through story cards.
+- **One save per browser**, in local storage — no cloud saves, by design (no
+  backend).
 - **The third-person camera avoids walls but not low objects**: it may pull in
   briefly behind a bench or bollard.
 - **Not yet tested on a physical Android phone.** See [TODO.md](TODO.md).

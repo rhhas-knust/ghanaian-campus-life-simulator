@@ -66,6 +66,16 @@ round pause button top-left; the joystick bottom-left; a large round INTERACT
 button with a hand icon bottom-right; a pause menu with a green patterned
 border.
 
+The story screens have no mock-ups yet, so they extend the same language:
+a round **phone button** beside the pause button; an **objective card** (dark
+pill, gold left edge) under it; a **gold diamond** as the objective marker on
+the minimap, the campus map and floating in the world; a dark **conversation
+panel** along the bottom with a round portrait disc in the character's
+signature colour (CHARACTER_BIBLE.md §4); a cream **phone** with a green header;
+letterbox bars and white captions for the cinematic. Mock-ups for the
+conversation panel, the phone and character creation would be welcome — the
+current ones are placeholders built to the existing palette.
+
 ## What is used at runtime, and what is not
 
 The images are **2D concept renders**: several views per sheet, on a white
@@ -104,6 +114,9 @@ Full brief: [`public/assets/README.md`](../public/assets/README.md). Loading
   four. Are both designs wanted, or is one the standard?
 - The **minimap reference** shows a cross-shaped "Great Hall" in the courtyard,
   but the **master plan** has a monument there. Which is right?
+- **Character portraits** for the conversation panel: the panel currently
+  shows initials on the signature colour. Head-and-shoulders portraits per
+  character would replace them.
 - The two **extra H buildings** (Administration, Engineering) are not on the
   master plan. If the plan is updated, their positions in `campusLayout.ts` and
   `ADDED_SINCE_MASTER_PLAN` should follow it.

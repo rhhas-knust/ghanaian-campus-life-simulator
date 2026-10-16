@@ -1,0 +1,47 @@
+{
+  "id": "m01-uncle-bright",
+  "start": "hello",
+  "nodes": {
+    "hello": {
+      "speaker": "uncle-bright",
+      "text": "Eii, another fresher! Akwaaba, akwaaba. Welcome to UCIS.",
+      "next": "book"
+    },
+    "book": {
+      "speaker": "uncle-bright",
+      "text": "Before you enter, you sign the book. Everybody signs. Name?",
+      "choices": [
+        {
+          "text": "Good morning, Uncle. I'm {name}.",
+          "next": "manners",
+          "effects": [{ "type": "relationship", "who": "uncle-bright", "delta": 5 }]
+        },
+        { "text": "{name}. Level 100, {programme}.", "next": "programme" },
+        { "text": "Do I really have to sign? I have my admission letter.", "next": "letter" }
+      ]
+    },
+    "manners": {
+      "speaker": "uncle-bright",
+      "text": "Ah, see manners! Somebody trained you well. And your programme?",
+      "next": "programme"
+    },
+    "letter": {
+      "speaker": "uncle-bright",
+      "text": "Letter or no letter, everybody signs. Even the Vice-Chancellor signs. …Well, his driver signs. Programme?",
+      "next": "programme"
+    },
+    "programme": {
+      "speaker": "uncle-bright",
+      "text": "{programme}, hmm? Then you need your student ID. Go to the Administration Block, north of the courtyard. Without it, the gate doesn't know you.",
+      "next": "sign"
+    },
+    "sign": {
+      "speaker": "uncle-bright",
+      "text": "And read the big sign by the road. Everybody walks past it; nobody reads it. Go well!",
+      "effects": [
+        { "type": "flag", "flag": "signed_in" },
+        { "type": "flag", "flag": "met:uncle-bright" }
+      ]
+    }
+  }
+}

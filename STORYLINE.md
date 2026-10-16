@@ -70,7 +70,10 @@ visible from the first frame; skipping jumps straight to character creation.
    story.*
 
 Implementation note: camera spline plus captions over the Phase 1 campus; no
-new character art is required for a first version.
+new character art is required for a first version. **Built** (about 45
+seconds; shots in `src/story/data/opening.ts`). Not yet in it: students with
+suitcases, cars at the barrier, and visible pegs on the field — the caption
+carries the pegs for now.
 
 ### Character creation
 
@@ -88,14 +91,26 @@ places that already exist in the Phase 1 build.
 | Step | Objective | Teaches |
 | --- | --- | --- |
 | 1 | Walk through the gate and sign in with **Uncle Bright** at the porter's lodge | Movement, talking |
-| 2 | Read the **AKWAABA** campus sign | Interaction (already implemented) |
-| 3 | Find the **Administration Block** and collect your student ID | Map and minimap |
-| 4 | Cross the courtyard; use the **signpost** to find Hastech Hostels | Signs, free choice of route |
-| 5 | Find room **A-214** and meet **Nii** | Story NPC dialogue |
-| 6 | Nii adds you to the hostel group chat | The phone |
+| 2 | Read the **AKWAABA** campus sign | Interaction |
+| 3 | Cross the courtyard; check the **signpost** | Signs, free choice of route |
+| 4 | Find the **Administration Block** and collect your student ID from **Mrs. Agyeman**, the registry clerk | Map and minimap |
+| 5 | Find **Nii** at the Hastech Hostels Block A gateway | Story NPC dialogue |
+| 6 | Nii adds you to the Block A group chat; read it on your phone | The phone |
+| 7 | Go up to room **A-214** and sleep | Ending a day |
+
+The signpost comes before the Administration Block so the route never doubles
+back across the courtyard. Steps done early still count: reading the sign
+before signing in ticks step 2 off as soon as step 1 is done.
 
 **Outcome:** the campus opens fully. Day 1 ends at sleep — and something
-buzzes under the floor. Flags: `met_nii`, `has_student_id`.
+buzzes under the floor. Flags: `signed_in`, `has_student_id`, `met_nii`,
+`joined_group_chat`, `read_group_chat`, `slept_day_1`, `m01_complete`.
+
+**Built.** Conversations are in `src/story/data/dialogue/` and the steps in
+`src/story/data/missions.ts`. Mrs. Agyeman pauses over the room number
+("A-214… Hm. Nothing."), and Nii warns that a floor tile by the bed is loose —
+small hooks for M02. Rooms have no interiors yet, so the night in A-214 is a
+story card.
 
 ---
 
@@ -313,7 +328,9 @@ Kept short on purpose; dialogue may set extra local flags.
 
 | Flag | Set in | Read by |
 | --- | --- | --- |
-| `met_nii`, `has_student_id` | M01 | M02 onwards |
+| `signed_in`, `has_student_id`, `met_nii`, `joined_group_chat`, `read_group_chat`, `slept_day_1` | M01 | M02 onwards |
+| `seen:<interactable id>` | Reading any sign or plaque | Mission steps that ask the player to read something |
+| `met:<cast id>` | First conversation with someone | The phone's "People" list |
 | `found_kojo_phone` | M02 | M04, S09 |
 | `answered_phone`, `phone_handed_in` | M04 (C0) | S09, M08, M15, endings |
 | `met_kojo` | S09 | M15, endings, epilogue |
