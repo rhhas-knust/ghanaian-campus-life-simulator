@@ -18,16 +18,22 @@ Delivery order: [PROJECT_PHASES.md](PROJECT_PHASES.md).
 **Only the left-hand column exists in code.** Everything else in this document
 is a design to build against, not a description of the game today.
 
-| Implemented (Phase 1) | Planned |
+| Implemented (Phase 1, and stages A–C of §12) | Planned |
 | --- | --- |
-| Game title and UCIS University name on the title, loading and pause screens and the welcome sign | Cinematic opening |
-| Walkable 3D campus traced from the master plan | — |
-| First- and third-person cameras, toggle | Character creation and avatar customisation |
-| One fixed procedural student avatar | Rigged, animated characters (player and NPCs) |
-| Keyboard/mouse and touch controls | Dialogue, choices, relationships, reputation |
-| Collision; readable signs and plaques | Missions, chapters, endings |
-| HUD: location pill, minimap, INTERACT, pause | Time of day, timetable, energy, money, grades |
-| Campus map, settings, quality presets | Phone menu, save/load |
+| Game title and UCIS University name on the title, loading and pause screens and the welcome sign | — |
+| M00 arrival cinematic (camera flight with captions, Skip) | Longer cinematic with students and surveyors' pegs on the field |
+| Walkable 3D campus traced from the master plan | Interiors (room A-214 is a story card) |
+| First- and third-person cameras, toggle | — |
+| Character creation: name, address, programme, home | Appearance options (body, skin, face, hair, outfit) |
+| One fixed procedural student avatar; standing placeholder figures for Uncle Bright, Mrs. Agyeman and Nii | Rigged, animated characters (player and NPCs) |
+| Keyboard/mouse and touch controls | — |
+| Dialogue from JSON with choices, conditions and effects; relationship and reputation values | Portrait art; skill checks; money and item effects |
+| Mission M01 "Akwaaba"; objective card, minimap and map markers, floating beacon | M02–M16, side stories, chapters, endings |
+| A game clock and days that end by sleeping | Time of day, timetable, energy, money, grades |
+| Phone: objectives, messages, profile; one save slot in local storage | Timetable and wallet in the phone |
+| Collision; readable signs and plaques | — |
+| HUD: location pill, minimap, INTERACT, pause, phone | — |
+| Campus map, settings, quality presets | — |
 | Static GitHub Pages deployment | NPC schedules and crowds; audio |
 
 The setting is **UCIS University** — *Until Christ is Seen* — a fictional,
@@ -122,7 +128,8 @@ Character creation runs once, after the opening cinematic (STORYLINE.md §2).
 Each programme gets one exclusive side story (STORYLINE.md S07) and a few
 alternative dialogue options; none locks the player out of an ending.
 
-The Phase 1 procedural avatar is a placeholder. Customisation needs the rigged
+Name, form of address, programme and home are built (stage C). The Phase 1
+procedural avatar is a placeholder. Customisation needs the rigged
 character pipeline in CHARACTER_BIBLE.md §4.
 
 ---
@@ -283,9 +290,9 @@ delivery order.
 
 | Stage | Delivers | Needs | Phase |
 | --- | --- | --- | --- |
-| **A. Game state foundation** | Save/load, flags, game clock, phone menu shell, objective tracker | Nothing new — code only | 2 |
-| **B. Dialogue** | Dialogue runner, JSON format, choice UI, relationship/reputation values | A | 2 |
-| **C. Opening and first mission** | Title card, skippable opening cinematic using the existing campus, M01 "Akwaaba" with placeholder NPCs | A, B | 2 |
+| **A. Game state foundation** ✅ | Save/load, flags, game clock, phone menu shell, objective tracker | Nothing new — code only | 2 |
+| **B. Dialogue** ✅ | Dialogue runner, JSON format, choice UI, relationship/reputation values | A | 2 |
+| **C. Opening and first mission** ✅ | Title card, skippable opening cinematic using the existing campus, M01 "Akwaaba" with placeholder NPCs | A, B | 2 |
 | **D. Character pipeline** | Shared rig, first rigged hero model, character creation, player customisation | Character art (CHARACTER_BIBLE §4) | 2 |
 | **E. Living campus** | NPC schedules, crowd students, time of day | D | 2 |
 | **F. Life systems** | Energy, money, timetable, attendance, study, grades | A, E | 3–4 |
@@ -293,8 +300,11 @@ delivery order.
 | **H. Chapters 4–6 and endings** | M08–M16, ending resolution, epilogue | G | 5 |
 | **I. Polish** | Audio, interiors, localisation, accessibility | Any | 5 |
 
-Stages A–C can start immediately on the current codebase; they need no new
-art. Stage D is blocked on rigged character models — concept art alone is not
+Stages A–C are built (✅): see README.md, "The story so far". They brought
+forward the art-free part of character creation (name, address, programme,
+home); the appearance options stay in stage D.
+
+Stage D is blocked on rigged character models — concept art alone is not
 enough (CHARACTER_BIBLE.md §4).
 
 ---

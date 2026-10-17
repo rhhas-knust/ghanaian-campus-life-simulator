@@ -1,0 +1,10 @@
+{
+  "id": "nii-idle",
+  "start": "rest",
+  "nodes": {
+    "rest": {
+      "speaker": "nii",
+      "text": "Go and rest small, {name}. Tomorrow, lectures start for real."
+    }
+  }
+}

@@ -170,6 +170,19 @@ export const STORAGE_KEYS = {
   cameraMode: 'gcls.cameraMode',
   invertY: 'gcls.invertY',
   autoLevel: 'gcls.autoLevel',
+  /** The story save. Versioned, so an incompatible future format starts fresh. */
+  story: 'gcls.story.v1',
+} as const;
+
+/** Story pacing. One real second is one game minute, so a 16-hour day is ~16 minutes. */
+export const STORY_SETTINGS = {
+  gameMinutesPerSecond: 1,
+  /** Arrival-day morning, in minutes after midnight. */
+  dayOneStartMinutes: 7 * 60 + 30,
+  /** Every later day starts here, after sleeping. */
+  wakeMinutes: 7 * 60,
+  /** NPCs stop talking and turn back once the player walks this far away. */
+  talkRadius: 3.2,
 } as const;
 
 export type CameraMode = 'first' | 'third';

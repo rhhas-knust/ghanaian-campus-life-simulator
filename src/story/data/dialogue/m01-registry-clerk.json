@@ -1,0 +1,64 @@
+{
+  "id": "m01-registry-clerk",
+  "start": "next",
+  "nodes": {
+    "next": {
+      "speaker": "registry-clerk",
+      "text": "Next! Name, programme, level.",
+      "next": "player"
+    },
+    "player": {
+      "speaker": "player",
+      "text": "{name}. {programme}, Level 100.",
+      "next": "copies"
+    },
+    "copies": {
+      "speaker": "registry-clerk",
+      "text": "Mm-hm. Photo, signature… and three photocopies of your admission letter?",
+      "choices": [
+        {
+          "text": "Here. Three copies, as the letter said.",
+          "next": "prepared",
+          "effects": [
+            { "type": "relationship", "who": "registry-clerk", "delta": 5 },
+            { "type": "reputation", "axis": "academic", "delta": 2 }
+          ]
+        },
+        { "text": "Three? The letter said two!", "next": "two" },
+        {
+          "text": "Uncle Bright said you're the kindest person in Admin.",
+          "next": "flattery",
+          "effects": [{ "type": "relationship", "who": "registry-clerk", "delta": 3 }]
+        }
+      ]
+    },
+    "prepared": {
+      "speaker": "registry-clerk",
+      "text": "Wonderful. Somebody actually reads. You'll go far.",
+      "next": "card"
+    },
+    "two": {
+      "speaker": "registry-clerk",
+      "text": "The letter is old; the rule is new. …Fine. I'll copy one for you. Just this once.",
+      "next": "card"
+    },
+    "flattery": {
+      "speaker": "registry-clerk",
+      "text": "Bright says that to everybody. …It's working, though.",
+      "next": "card"
+    },
+    "card": {
+      "speaker": "registry-clerk",
+      "text": "Here's your student ID. Don't lose it — the porter has a whole drawer of lost cards. You're in Hastech Hostels, Block A. Room A-214.",
+      "effects": [
+        { "type": "flag", "flag": "has_student_id" },
+        { "type": "flag", "flag": "met:registry-clerk" }
+      ],
+      "next": "pause"
+    },
+    "pause": {
+      "speaker": "registry-clerk",
+      "text": "A-214… Hm. Nothing. It's nothing. Go on — your roommate will be waiting."
+    }
+  }
+}

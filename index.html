@@ -30,6 +30,17 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
       </button>
 
+      <button id="phone-button" class="hud-button hud-phone" type="button" aria-label="Open phone">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2h8a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm0 3v13h8V5zm4 14.2a1 1 0 1 0 0 2 1 1 0 0 0 0-2z" /></svg>
+        <span id="phone-badge" class="hud-badge" hidden></span>
+      </button>
+
+      <!-- Current objective: told what to show by the game, never reads state -->
+      <div id="objective" class="objective" role="status" aria-live="polite" hidden>
+        <p id="objective-heading" class="objective-heading"></p>
+        <p id="objective-text" class="objective-text"></p>
+      </div>
+
       <div class="location-pill" role="status" aria-live="polite">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z" /></svg>
         <span id="location-label">Main Gate</span>
@@ -56,7 +67,7 @@
         <span>Swipe to look</span>
       </div>
 
-      <p id="desktop-hint" class="desktop-hint">V camera · E interact · Shift run · Esc pause</p>
+      <p id="desktop-hint" class="desktop-hint">V camera · E interact · Tab phone · Shift run · Esc pause</p>
 
       <!-- Touch controls: wired up by src/input/TouchInput.ts -->
       <div id="touch-controls" class="touch-controls" hidden>
@@ -91,12 +102,13 @@
         <h1 class="title">Campus Life: The Journey</h1>
         <p class="tagline">Your campus. Your choices. Your story.</p>
         <p class="subtitle">
-          Walk in through the main gate and explore the courtyard, lecture halls, library, student
-          centre and hostels.
+          Your first day at UCIS University starts at the main gate. Sign in, find your room, meet
+          your roommate — and explore the campus between story moments.
         </p>
         <p class="rotate-hint">Turn your phone sideways for the best view.</p>
 
-        <button id="start-button" class="primary-button" type="button">Enter Campus</button>
+        <button id="start-button" class="primary-button" type="button">New Story</button>
+        <button id="new-story-button" class="secondary-button" type="button" hidden>Start a new story</button>
 
         <dl class="controls-grid" id="controls-grid-start"></dl>
       </div>
@@ -137,6 +149,7 @@
             <label class="settings-label" for="auto-level-toggle">Level the view when walking</label>
             <input id="auto-level-toggle" class="settings-toggle" type="checkbox" />
           </div>
+          <button id="restart-story-button" class="secondary-button settings-danger" type="button">Start a new story</button>
         </details>
 
         <details class="settings">
@@ -146,11 +159,95 @@
       </div>
     </div>
 
+    <!-- Arrival cinematic: letterbox, captions, phone pop-up, title card, skip -->
+    <div id="cinematic" class="cinematic" hidden>
+      <div id="cinematic-notification" class="cinematic-notification" hidden>
+        <p class="cinematic-notification-app">UCIS Admissions · now</p>
+        <p id="cinematic-notification-text"></p>
+      </div>
+      <p id="cinematic-caption" class="cinematic-caption"></p>
+      <div id="cinematic-title" class="cinematic-title" hidden>
+        <p class="eyebrow">UCIS University</p>
+        <h1 class="title">Campus Life: The Journey</h1>
+        <p id="cinematic-tagline" class="tagline"></p>
+      </div>
+      <div id="cinematic-fade" class="cinematic-fade"></div>
+      <button id="cinematic-skip" class="cinematic-skip" type="button">Skip ▸▸</button>
+    </div>
+
+    <!-- Character creation -->
+    <div id="creation-screen" class="overlay" hidden>
+      <form id="creation-form" class="panel panel--creation" novalidate>
+        <p class="eyebrow">Student registration · Level 100</p>
+        <h2 class="title title--small">Who are you?</h2>
+
+        <div class="creation-row">
+          <label class="creation-label" for="creation-name">Name</label>
+          <div class="creation-name-row">
+            <input id="creation-name" class="creation-input" type="text" maxlength="20" autocomplete="off" spellcheck="false" />
+            <button id="creation-suggest" class="secondary-button creation-suggest" type="button">Day name</button>
+          </div>
+        </div>
+
+        <fieldset class="creation-row">
+          <legend class="creation-label">How people refer to you</legend>
+          <div id="creation-address" class="creation-options creation-options--inline"></div>
+        </fieldset>
+
+        <fieldset class="creation-row">
+          <legend class="creation-label">Programme</legend>
+          <div id="creation-programme" class="creation-options"></div>
+        </fieldset>
+
+        <div class="creation-row">
+          <label class="creation-label" for="creation-home">Home</label>
+          <select id="creation-home" class="settings-select creation-select"></select>
+        </div>
+
+        <p class="creation-note">Appearance options arrive with the 3D character models.</p>
+        <button id="creation-confirm" class="primary-button" type="submit">Begin</button>
+      </form>
+    </div>
+
+    <!-- Dialogue: speaker, line, and 2–4 choices -->
+    <div id="dialogue" class="dialogue" hidden>
+      <div id="dialogue-panel" class="dialogue-panel">
+        <div id="dialogue-portrait" class="dialogue-portrait" aria-hidden="true"></div>
+        <div class="dialogue-main">
+          <p class="dialogue-speaker"><span id="dialogue-name"></span> <span id="dialogue-role" class="dialogue-role"></span></p>
+          <p id="dialogue-text" class="dialogue-text"></p>
+          <div id="dialogue-choices" class="dialogue-choices"></div>
+          <p id="dialogue-continue" class="dialogue-continue">Tap to continue ▸</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phone: objectives, messages, profile (GAME_DESIGN.md §9) -->
+    <div id="phone-screen" class="overlay overlay--phone" hidden>
+      <div class="phone">
+        <div class="phone-status">
+          <span id="phone-clock">07:30</span>
+          <span id="phone-day">Day 1</span>
+        </div>
+        <div class="phone-tabs" role="tablist">
+          <button class="phone-tab" type="button" role="tab" data-tab="objectives">Objectives</button>
+          <button class="phone-tab" type="button" role="tab" data-tab="messages">Messages<span id="phone-tab-badge" class="hud-badge hud-badge--inline" hidden></span></button>
+          <button class="phone-tab" type="button" role="tab" data-tab="profile">Me</button>
+        </div>
+        <div id="phone-page" class="phone-page"></div>
+        <div class="phone-footer">
+          <button id="phone-map" class="secondary-button" type="button">Map</button>
+          <button id="phone-close" class="primary-button" type="button">Close</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Campus map: the artist's master plan, with a "you are here" marker -->
     <div id="map-screen" class="overlay overlay--map" hidden>
       <div class="map-frame">
         <div class="map-canvas">
           <img id="map-image" alt="Campus master plan" decoding="async" />
+          <div id="map-objective" class="map-objective" aria-label="Objective" hidden></div>
           <div id="map-marker" class="map-marker" aria-label="You are here"></div>
         </div>
         <button id="map-close" class="primary-button map-close" type="button">Close map</button>

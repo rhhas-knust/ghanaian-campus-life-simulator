@@ -10,12 +10,22 @@
 import { IMAGE_ASSETS, resolveAssetUrl } from '../config/assets';
 import { ADDED_SINCE_MASTER_PLAN, BUILDINGS, PLAN } from '../config/campusLayout';
 import type { CameraMode, QualityLevel } from '../config/settings';
-import type { Interactable } from '../types';
+import type { Vec2Tuple } from '../types';
 import { DESKTOP_CONTROLS, TOUCH_CONTROLS } from './controls';
 import { renderControlsList, renderTextBlock, requireElement } from './dom';
 
+/** What the reading panel shows: a sign, a plaque, or a story card. */
+export interface InfoContent {
+  readonly eyebrow: string;
+  readonly title: string;
+  readonly body: readonly string[];
+  readonly bullets?: readonly string[];
+}
+
 export interface OverlayCallbacks {
   readonly onStart: () => void;
+  readonly onNewStory: () => void;
+  readonly onRestartStory: () => void;
   readonly onResume: () => void;
   readonly onCloseInfo: () => void;
   readonly onOpenMap: () => void;
@@ -42,6 +52,11 @@ export class Overlays {
 
   private readonly startScreen = requireElement('start-screen');
   private readonly startButton = requireElement<HTMLButtonElement>('start-button');
+  private readonly newStoryButton = requireElement<HTMLButtonElement>('new-story-button');
+  private readonly restartStoryButton = requireElement<HTMLButtonElement>('restart-story-button');
+  /** Starting over throws away a save, so it takes two presses. */
+  private newStoryArmed = false;
+  private restartArmed = false;
   private readonly startControls = requireElement('controls-grid-start');
 
   private readonly pauseScreen = requireElement('pause-screen');
@@ -57,6 +72,7 @@ export class Overlays {
   private readonly mapScreen = requireElement('map-screen');
   private readonly mapImage = requireElement<HTMLImageElement>('map-image');
   private readonly mapMarker = requireElement('map-marker');
+  private readonly mapObjective = requireElement('map-objective');
   private readonly mapClose = requireElement<HTMLButtonElement>('map-close');
 
   private readonly infoScreen = requireElement('info-screen');
@@ -67,6 +83,22 @@ export class Overlays {
 
   constructor(private readonly callbacks: OverlayCallbacks) {
     this.startButton.addEventListener('click', () => this.callbacks.onStart());
+    this.newStoryButton.addEventListener('click', () => {
+      if (this.newStoryArmed) {
+        this.callbacks.onNewStory();
+        return;
+      }
+      this.newStoryArmed = true;
+      this.newStoryButton.textContent = 'Tap again: your saved story will be lost';
+    });
+    this.restartStoryButton.addEventListener('click', () => {
+      if (this.restartArmed) {
+        this.callbacks.onRestartStory();
+        return;
+      }
+      this.restartArmed = true;
+      this.restartStoryButton.textContent = 'Tap again: your saved story will be lost';
+    });
     this.resumeButton.addEventListener('click', () => this.callbacks.onResume());
     this.mapButton.addEventListener('click', () => this.callbacks.onOpenMap());
     this.mapClose.addEventListener('click', () => this.callbacks.onCloseMap());
@@ -119,7 +151,10 @@ export class Overlays {
 
   // ------------------------------------------------------------------ start
 
-  showStart(): void {
+  /** With a save, the main button continues it and a second one starts over. */
+  showStart(hasSave: boolean): void {
+    this.startButton.textContent = hasSave ? 'Continue Story' : 'New Story';
+    this.newStoryButton.hidden = !hasSave;
     this.startScreen.hidden = false;
     this.startButton.focus();
   }
@@ -146,7 +181,7 @@ export class Overlays {
    * downloaded the first time the map is opened, so it never slows the initial
    * load.
    */
-  showMap(x: number, z: number, yaw: number): void {
+  showMap(x: number, z: number, yaw: number, objective: Vec2Tuple | null): void {
     if (!this.mapImage.src) {
       this.mapImage.src = resolveAssetUrl(IMAGE_ASSETS.campusMap.path);
       this.drawMapAdditions();
@@ -157,6 +192,11 @@ export class Overlays {
     this.mapMarker.style.left = `${(px / PLAN.widthPx) * 100}%`;
     this.mapMarker.style.top = `${(py / PLAN.heightPx) * 100}%`;
     this.mapMarker.style.transform = `rotate(${-yaw}rad)`;
+    this.mapObjective.hidden = objective === null;
+    if (objective) {
+      this.mapObjective.style.left = `${((objective[0] / PLAN.metresPerPx + PLAN.originPx[0]) / PLAN.widthPx) * 100}%`;
+      this.mapObjective.style.top = `${((objective[1] / PLAN.metresPerPx + PLAN.originPx[1]) / PLAN.heightPx) * 100}%`;
+    }
     this.mapScreen.hidden = false;
     this.mapClose.focus();
   }
@@ -206,10 +246,10 @@ export class Overlays {
 
   // ------------------------------------------------------------------- info
 
-  showInfo(interactable: Interactable): void {
-    this.infoEyebrow.textContent = interactable.eyebrow;
-    this.infoTitle.textContent = interactable.title;
-    renderTextBlock(this.infoBody, interactable.body, interactable.bullets);
+  showInfo(content: InfoContent): void {
+    this.infoEyebrow.textContent = content.eyebrow;
+    this.infoTitle.textContent = content.title;
+    renderTextBlock(this.infoBody, content.body, content.bullets);
     this.infoScreen.hidden = false;
     this.infoClose.focus();
   }

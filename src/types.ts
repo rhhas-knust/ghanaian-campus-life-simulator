@@ -51,7 +51,15 @@ export interface CampusBounds {
 
 // -------------------------------------------------------------- interaction
 
-/** Anything the player can walk up to and read. */
+/**
+ * What interacting does. Without an action, the panel is read like a sign.
+ * Story actions are resolved by the game, which owns the story state.
+ */
+export type InteractAction =
+  | { readonly kind: 'talk'; readonly who: string }
+  | { readonly kind: 'sleep' };
+
+/** Anything the player can walk up to and read, talk to or use. */
 export interface Interactable {
   readonly id: string;
   /** World-space focus point — where the prompt "aims". */
@@ -66,6 +74,7 @@ export interface Interactable {
   /** Paragraphs. Rendered with `textContent`, so plain text only. */
   readonly body: readonly string[];
   readonly bullets?: readonly string[];
+  readonly action?: InteractAction;
 }
 
 // ------------------------------------------------------------------- zones
@@ -121,4 +130,16 @@ export interface LookDelta {
   pitch: number;
 }
 
-export type GamePhase = 'loading' | 'ready' | 'playing' | 'paused' | 'reading';
+export type GamePhase =
+  | 'loading'
+  | 'ready'
+  /** The arrival cinematic. */
+  | 'cinematic'
+  /** Character creation. */
+  | 'creating'
+  | 'playing'
+  | 'paused'
+  /** A sign or story card is open. */
+  | 'reading'
+  | 'dialogue'
+  | 'phone';

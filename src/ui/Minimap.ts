@@ -24,6 +24,7 @@ import {
   planRect,
   type PlanRect,
 } from '../config/campusLayout';
+import type { Vec2Tuple } from '../types';
 
 /** Base-map resolution, in canvas pixels per world metre. */
 const PIXELS_PER_METRE = 3;
@@ -82,7 +83,7 @@ export class Minimap {
   }
 
   /** Redraws centred on the player. Cheap, and throttled unless `force`. */
-  update(x: number, z: number, yaw: number, force = false): void {
+  update(x: number, z: number, yaw: number, force = false, target: Vec2Tuple | null = null): void {
     const now = performance.now();
     if (!this.context || (!force && now - this.lastDraw < REDRAW_INTERVAL_MS)) {
       return;
@@ -99,9 +100,13 @@ export class Minimap {
     context.fillRect(0, 0, size, size);
     context.drawImage(this.base, sourceX, sourceY, sourceSize, sourceSize, 0, 0, size, size);
 
+    const scale = size / 132;
+    if (target) {
+      this.drawTarget(context, size, scale, (target[0] - x) * (size / VIEW_METRES), (target[1] - z) * (size / VIEW_METRES));
+    }
+
     // Heading arrow. Screen-up is north; yaw 0 faces north, positive yaw turns
     // west (anticlockwise on screen), hence the negative rotation.
-    const scale = size / 132;
     context.save();
     context.translate(size / 2, size / 2);
     context.rotate(-yaw);
@@ -113,6 +118,36 @@ export class Minimap {
     context.closePath();
     context.fillStyle = '#2f9a4f';
     context.strokeStyle = '#f6d55c';
+    context.lineWidth = 2 * scale;
+    context.fill();
+    context.stroke();
+    context.restore();
+  }
+
+  /**
+   * The objective marker: a gold diamond where it is, or pinned to the rim and
+   * pointing outwards when it is off the edge of the map.
+   */
+  private drawTarget(context: CanvasRenderingContext2D, size: number, scale: number, dx: number, dy: number): void {
+    const rim = size / 2 - 9 * scale;
+    const distance = Math.hypot(dx, dy);
+    const outside = distance > rim;
+    const px = size / 2 + (outside ? (dx / distance) * rim : dx);
+    const py = size / 2 + (outside ? (dy / distance) * rim : dy);
+    context.save();
+    context.translate(px, py);
+    if (outside) {
+      context.rotate(Math.atan2(dy, dx) + Math.PI / 4);
+    }
+    const radius = 6 * scale;
+    context.beginPath();
+    context.moveTo(0, -radius);
+    context.lineTo(radius, 0);
+    context.lineTo(0, radius);
+    context.lineTo(-radius, 0);
+    context.closePath();
+    context.fillStyle = '#f6c445';
+    context.strokeStyle = '#15191a';
     context.lineWidth = 2 * scale;
     context.fill();
     context.stroke();

@@ -1,0 +1,10 @@
+{
+  "id": "registry-clerk-idle",
+  "start": "queue",
+  "nodes": {
+    "queue": {
+      "speaker": "registry-clerk",
+      "text": "Registry closes at four. Come early — by noon the queue reaches the car park."
+    }
+  }
+}
