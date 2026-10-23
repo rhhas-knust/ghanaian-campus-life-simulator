@@ -263,6 +263,205 @@ check('position survives a quality change', Math.abs(afterQuality.x - beforeQual
   await waitForPhase(page, 'paused');
 }
 
+// ============================================================ interiors
+/** Presses the interact key on `id` and waits for the fade to land in `location`. */
+async function goThrough(target, id, location) {
+  const focus = await waitForFocus(target, id);
+  await target.keyboard.press('e');
+  const end = Date.now() + 10000;
+  while (Date.now() < end) {
+    const [loc, phase] = await target.evaluate(() => [window.__campusDebug.getLocation(), window.__campusDebug.getPhase()]);
+    if (loc === location && phase === 'playing') {
+      return true;
+    }
+    await target.waitForTimeout(120);
+  }
+  console.log(`  (goThrough ${id}: focus was ${focus})`);
+  return false;
+}
+
+/** Talks to whoever is in focus, picking replies in order; Space for lines without replies. */
+async function converse(target, picks) {
+  await waitForPhase(target, 'dialogue');
+  let pick = 0;
+  for (let line = 0; line < 20 && (await target.evaluate(() => window.__campusDebug.getPhase())) === 'dialogue'; line += 1) {
+    if ((await target.locator('.dialogue-choice').count()) > 0) {
+      await target.keyboard.press(picks[pick] ?? '1');
+      pick += 1;
+    } else {
+      await target.keyboard.press('Space');
+    }
+    await target.waitForTimeout(450);
+  }
+}
+
+{
+  await page.keyboard.press('Escape');
+  await waitForPhase(page, 'playing');
+  // Jump to the end of M01 without replaying it: the conversations above
+  // already prove dialogue works.
+  await debug(() =>
+    window.__campusDebug.setFlags(['seen:sign:courtyard-finger-post', 'has_student_id', 'met_nii', 'met:nii', 'joined_group_chat', 'read_group_chat']),
+  );
+  check('M01 ends with "go up to A-214"', /A-214/.test((await debug(() => window.__campusDebug.getStory())).objective));
+
+  const [sx, sz] = plan(1312, 262);
+  await debug(({ x, z }) => window.__campusDebug.teleport(x, z, 0), { x: sx, z: sz });
+  check('E at the Block A stairs goes inside', await goThrough(page, 'entrance:hostel-a', 'hostel-a-2f'));
+  const inside = await debug(() => window.__campusDebug.getStats());
+  check('the interior is built and batched', inside.interiorBatches > 8 && inside.interiorBatches < 40, JSON.stringify(inside));
+  check('location pill names the floor', /Block A/i.test((await page.textContent('#location-label')) ?? ''));
+  check('minimap switches to the floor plan', await page.evaluate(() => document.getElementById('hud').classList.contains('is-indoors')));
+
+  // Walk north into the corridor wall (face at z = -1.15).
+  await debug(() => window.__campusDebug.teleport(0, 0, 0));
+  await page.keyboard.down('w');
+  await page.waitForTimeout(3000);
+  await page.keyboard.up('w');
+  const stopped = await debug(() => window.__campusDebug.getPlayer());
+  check('corridor walls stop the player', stopped.z > -0.85 && stopped.z < -0.3, `z ${stopped.z.toFixed(2)}`);
+
+  // Through the doorway into A-214.
+  await debug(() => window.__campusDebug.teleport(9, 0, 180));
+  await page.keyboard.down('w');
+  await page.waitForTimeout(3500);
+  await page.keyboard.up('w');
+  check('the A-214 doorway is walkable', (await page.textContent('#location-label')) === 'Room A-214');
+
+  await debug(() => window.__campusDebug.teleport(10.4, 4.6, -90));
+  check('the bed offers sleep', (await waitForFocus(page, 'place:bed-a214')) === 'place:bed-a214');
+  await page.keyboard.press('e');
+  check('sleeping shows the day-one night card', (await waitForPhase(page, 'reading')) && /A-214/.test((await page.textContent('#info-title')) ?? ''));
+  await page.click('#info-close');
+  await waitForPhase(page, 'playing');
+  let story = await debug(() => window.__campusDebug.getStory());
+  check('M01 completes and M02 starts on day 2', story.missionId === 'm02' && story.day === 2, `${story.missionId}, day ${story.day}`);
+  check('the player wakes inside A-214', (await debug(() => window.__campusDebug.getLocation())) === 'hostel-a-2f');
+  let saved = await page.evaluate(() => JSON.parse(localStorage.getItem('gcls.story.v1') ?? 'null'));
+  check('the save records the interior', saved?.position?.location === 'hostel-a-2f');
+
+  await debug(() => window.__campusDebug.teleport(-14, -1.8, 0));
+  check('the stairs lead back out to the court', await goThrough(page, 'exit:hostel-a-2f:hostel-a', 'campus'));
+  // A second round trip must not leave geometry behind. (Measured after the
+  // first trip, because anything drawn for the first time — the beacon, a
+  // character — uploads its geometry once and keeps it.)
+  const memoryBefore = (await debug(() => window.__campusDebug.getStats())).geometries;
+  await debug(({ x, z }) => window.__campusDebug.teleport(x, z, 0), { x: sx, z: sz });
+  await goThrough(page, 'entrance:hostel-a', 'hostel-a-2f');
+  await debug(() => window.__campusDebug.teleport(-14, -1.8, 0));
+  await goThrough(page, 'exit:hostel-a-2f:hostel-a', 'campus');
+  const memoryAfter = (await debug(() => window.__campusDebug.getStats())).geometries;
+  check('going in and out frees the interior', memoryAfter <= memoryBefore, `${memoryBefore} -> ${memoryAfter} geometries`);
+
+  // ------------------------------------------------------------ M02
+  await page.keyboard.press('Tab');
+  await waitForPhase(page, 'phone');
+  await page.click('.phone-thread.is-unread');
+  await page.keyboard.press('Tab');
+  await waitForPhase(page, 'playing');
+  story = await debug(() => window.__campusDebug.getStory());
+  check("M02: reading Uncle Bright's message sends you to the gate", story.step === 2, story.objective);
+
+  const [kx, kz] = plan(1046, 1030);
+  await debug(({ x, z }) => window.__campusDebug.teleport(x, z, 180), { x: kx, z: kz - 2.2 });
+  check('M02: Kojo waits outside the gate', (await waitForFocus(page, 'npc:kojo')) === 'npc:kojo');
+  await page.keyboard.press('e');
+  await converse(page, ['1', '1']);
+  story = await debug(() => window.__campusDebug.getStory());
+  check('M02: the first meeting moves Kojo\'s trust', story.flags.includes('m02_met_kojo') && story.relationships.kojo === -5, `kojo ${story.relationships.kojo}`);
+
+  // The room search and Nii's tip are covered by the manual pass; jump to the lodge.
+  await debug(() => window.__campusDebug.setFlags(['found_charger', 'knows_lost_property']));
+  const [lx, lz] = plan(954, 958);
+  await debug(({ x, z }) => window.__campusDebug.teleport(x, z, 90), { x: lx, z: lz });
+  check("M02: the Porter's Lodge can be entered", await goThrough(page, 'entrance:porters-lodge', 'porters-lodge'));
+  await debug(() => window.__campusDebug.teleport(0.2, 0, 90));
+  check('M02: Uncle Bright is behind his counter', (await waitForFocus(page, 'npc:uncle-bright')) === 'npc:uncle-bright');
+  await page.keyboard.press('e');
+  await converse(page, ['1']);
+  await debug(() => window.__campusDebug.teleport(1.2, 0.8, 180));
+  await waitForFocus(page, 'place:lost-property');
+  await page.keyboard.press('e');
+  await waitForPhase(page, 'reading');
+  check('M02: the cabinet holds Kojo\'s phone', /Kojo/.test((await page.textContent('#info-title')) ?? ''));
+  await page.click('#info-close');
+  await waitForPhase(page, 'playing');
+
+  // Reload while standing inside the lodge, halfway through M02.
+  const beforeReload = await debug(() => window.__campusDebug.getPlayer());
+  await page.keyboard.press('Escape');
+  await waitForPhase(page, 'paused');
+  await page.reload({ waitUntil: 'load' });
+  await page.waitForSelector('#start-screen:not([hidden])', { timeout: 90000 });
+  await page.click('#start-button');
+  await waitForPhase(page, 'playing');
+  const afterReload = await debug(() => window.__campusDebug.getPlayer());
+  story = await debug(() => window.__campusDebug.getStory());
+  check(
+    'reloading mid-M02 puts you back inside the lodge, on the same step',
+    (await debug(() => window.__campusDebug.getLocation())) === 'porters-lodge' &&
+      Math.hypot(afterReload.x - beforeReload.x, afterReload.z - beforeReload.z) < 0.3 &&
+      story.flags.includes('has_kojo_handset'),
+    `step ${story.step}`,
+  );
+
+  await debug(() => window.__campusDebug.teleport(2.2, 0, -90));
+  await goThrough(page, 'exit:porters-lodge:porters-lodge', 'campus');
+  await debug(({ x, z }) => window.__campusDebug.teleport(x, z, 180), { x: kx, z: kz - 2.2 });
+  await waitForFocus(page, 'npc:kojo');
+  await page.keyboard.press('e');
+  await converse(page, ['1']);
+  check('M02: returning the phone shows the completion card', (await waitForPhase(page, 'reading')) && /complete/i.test((await page.textContent('#info-eyebrow')) ?? ''));
+  await page.click('#info-close');
+  await waitForPhase(page, 'playing');
+  story = await debug(() => window.__campusDebug.getStory());
+  check('M02 completes into free roam', story.missionId === null && story.flags.includes('m02_complete'), story.objective);
+  check('trust earned along the way: Kojo shares his number', story.flags.includes('kojo_number') && story.relationships.kojo >= 10, `kojo ${story.relationships.kojo}`);
+  check('Kojo has gone home', (await waitForFocus(page, 'npc:kojo', 1200)) !== 'npc:kojo');
+
+  await page.keyboard.press('Escape');
+  await waitForPhase(page, 'paused');
+}
+
+// A save written by the previous release (no `location`, M01 done, no M02 yet)
+// must continue straight into M02.
+{
+  const legacy = await browser.newContext({ viewport: { width: 960, height: 540 } });
+  await legacy.addInitScript(() => {
+    if (!sessionStorage.getItem('seeded')) {
+      localStorage.setItem(
+        'gcls.story.v1',
+        JSON.stringify({
+          version: 1,
+          profile: { name: 'Ama', address: 'she', programme: 'architecture', home: 'volta' },
+          flags: ['signed_in', 'has_student_id', 'met_nii', 'joined_group_chat', 'read_group_chat', 'slept_day_1', 'm01_complete'],
+          relationships: { 'uncle-bright': 15, 'registry-clerk': 5, nii: 35, narh: 0 },
+          reputation: { integrity: 50, popularity: 10, academic: 52 },
+          day: 2,
+          minutes: 450,
+          missionId: null,
+          position: { x: 46.8, z: -30.9, yawDegrees: 180 },
+        }),
+      );
+      sessionStorage.setItem('seeded', '1');
+    }
+  });
+  const lpage = await legacy.newPage();
+  const legacyErrors = [];
+  lpage.on('pageerror', (e) => legacyErrors.push(e.message));
+  await lpage.goto(BASE + '?debug=1', { waitUntil: 'load' });
+  await lpage.waitForSelector('#start-screen:not([hidden])', { timeout: 90000 });
+  await lpage.click('#start-button');
+  await waitForPhase(lpage, 'playing');
+  const story = await lpage.evaluate(() => window.__campusDebug.getStory());
+  check(
+    'a save from the previous release continues into M02',
+    story?.missionId === 'm02' && story.name === 'Ama' && (await lpage.evaluate(() => window.__campusDebug.getLocation())) === 'campus' && legacyErrors.length === 0,
+    `${story?.missionId}: ${story?.objective}`,
+  );
+  await legacy.close();
+}
+
 // ================================================================ touch
 const mobile = await browser.newContext({ viewport: { width: 800, height: 360 }, deviceScaleFactor: 2.6, isMobile: true, hasTouch: true });
 const mpage = await mobile.newPage();
@@ -319,6 +518,31 @@ check('touch: deliberate vertical drag still looks up', m3.pitch - m2.pitch > 0.
 await mpage.click('#camera-button');
 await mpage.waitForTimeout(300);
 check('touch: camera button switches to third person', (await mpage.evaluate(() => window.__campusDebug.getCamera().mode)) === 'third');
+
+// Into Block A with the on-screen INTERACT button.
+{
+  await mpage.evaluate(() =>
+    window.__campusDebug.setFlags(['signed_in', 'has_student_id', 'met_nii', 'joined_group_chat', 'read_group_chat']),
+  );
+  const [sx, sz] = plan(1312, 262);
+  await mpage.evaluate(({ x, z }) => window.__campusDebug.teleport(x, z, 0), { x: sx, z: sz });
+  await waitForFocus(mpage, 'entrance:hostel-a');
+  await mpage.tap('#touch-interact');
+  const end = Date.now() + 10000;
+  let location = '';
+  while (Date.now() < end && location !== 'hostel-a-2f') {
+    location = await mpage.evaluate(() => window.__campusDebug.getLocation());
+    await mpage.waitForTimeout(150);
+  }
+  check('touch: INTERACT takes you into Block A', location === 'hostel-a-2f');
+  await waitForPhase(mpage, 'playing');
+  const before = await mpage.evaluate(() => window.__campusDebug.getPlayer());
+  await pointer('#touch-joystick', 4, [['pointerdown', 0, 0], ['pointermove', 0, -60]]);
+  await mpage.waitForTimeout(1500);
+  await pointer('#touch-joystick', 4, [['pointerup', 0, -60]]);
+  const after = await mpage.evaluate(() => window.__campusDebug.getPlayer());
+  check('touch: the joystick walks you down the corridor', Math.hypot(after.x - before.x, after.z - before.z) > 0.8, `${before.x.toFixed(2)} -> ${after.x.toFixed(2)}`);
+}
 
 check('no console errors (desktop)', desktopErrors.length === 0, desktopErrors.join(' | ').slice(0, 400));
 check('no console errors (mobile)', mobileErrors.length === 0, mobileErrors.join(' | ').slice(0, 400));
