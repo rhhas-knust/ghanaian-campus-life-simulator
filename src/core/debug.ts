@@ -20,9 +20,27 @@ export interface CampusDebugApi {
   /** Camera mode and world position — for checking third-person framing. */
   getCamera(): { mode: string; x: number; y: number; z: number };
   /** Geometry batching statistics from world generation. */
-  getStats(): BatchStats & { colliders: number; interactables: number };
+  /**
+   * Campus batching statistics, the active collision and interaction sets,
+   * the current interior's batch count, and live GPU geometries and textures
+   * — which must not grow as the player goes in and out of buildings.
+   */
+  getStats(): BatchStats & {
+    colliders: number;
+    interactables: number;
+    interiorBatches: number;
+    geometries: number;
+    textures: number;
+  };
   /** Current state machine phase. */
   getPhase(): string;
+  /** `campus`, or the id of the interior the player is in. */
+  getLocation(): string;
+  /**
+   * Sets story flags as if they had been earned, then saves. For tests and
+   * for checking a mid-story scene without replaying the story to reach it.
+   */
+  setFlags(flags: string[]): void;
   /** The story so far, or `null` before character creation. */
   getStory(): {
     name: string;

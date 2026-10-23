@@ -1,0 +1,116 @@
+{
+  "id": "m02-kojo-return",
+  "start": "open",
+  "nodes": {
+    "open": {
+      "branch": [{ "if": { "flag": "phone_opened" }, "next": "switched-on" }],
+      "next": "sealed",
+      "effects": [{ "type": "flag", "flag": "returned_kojo_phone" }]
+    },
+    "sealed": {
+      "speaker": "kojo",
+      "text": "That's it. That's my phone. Dead as a stone — and still mine.",
+      "effects": [{ "type": "relationship", "who": "kojo", "delta": 15 }],
+      "next": "bright"
+    },
+    "switched-on": {
+      "speaker": "kojo",
+      "text": "That's it… but it's been charged. Somebody switched it on.",
+      "effects": [{ "type": "relationship", "who": "kojo", "delta": 5 }],
+      "choices": [
+        {
+          "text": "Nii charged it, to check it still worked.",
+          "next": "honest",
+          "effects": [{ "type": "relationship", "who": "kojo", "delta": 5 }]
+        },
+        {
+          "text": "It was like that when I found it.",
+          "next": "fib",
+          "effects": [{ "type": "reputation", "axis": "integrity", "delta": -5 }]
+        }
+      ]
+    },
+    "honest": {
+      "speaker": "kojo",
+      "text": "Nii. I don't know him. …Next time, ask me first.",
+      "next": "bright"
+    },
+    "fib": {
+      "speaker": "kojo",
+      "text": "…Okay.",
+      "next": "bright"
+    },
+    "bright": {
+      "branch": [{ "if": { "flag": "lied_to_bright" }, "next": "bright-called" }],
+      "next": "tag"
+    },
+    "bright-called": {
+      "speaker": "kojo",
+      "text": "Uncle Bright called me. He says you told him the phone was yours.",
+      "effects": [{ "type": "relationship", "who": "kojo", "delta": -5 }],
+      "choices": [
+        { "text": "He wasn't going to hand it over otherwise.", "next": "tag" },
+        {
+          "text": "Sorry. That was stupid of me.",
+          "next": "sorry",
+          "effects": [{ "type": "relationship", "who": "kojo", "delta": 3 }]
+        }
+      ]
+    },
+    "sorry": {
+      "speaker": "kojo",
+      "text": "At least you say so.",
+      "next": "tag"
+    },
+    "tag": {
+      "speaker": "kojo",
+      "text": "\"Received from Registry, Administration Block.\" So that's where it went. Two years, and nobody called me.",
+      "choices": [
+        {
+          "text": "If there's anything else of yours in that room, I'll keep it safe.",
+          "next": "offer",
+          "effects": [
+            { "type": "relationship", "who": "kojo", "delta": 10 },
+            { "type": "flag", "flag": "kojo_offer" }
+          ]
+        },
+        {
+          "text": "Kojo — why did you really leave UCIS?",
+          "next": "why",
+          "effects": [
+            { "type": "relationship", "who": "kojo", "delta": -5 },
+            { "type": "flag", "flag": "asked_why_kojo_left" }
+          ]
+        },
+        {
+          "text": "Glad I could help. Take care.",
+          "next": "end",
+          "effects": [{ "type": "relationship", "who": "kojo", "delta": 5 }]
+        }
+      ]
+    },
+    "offer": {
+      "speaker": "kojo",
+      "text": "Anything else… If you ever find anything of mine — anything — don't take it to Admin. Not to anybody. Keep it, and tell me.",
+      "next": "end"
+    },
+    "why": {
+      "speaker": "kojo",
+      "text": "Not today. Maybe not ever.",
+      "next": "end"
+    },
+    "end": {
+      "branch": [{ "if": { "atLeast": { "who": "kojo", "value": 10 } }, "next": "number" }],
+      "next": "bye"
+    },
+    "number": {
+      "speaker": "kojo",
+      "text": "Here — take my number. In case. Thank you, {name}. Really.",
+      "effects": [{ "type": "flag", "flag": "kojo_number" }]
+    },
+    "bye": {
+      "speaker": "kojo",
+      "text": "Thank you. I'll… see you around."
+    }
+  }
+}

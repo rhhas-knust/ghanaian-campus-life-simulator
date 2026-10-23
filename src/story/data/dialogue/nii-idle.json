@@ -1,7 +1,22 @@
 {
   "id": "nii-idle",
-  "start": "rest",
+  "start": "fork",
   "nodes": {
+    "fork": {
+      "branch": [
+        { "if": { "flag": "m02_complete" }, "next": "done" },
+        { "if": { "flag": "m01_complete" }, "next": "day" }
+      ],
+      "next": "rest"
+    },
+    "done": {
+      "speaker": "nii",
+      "text": "So the phone guy got his phone? You're a good person, {name}. Strange, but good."
+    },
+    "day": {
+      "speaker": "nii",
+      "text": "Morning! The water came and went at six. You'll learn."
+    },
     "rest": {
       "speaker": "nii",
       "text": "Go and rest small, {name}. Tomorrow, lectures start for real."

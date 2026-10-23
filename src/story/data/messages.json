@@ -5,7 +5,10 @@
       "title": "UCIS Admissions",
       "unlockedBy": null,
       "messages": [
-        { "from": "UCIS Admissions", "text": "Congratulations! You have been admitted to UCIS University. Report to the Porter's Lodge at the main gate on arrival." }
+        {
+          "from": "UCIS Admissions",
+          "text": "Congratulations! You have been admitted to UCIS University. Report to the Porter's Lodge at the main gate on arrival."
+        }
       ]
     },
     {
@@ -13,8 +16,14 @@
       "title": "Mum ❤️",
       "unlockedBy": "signed_in",
       "messages": [
-        { "from": "Mum", "text": "Have you reached safely? Call me when you settle." },
-        { "from": "Mum", "text": "And eat something proper. Not only indomie. 🙏🏾" }
+        {
+          "from": "Mum",
+          "text": "Have you reached safely? Call me when you settle."
+        },
+        {
+          "from": "Mum",
+          "text": "And eat something proper. Not only indomie. 🙏🏾"
+        }
       ]
     },
     {
@@ -23,11 +32,61 @@
       "unlockedBy": "joined_group_chat",
       "readFlag": "read_group_chat",
       "messages": [
-        { "from": "Nii (A-214)", "text": "Everybody welcome {name}, our new A-214 👋🏾" },
-        { "from": "Kwesi (A-108)", "text": "Akwaaba!! 🎉" },
-        { "from": "Efua (A-301)", "text": "Water is coming at 5am. Fill your buckets tonight 🪣" },
-        { "from": "Block Rep", "text": "Hall meeting Friday 7pm. Attendance is compulsory (it isn't)." },
-        { "from": "Nii (A-214)", "text": "Also: Past Questions 🔥 group is open for freshers. DM me 😉" }
+        {
+          "from": "Nii (A-214)",
+          "text": "Everybody welcome {name}, our new A-214 👋🏾"
+        },
+        {
+          "from": "Kwesi (A-108)",
+          "text": "Akwaaba!! 🎉"
+        },
+        {
+          "from": "Efua (A-301)",
+          "text": "Water is coming at 5am. Fill your buckets tonight 🪣"
+        },
+        {
+          "from": "Block Rep",
+          "text": "Hall meeting Friday 7pm. Attendance is compulsory (it isn't)."
+        },
+        {
+          "from": "Nii (A-214)",
+          "text": "Also: Past Questions 🔥 group is open for freshers. DM me 😉"
+        }
+      ]
+    },
+    {
+      "id": "porters-lodge",
+      "title": "Porter's Lodge",
+      "unlockedBy": "m01_complete",
+      "readFlag": "read_bright_message",
+      "messages": [
+        {
+          "from": "Uncle Bright (Porter's Lodge)",
+          "text": "Good morning {name}. A young man is at the main gate asking for whoever is in A-214. He says he left a phone behind. Come when you are free."
+        },
+        {
+          "from": "Uncle Bright (Porter's Lodge)",
+          "text": "He is waiting outside. He cannot come in."
+        }
+      ]
+    },
+    {
+      "id": "kojo",
+      "title": "Kojo",
+      "unlockedBy": "kojo_number",
+      "messages": [
+        {
+          "from": "Kojo",
+          "text": "It's me. Thank you for today, {name}."
+        },
+        {
+          "from": "Kojo",
+          "text": "The photos are still on it. My grandmother's last birthday. 🙏🏾"
+        },
+        {
+          "from": "Kojo",
+          "text": "Remember what I said. Anything of mine in that room — not Admin. Not anybody."
+        }
       ]
     }
   ]

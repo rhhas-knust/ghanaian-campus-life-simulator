@@ -31,13 +31,23 @@ interface PreparedCollider {
 }
 
 export class CollisionSystem {
-  private readonly prepared: PreparedCollider[];
+  private prepared: PreparedCollider[];
 
   constructor(
     colliders: readonly Collider[],
-    private readonly bounds: CampusBounds,
+    private bounds: CampusBounds,
   ) {
     this.prepared = colliders.map((collider) => prepare(collider));
+  }
+
+  /**
+   * Swaps in a different world — the campus, or an interior — without
+   * replacing the system. The player controller and camera rig keep their
+   * reference to this object, so they follow the player indoors for free.
+   */
+  replace(colliders: readonly Collider[], bounds: CampusBounds): void {
+    this.prepared = colliders.map((collider) => prepare(collider));
+    this.bounds = bounds;
   }
 
   get colliderCount(): number {

@@ -6,17 +6,22 @@
  * the objective is and tells the UI.
  */
 
-import { planPoint } from '../config/campusLayout';
-import type { Vec2Tuple } from '../types';
-import { findMission, type MissionDef } from './data/missions';
+import { locationPoint, type LocationId } from '../config/interiors';
+import { MISSIONS, findMission, type MissionDef } from './data/missions';
 import type { StoryState } from './StoryState';
+
+export interface ObjectiveTarget {
+  readonly location: LocationId;
+  /** Metres, in that location's space. */
+  readonly x: number;
+  readonly z: number;
+}
 
 export interface Objective {
   /** `M01 · Akwaaba`, or `Free roam`. */
   readonly heading: string;
   readonly text: string;
-  /** World metres, or `null` when there is nowhere in particular to go. */
-  readonly target: Vec2Tuple | null;
+  readonly target: ObjectiveTarget | null;
   /** 1-based step number and step count, for the phone's checklist. */
   readonly step: number;
   readonly stepCount: number;
@@ -24,14 +29,16 @@ export interface Objective {
 
 export const FREE_ROAM: Objective = {
   heading: 'Free roam',
-  text: 'Explore UCIS University. The next mission is still being written.',
+  text: 'Explore UCIS University. Mission 3 is still being written — sleep in A-214 to end the day.',
   target: null,
   step: 0,
   stepCount: 0,
 };
 
 export class StoryDirector {
-  constructor(private readonly state: StoryState) {}
+  constructor(private readonly state: StoryState) {
+    this.resume();
+  }
 
   get mission(): MissionDef | undefined {
     return findMission(this.state.missionId);
@@ -67,12 +74,38 @@ export class StoryDirector {
     if (!step) {
       return FREE_ROAM;
     }
+    let target: ObjectiveTarget | null = null;
+    if (step.target) {
+      const [x, z] = locationPoint(step.target.location, step.target.at);
+      target = { location: step.target.location ?? 'campus', x, z };
+    }
     return {
       heading: `${mission.code} · ${mission.title}`,
       text: step.objective,
-      target: step.target ? planPoint(step.target) : null,
+      target,
       step: index + 1,
       stepCount: mission.steps.length,
     };
+  }
+
+  /**
+   * Picks up a mission that was added after the save was made. A player who
+   * finished M01 before M02 existed has `missionId: null`; walking the chain
+   * finds the first mission whose predecessor is complete and starts it.
+   */
+  private resume(): void {
+    if (this.state.missionId !== null) {
+      return;
+    }
+    for (const mission of MISSIONS) {
+      if (this.state.hasFlag(`${mission.id}_complete`)) {
+        continue;
+      }
+      const previous = MISSIONS.find((candidate) => candidate.next === mission.id);
+      if (previous && this.state.hasFlag(`${previous.id}_complete`)) {
+        this.state.missionId = mission.id;
+      }
+      return;
+    }
   }
 }

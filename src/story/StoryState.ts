@@ -8,6 +8,7 @@
  * than crashing the game.
  */
 
+import { isInteriorId, type LocationId } from '../config/interiors';
 import { STORY_SETTINGS } from '../config/settings';
 import { CAST } from './data/cast';
 import {
@@ -24,6 +25,13 @@ import {
 export const SAVE_VERSION = 1;
 
 export interface SavedPosition {
+  /**
+   * Where the player is: the campus, or an interior. Saves written before
+   * interiors existed have no `location`, and load as the campus — which is
+   * where those players were.
+   */
+  readonly location: LocationId;
+  /** Metres: campus world space, or the interior's local space. */
   readonly x: number;
   readonly z: number;
   readonly yawDegrees: number;
@@ -109,6 +117,9 @@ export class StoryState {
       return false;
     }
     if (condition.programme !== undefined && condition.programme !== this.profile.programme) {
+      return false;
+    }
+    if (condition.atLeast !== undefined && this.relationship(condition.atLeast.who) < condition.atLeast.value) {
       return false;
     }
     return true;
@@ -225,7 +236,15 @@ export class StoryState {
     }
     const position = raw.position;
     if (isRecord(position) && isFiniteNumber(position.x) && isFiniteNumber(position.z) && isFiniteNumber(position.yawDegrees)) {
-      state.position = { x: position.x, z: position.z, yawDegrees: position.yawDegrees };
+      const location = position.location;
+      if (location === undefined || location === 'campus') {
+        state.position = { location: 'campus', x: position.x, z: position.z, yawDegrees: position.yawDegrees };
+      } else if (isInteriorId(location)) {
+        state.position = { location, x: position.x, z: position.z, yawDegrees: position.yawDegrees };
+      }
+      // An interior this build does not know (a save from a newer build):
+      // leave the position unset, so the player starts at the gate rather
+      // than inside a wall.
     }
     return state;
   }

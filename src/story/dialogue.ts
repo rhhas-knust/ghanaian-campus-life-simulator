@@ -6,7 +6,9 @@
  * or neither (the conversation ends). Nodes and choices can carry `effects`
  * (set a flag, change a relationship or reputation) and choices can carry an
  * `if` condition, so a line can exist only for one programme or after one
- * event.
+ * event. A node with `branch` instead of a line is a silent fork: the first
+ * branch whose `if` holds is taken, otherwise `next` — which is how a
+ * conversation reacts to what the player did earlier.
  *
  * The JSON is validated when the game starts. A typo in a dialogue file is
  * reported with the file and node name, instead of surfacing as a silent dead
@@ -34,12 +36,14 @@ export interface DialogueChoice {
 }
 
 export interface DialogueNode {
-  /** A cast id, `player` or `narrator`. */
+  /** A cast id, `player` or `narrator`. Empty for a branch node. */
   readonly speaker: string;
   readonly text: string;
   readonly next: string | null;
   readonly choices: readonly DialogueChoice[];
   readonly effects: readonly Effect[];
+  /** Silent forks, tried in order before falling through to `next`. */
+  readonly branch: readonly { readonly if: Condition; readonly next: string }[];
 }
 
 export interface DialogueTree {
@@ -75,6 +79,25 @@ export function parseDialogue(raw: unknown, source: string): DialogueTree {
 
   const nodes: Record<string, DialogueNode> = {};
   for (const [nodeId, rawNode] of Object.entries(raw.nodes)) {
+    if (isRecord(rawNode) && rawNode.branch !== undefined) {
+      if (!Array.isArray(rawNode.branch) || rawNode.branch.length === 0) {
+        return fail(`node "${nodeId}" needs a non-empty "branch" list`);
+      }
+      nodes[nodeId] = {
+        speaker: '',
+        text: '',
+        next: optionalString(rawNode.next, fail, nodeId),
+        choices: [],
+        effects: parseEffects(rawNode.effects, fail, nodeId),
+        branch: rawNode.branch.map((entry) => {
+          if (!isRecord(entry) || typeof entry.next !== 'string') {
+            return fail(`a branch in node "${nodeId}" needs "if" and "next"`);
+          }
+          return { if: parseCondition(entry.if, fail, nodeId), next: entry.next };
+        }),
+      };
+      continue;
+    }
     if (!isRecord(rawNode) || typeof rawNode.speaker !== 'string' || typeof rawNode.text !== 'string') {
       return fail(`node "${nodeId}" needs "speaker" and "text"`);
     }
@@ -103,6 +126,7 @@ export function parseDialogue(raw: unknown, source: string): DialogueTree {
       next: optionalString(rawNode.next, fail, nodeId),
       choices,
       effects: parseEffects(rawNode.effects, fail, nodeId),
+      branch: [],
     };
   }
 
@@ -112,7 +136,11 @@ export function parseDialogue(raw: unknown, source: string): DialogueTree {
     fail(`start node "${raw.start}" does not exist`);
   }
   for (const [nodeId, node] of Object.entries(nodes)) {
-    if (!exists(node.next) || node.choices.some((choice) => !exists(choice.next))) {
+    if (
+      !exists(node.next) ||
+      node.choices.some((choice) => !exists(choice.next)) ||
+      node.branch.some((entry) => !exists(entry.next))
+    ) {
       fail(`node "${nodeId}" links to a node that does not exist`);
     }
     if (node.choices.length > 0 && node.choices.every((choice) => choice.if !== undefined)) {
@@ -129,10 +157,17 @@ function parseCondition(raw: unknown, fail: (message: string) => never, nodeId: 
   if (raw.programme !== undefined && !isProgrammeId(raw.programme)) {
     return fail(`unknown programme in node "${nodeId}"`);
   }
+  const atLeast = raw.atLeast;
+  if (atLeast !== undefined && (!isRecord(atLeast) || typeof atLeast.who !== 'string' || typeof atLeast.value !== 'number')) {
+    return fail(`"atLeast" in node "${nodeId}" needs "who" and "value"`);
+  }
   return {
     ...(typeof raw.flag === 'string' ? { flag: raw.flag } : {}),
     ...(typeof raw.notFlag === 'string' ? { notFlag: raw.notFlag } : {}),
     ...(isProgrammeId(raw.programme) ? { programme: raw.programme } : {}),
+    ...(isRecord(atLeast) && typeof atLeast.who === 'string' && typeof atLeast.value === 'number'
+      ? { atLeast: { who: atLeast.who, value: atLeast.value } }
+      : {}),
   };
 }
 
@@ -248,10 +283,20 @@ export class DialogueRunner {
   }
 
   private enter(nodeId: string | null): void {
-    this.node = nodeId === null ? null : (this.tree.nodes[nodeId] ?? null);
-    for (const effect of this.node?.effects ?? []) {
-      this.state.apply(effect);
+    let next = nodeId;
+    // Follow silent forks until a line is reached. The guard stops a data
+    // mistake (two branches pointing at each other) from hanging the game.
+    for (let hops = 0; hops < 32; hops += 1) {
+      this.node = next === null ? null : (this.tree.nodes[next] ?? null);
+      for (const effect of this.node?.effects ?? []) {
+        this.state.apply(effect);
+      }
+      if (!this.node || this.node.branch.length === 0) {
+        return;
+      }
+      next = this.node.branch.find((entry) => this.state.meets(entry.if))?.next ?? this.node.next;
     }
+    this.node = null;
   }
 }
 

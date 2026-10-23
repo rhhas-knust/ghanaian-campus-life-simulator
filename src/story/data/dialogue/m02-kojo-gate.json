@@ -1,0 +1,77 @@
+{
+  "id": "m02-kojo-gate",
+  "start": "hello",
+  "nodes": {
+    "hello": {
+      "speaker": "kojo",
+      "text": "You're the new A-214? Uncle Bright said you might come. I'm Kojo. That was my room — before.",
+      "choices": [
+        {
+          "text": "Nice to meet you, Kojo. How can I help?",
+          "next": "straight",
+          "effects": [{ "type": "relationship", "who": "kojo", "delta": 10 }]
+        },
+        { "text": "Why are you waiting out here? Come in.", "next": "gate" },
+        {
+          "text": "How do I know you are who you say you are?",
+          "next": "careful",
+          "effects": [{ "type": "relationship", "who": "kojo", "delta": 5 }]
+        }
+      ]
+    },
+    "straight": {
+      "speaker": "kojo",
+      "text": "Straight to it. Good.",
+      "next": "story"
+    },
+    "gate": {
+      "speaker": "kojo",
+      "text": "I'm not a student here any more. Long story. This gate is as far as I go now.",
+      "next": "story"
+    },
+    "careful": {
+      "speaker": "kojo",
+      "text": "Good. Don't trust everybody on this campus. Ask Uncle Bright — he knows my face.",
+      "next": "story"
+    },
+    "story": {
+      "speaker": "kojo",
+      "text": "When I left, they packed up my things and sent them to my family. Everything came back except my phone. Black Tecno, cracked in one corner, a Black Stars sticker on the back.",
+      "next": "why"
+    },
+    "why": {
+      "speaker": "kojo",
+      "text": "It's old. Probably useless. But there are photos on it I can't get anywhere else.",
+      "choices": [
+        {
+          "text": "I'll look for it.",
+          "next": "thanks",
+          "effects": [{ "type": "relationship", "who": "kojo", "delta": 5 }]
+        },
+        {
+          "text": "What's in it for me?",
+          "next": "nothing",
+          "effects": [{ "type": "relationship", "who": "kojo", "delta": -10 }]
+        }
+      ]
+    },
+    "thanks": {
+      "speaker": "kojo",
+      "text": "Thank you. Start with the room. I was always losing things in that wardrobe.",
+      "next": "wait"
+    },
+    "nothing": {
+      "speaker": "kojo",
+      "text": "Nothing. I've got nothing to give you. …I'm asking anyway. Start with the wardrobe, if you bother.",
+      "next": "wait"
+    },
+    "wait": {
+      "speaker": "kojo",
+      "text": "I'll be around here. Take your time — I'm used to waiting at this gate.",
+      "effects": [
+        { "type": "flag", "flag": "m02_met_kojo" },
+        { "type": "flag", "flag": "met:kojo" }
+      ]
+    }
+  }
+}

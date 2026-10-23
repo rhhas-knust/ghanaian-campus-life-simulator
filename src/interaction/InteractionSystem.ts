@@ -25,7 +25,12 @@ const MIN_FACING_DOT = 0.25;
 export class InteractionSystem {
   private readonly toTarget = new Vector3();
 
-  constructor(private readonly interactables: readonly Interactable[]) {}
+  constructor(private interactables: readonly Interactable[]) {}
+
+  /** Swaps the set of things in reach — on entering a building, or when the story moves someone. */
+  replace(interactables: readonly Interactable[]): void {
+    this.interactables = interactables;
+  }
 
   get count(): number {
     return this.interactables.length;

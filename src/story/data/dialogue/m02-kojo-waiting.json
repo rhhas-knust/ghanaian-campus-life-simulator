@@ -1,0 +1,25 @@
+{
+  "id": "m02-kojo-waiting",
+  "start": "fork",
+  "nodes": {
+    "fork": {
+      "branch": [
+        { "if": { "flag": "knows_lost_property" }, "next": "lodge" },
+        { "if": { "flag": "found_charger" }, "next": "charger" }
+      ],
+      "next": "any"
+    },
+    "lodge": {
+      "speaker": "kojo",
+      "text": "The Porter's Lodge? …Of course. Bright keeps everything. He just never knew who to call."
+    },
+    "charger": {
+      "speaker": "kojo",
+      "text": "My charger — so the room still had something of mine. But no phone. Somebody must have moved it."
+    },
+    "any": {
+      "speaker": "kojo",
+      "text": "Any luck? Try the wardrobe in A-214. I'll be here."
+    }
+  }
+}

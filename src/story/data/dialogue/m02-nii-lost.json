@@ -1,0 +1,27 @@
+{
+  "id": "m02-nii-lost",
+  "start": "phone",
+  "nodes": {
+    "phone": {
+      "speaker": "nii",
+      "text": "An old phone from our room? Before my time, chale. But I know how it works: end of the year the caretaker clears the rooms, and anything worth money goes down to the Porter's Lodge. Lost property.",
+      "effects": [{ "type": "flag", "flag": "knows_lost_property" }],
+      "choices": [
+        { "text": "Did you know the guy who had our room before?", "next": "kojo" },
+        {
+          "text": "Thanks, Nii.",
+          "next": "welcome",
+          "effects": [{ "type": "relationship", "who": "nii", "delta": 2 }]
+        }
+      ]
+    },
+    "kojo": {
+      "speaker": "nii",
+      "text": "Only the name. Kojo. People go quiet when it comes up, so I stopped asking."
+    },
+    "welcome": {
+      "speaker": "nii",
+      "text": "Anytime. If it's dead when you find it, bring it here — I can charge anything."
+    }
+  }
+}

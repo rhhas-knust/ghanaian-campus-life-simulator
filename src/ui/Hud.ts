@@ -7,6 +7,7 @@
  * writes cause layout work, which is a real cost on a phone.
  */
 
+import type { InteriorDef } from '../config/interiors';
 import type { CameraMode } from '../config/settings';
 import type { Interactable, Vec2Tuple } from '../types';
 import { requireElement } from './dom';
@@ -43,6 +44,8 @@ export class Hud {
   private currentMode: CameraMode | null = null;
   private currentObjective = '';
   private objectiveTarget: Vec2Tuple | null = null;
+  /** Remembered so a minimap created later (on first show) starts on the right plan. */
+  private interior: InteriorDef | null = null;
 
   constructor() {
     this.elements = {
@@ -74,6 +77,7 @@ export class Hud {
     // is actually laid out.
     if (visible && !this.minimap) {
       this.minimap = new Minimap(requireElement<HTMLCanvasElement>('minimap-canvas'));
+      this.minimap.setInterior(this.interior);
     }
   }
 
@@ -114,9 +118,20 @@ export class Hud {
     this.minimap?.update(x, z, yaw, force, this.objectiveTarget);
   }
 
-  /** The current objective card, and the marker it puts on the minimap. */
-  setObjective(heading: string, text: string, target: Vec2Tuple | null): void {
+  /** Indoors, the minimap shows the floor plan instead of the campus. */
+  setInterior(interior: InteriorDef | null): void {
+    this.interior = interior;
+    this.minimap?.setInterior(interior);
+    this.elements.root.classList.toggle('is-indoors', interior !== null);
+  }
+
+  /** Where the minimap marker points, in the current location's metres. */
+  setGuidance(target: Vec2Tuple | null): void {
     this.objectiveTarget = target;
+  }
+
+  /** The current objective card. */
+  setObjective(heading: string, text: string): void {
     const key = `${heading}\n${text}`;
     if (key === this.currentObjective) {
       return;
