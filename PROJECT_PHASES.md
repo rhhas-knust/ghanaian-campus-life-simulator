@@ -13,7 +13,7 @@ onto the phases below; this file stays the source of truth for order.
 | Phase | Theme | Status |
 | --- | --- | --- |
 | 1 | Playable campus | **Built** — awaiting a test on real Android hardware |
-| 2 | Real assets and a living campus | **In progress** — story foundation (stages A–C) built; assets, traversal and campus life not started |
+| 2 | Real assets and a living campus | **In progress** — story foundation (stages A–C), interiors and M02 built; assets and campus life not started |
 | 3 | Student life systems | Not started |
 | 4 | Academics and progression | Not started |
 | 5 | Social life, story and polish | Not started |
@@ -72,8 +72,19 @@ new art; it uses placeholder characters on the existing campus.
   cinematic, character creation (name, address, programme, home), and M01
   "Akwaaba" with Uncle Bright, Mrs. Agyeman and Nii as standing placeholders.
 
-Still open from stage C's neighbours: Mission 2 onwards, interiors (room A-214
-is a story card), and the rigged characters of stage D.
+### Interiors and Mission 2 — built (stage C+)
+Also at the owner's request.
+- **Interior system:** floor plans as data, built on entry and freed on exit,
+  one at a time; fade transitions; collision, interactables, indoor lighting,
+  a floor-plan minimap and a ceiling for the third-person camera; the save
+  remembers which building the player is in, and older saves still load.
+- **Interiors:** Hastech Block A second floor (corridor, room A-214, common
+  room) and the Porter's Lodge.
+- **M02 "Kojo's Missing Phone"**, using both interiors, with choices that
+  change Kojo's, Uncle Bright's and Nii's standing.
+
+Still open: Mission 3 onwards, more interiors, and the rigged characters of
+stage D.
 
 ### Assets
 - glTF/GLB loader honouring `MODEL_ASSETS`; any building with `model` set uses
@@ -86,7 +97,8 @@ is a story card), and the rigged characters of stage D.
 ### Traversal
 - **Ground height and step height**, so verandahs, steps and plinths become
   walkable rather than part of the building colliders.
-- At least one interior — the library is the obvious first.
+- More interiors on the same system — the library and a lecture theatre
+  next (two are built: Block A's second floor and the Porter's Lodge).
 
 ### Life
 - Students walking between buildings on a path graph (instanced, not batched).

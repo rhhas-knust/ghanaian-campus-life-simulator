@@ -66,6 +66,17 @@ round pause button top-left; the joystick bottom-left; a large round INTERACT
 button with a hand icon bottom-right; a pause menu with a green patterned
 border.
 
+### Interiors
+
+There are no interior concept sheets yet, so the interiors follow the
+exteriors: cream walls with a painted lower band in the hostel green, green
+door frames and window frames, brown timber doors with cream number plates,
+terrazzo corridors, tiled rooms, a white ceiling with glowing lamp panels,
+and lit window panes rather than real views outside. Furniture is the
+props-sheet style in boxes: metal-framed beds, timber desks and wardrobes,
+plastic buckets. Interior sheets — the hostel corridor, a student room, the
+porter's lodge — would be the most useful next art.
+
 The story screens have no mock-ups yet, so they extend the same language:
 a round **phone button** beside the pause button; an **objective card** (dark
 pill, gold left edge) under it; a **gold diamond** as the objective marker on

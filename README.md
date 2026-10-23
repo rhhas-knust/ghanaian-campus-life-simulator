@@ -18,13 +18,16 @@ not change.)
 the courtyard, lecture halls, library, student centre, cafeteria, hostels and
 sports fields, in first or third person, and read the signs.
 
-**Phase 2 has started with the story opening** (roadmap stages A–C): **New
-Story** plays a skippable arrival cinematic, then character creation, then the
-first mission, **M01 "Akwaaba"** — sign in at the gate, collect your student ID,
-meet your roommate Nii and join the hostel group chat. Conversations have
-choices, the phone holds your objectives and messages, and progress is saved
-on the device. After M01 the campus is free to explore; Mission 2 is not built
-yet. Buildings cannot be entered yet either — interiors are a later stage.
+**Phase 2 has started with the story.** **New Story** plays a skippable
+arrival cinematic, then character creation, then two missions:
+**M01 "Akwaaba"** — sign in at the gate, collect your student ID, meet your
+roommate Nii, and climb to room A-214 to sleep — and **M02 "Kojo's Missing
+Phone"**, in which the room's previous occupant asks you to find something he
+left behind. You can **walk into buildings**: the Block A second floor (with
+your room and the common room) and the Porter's Lodge. Conversations have
+choices that people remember, the phone holds your objectives and messages,
+and progress is saved on the device. After M02 the campus is free roam;
+Mission 3 is not built yet.
 
 **Design documents** for the full game — systems, cast and story; most of it
 not built yet: [GAME_DESIGN.md](GAME_DESIGN.md),
@@ -177,8 +180,8 @@ Traced from the master plan in `GAME_ART/campus-map/`:
 
 ## The story so far
 
-Phase 2, roadmap stages A–C of [GAME_DESIGN.md](GAME_DESIGN.md) §12. Story
-text follows [STORYLINE.md](STORYLINE.md) §2.
+Phase 2, roadmap stages A–C and C+ of [GAME_DESIGN.md](GAME_DESIGN.md) §12.
+Story text follows [STORYLINE.md](STORYLINE.md) §2.
 
 - **Title screen.** **New Story**, or **Continue Story** when there is a save
   (with a second button to start over, which asks twice).
@@ -194,20 +197,35 @@ text follows [STORYLINE.md](STORYLINE.md) §2.
   porter's lodge → read the AKWAABA board → check the courtyard signpost →
   collect your student ID from **Mrs. Agyeman** at the Administration Block →
   meet **Nii** at the Block A gateway → read the Block A group chat on your
-  phone → go up to room A-214 and sleep. Day one ends with something buzzing
-  under the floor.
+  phone → climb the Block A stairs, find room A-214 and sleep in your bed.
+  Day one ends with something buzzing under the floor.
+- **M02 "Kojo's Missing Phone"**, day two: a message from Uncle Bright → meet
+  **Kojo** on the road outside the gate (he cannot come in) → search A-214 →
+  ask Nii in the common room where lost things go → talk Uncle Bright into
+  opening the lost-property cabinet in the Porter's Lodge → take the phone
+  back to Kojo. How you treat Kojo, Bright and Nii changes their standing,
+  what they say later, and whether Kojo gives you his number. The mystery
+  under the floor stays unsolved.
+- **Buildings you can enter**: the stairs in the Block A court lead to the
+  second floor — a corridor of numbered doors (knock on them), room A-214
+  with its beds, desks, wardrobe and loose tile, and the common room. The
+  Porter's Lodge by the gate opens from day two. Going in or out fades
+  through black; inside, the minimap becomes a floor plan, the location pill
+  names the room, and objective markers point at the door you need.
 - **Conversations** are data — one JSON file each in
   `src/story/data/dialogue/` — with 2–4 replies, conditions (some lines only
   exist for one programme) and effects on flags, relationships and
   reputation. Text only; no voice acting.
 - **Objectives** on a card under the pause button, as a gold marker on the
-  minimap and the campus map, and as a gold diamond floating over the target.
+  minimap and the campus map, and as a gold diamond floating over the target —
+  or over the door to it, when the target is inside a building or a room.
 - **The phone**: the mission checklist, message threads (admissions, Mum, the
-  Block A group chat) and a profile with your reputation and the people you
-  have met.
+  Block A group chat, the Porter's Lodge, and Kojo if he trusts you) and a
+  profile with your reputation and the people you have met.
 - **Saving**: automatic, in the browser's local storage, after every
-  conversation, mission step, sleep and pause. There is one save slot per
-  browser; clearing site data starts again.
+  conversation, mission step, sleep, building transition and pause — and it
+  remembers which building you were in. There is one save slot per browser;
+  clearing site data starts again. Saves from the previous release still load.
 - **Placeholder characters**: simple standing figures, one draw call each,
   until the rigged models exist.
 
@@ -251,6 +269,7 @@ src/
 │   ├── campusLayout.ts        The whole campus, in master-plan pixels
 │   ├── palette.ts             Material colours (from GAME_ART)
 │   ├── settings.ts            Movement, camera, touch-look, quality presets
+│   ├── interiors.ts           Interior floor plans and the doors into them
 │   └── assets.ts              Runtime asset manifest + budgets
 │
 ├── core/
@@ -265,7 +284,7 @@ src/
 │   │   ├── cast.ts            Who stands where, and what they say
 │   │   ├── missions.ts        Mission steps, as flags to set
 │   │   ├── opening.ts         The arrival cinematic's camera shots
-│   │   └── places.ts          Story places (the stairs to A-214), story cards
+│   │   └── places.ts          Story places (the bed, the wardrobe, the cabinet), cards
 │   ├── StoryState.ts          Flags, relationships, reputation, clock, save format
 │   ├── StoryDirector.ts       Current objective, worked out from the flags
 │   ├── dialogue.ts            JSON validation and the dialogue runner
@@ -276,7 +295,7 @@ src/
 ├── actors/                  ── Story things in the 3D world. ──
 │   ├── NpcFigures.ts          Placeholder characters, one draw call each
 │   ├── ObjectiveBeacon.ts     The floating objective marker
-│   └── storyPlacements.ts     Cast + places -> interactables and colliders
+│   └── storyPlacements.ts     Cast, places, doors -> what is here, now
 │
 ├── world/                   ── Reads config/, emits geometry + colliders. ──
 │   ├── WorldBuilder.ts        Orchestrator; owns batching and the sign atlas
@@ -288,8 +307,11 @@ src/
 │   ├── Vegetation.ts          Five tree species, seeded scatter, hedges
 │   ├── Signage.ts             Welcome board, signpost, notice board
 │   ├── SignAtlas.ts           All sign lettering in one texture
-│   ├── Lighting.ts            Sun, sky dome, fog, player-following shadows
-│   └── zones.ts               Position -> HUD place name
+│   ├── Lighting.ts            Sun, sky dome, fog, shadows; indoor lighting
+│   ├── zones.ts               Position -> HUD place name
+│   └── interiors/
+│       ├── InteriorBuilder.ts   One interior: floors, walls, doors, lettering
+│       └── furniture.ts         Beds, desks, wardrobes, sofas, the stairwell…
 │
 ├── player/
 │   ├── PlayerController.ts  Body: position, look, velocity, auto-level
@@ -357,6 +379,22 @@ save.
 - **A mission step:** `src/story/data/missions.ts`. A step is done when its
   flag is set; reading anything sets `seen:<interactable id>`.
 - **A phone message:** `src/story/data/messages.json`.
+- **Where someone stands:** `posts` in `cast.ts`, each with an optional
+  condition and an optional interior. A conversation can fork on what the
+  player did earlier with a `branch` node:
+  `{ "branch": [{ "if": { "flag": "lied_to_bright" }, "next": "…" }], "next": "…" }`;
+  `"if"` also takes `"atLeast": { "who": "kojo", "value": 10 }`.
+- **Something to inspect:** `src/story/data/places.ts` — readings are tried in
+  order, and the first whose condition holds is shown (and may set a flag).
+
+### Editing an interior
+
+Interiors are floor plans in `src/config/interiors.ts`, in local metres:
+rooms (floor and name), axis-aligned walls with `openings` (doorways) and
+`windows`, closed `doors` with a number plate and a knock, `props` from the
+furniture list, ceiling `lights` and `exits`. `ENTRANCES` puts a door on
+campus (in master-plan pixels) and says where the player stands on each side.
+An interior is built when the player goes in and freed when they leave.
 
 ---
 
@@ -403,6 +441,7 @@ Target: a mid-range Android phone at 30+ fps.
 | --- | --- | --- |
 | Draw calls (campus) | ~38 | ~38 |
 | Draw calls (story characters, objective marker) | +4 | +4 |
+| Draw calls indoors (campus hidden) | ~24 + characters | ~24 + characters |
 | Triangles | ~70,000 | ~46,000 |
 | Pixel ratio cap | 2.0 / 1.5 | 1.0 |
 | Shadows | yes, following the player | off |
@@ -443,13 +482,17 @@ CI runs the same checks, and the Pages deploy does not publish if any fail.
 ### Browser smoke test
 
 `scripts/smoke-test.mjs` drives the real production build in headless
-Chromium and asserts on game state — **62 checks**: world generation, the
+Chromium and asserts on game state — **90 checks**: world generation, the
 arrival cinematic and Skip, character creation, walking, collision at the
 Library, reading the campus sign, a full conversation with Uncle Bright
 (choices, relationship change, mission progress), the phone, the save and
 **Continue**, both camera modes and third-person wall avoidance, pause, the
-campus map, the quality rebuild, and on a phone-sized touch screen the story
-start, the joystick, the swipe fix, vertical look and the camera button.
+campus map, the quality rebuild; going into Block A, corridor collision, the
+A-214 doorway, sleeping and waking inside, leaving, and geometry being freed;
+M02 from the message to the completion card, including a reload inside the
+Porter's Lodge halfway through; a save from the previous release; and on a
+phone-sized touch screen the story start, the joystick, the swipe fix,
+vertical look, the camera button and entering Block A with INTERACT.
 
 ```bash
 npm i -D playwright && npx playwright install chromium   # first time only
@@ -472,8 +515,12 @@ feels or performs on a real phone.
       **Skip** works
 - [ ] Character creation: the name box takes typing on a phone keyboard
 - [ ] Play M01 to the end: Uncle Bright, the board, the signpost, Mrs.
-      Agyeman, Nii, the group chat, sleeping in A-214
-- [ ] Reload: **Continue Story** puts you back where you were
+      Agyeman, Nii, the group chat, climbing to A-214 and sleeping in your bed
+- [ ] Play M02 to the end, once kindly and once badly; check Kojo's number
+      appears (or not) on the phone
+- [ ] Walk the Block A corridor and the Porter's Lodge with the thumbstick;
+      knock on a door; try third person in A-214
+- [ ] Reload inside a building: **Continue Story** puts you back in the room
 - [ ] Walk in through the gate; the AKWAABA board shows a prompt
 - [ ] You cannot walk through buildings, the fence, trees, posts or cars
 - [ ] The location pill and minimap update as you move
@@ -490,9 +537,12 @@ Add `?debug=1` to the URL to get `window.__campusDebug`:
 ```js
 __campusDebug.getPlayer()    // { x, z, yawDegrees, pitch, speed }
 __campusDebug.getCamera()    // { mode, x, y, z }
-__campusDebug.getStats()     // batches, triangles, colliders, interactables
+__campusDebug.getStats()     // batches, triangles, colliders, interactables,
+                             // interiorBatches, GPU geometries and textures
 __campusDebug.getPhase()     // 'loading' | 'ready' | 'cinematic' | 'creating' | 'playing'
-                             // | 'paused' | 'reading' | 'dialogue' | 'phone'
+                             // | 'paused' | 'reading' | 'transition' | 'dialogue' | 'phone'
+__campusDebug.getLocation()  // 'campus' | 'hostel-a-2f' | 'porters-lodge'
+__campusDebug.setFlags([...])// mark story flags as earned, to jump to a scene
 __campusDebug.getStory()     // name, mission, objective, step, day, clock, flags, relationships
 __campusDebug.getFocusId()   // id of the interactable in range, or null
 __campusDebug.getZoneName()  // the HUD place name
@@ -514,14 +564,19 @@ and troubleshooting: **[DEPLOYMENT.md](DEPLOYMENT.md)**.
 Deliberate Phase 1 boundaries:
 
 - **The world is flat and movement is 2D** — no stairs, no climbing onto
-  verandahs (they are inside the building colliders), no interiors.
+  verandahs (they are inside the building colliders). Going "upstairs" to the
+  Block A second floor is a fade, not a climb.
 - **Buildings are procedural placeholders** that follow the art; real models
   are Phase 2.
 - **No crowds, moving vehicles, time of day (the clock runs, the sky does not
   change), inventory or audio.** Story characters stand still at their posts.
-- **Only M01 is playable.** After it the campus is free roam until Mission 2
-  is built.
-- **No interiors**: rooms, including A-214, are reached through story cards.
+- **M01 and M02 are playable.** After them the campus is free roam until
+  Mission 3 is built.
+- **Two interiors**: the Block A second floor and the Porter's Lodge. The
+  other doors in Block A are closed; the other buildings cannot be entered
+  yet. The night in A-214 is still told on a card.
+- **The campus map is the master plan**: inside a building it marks the
+  building's door, not your spot in the room (the minimap shows the room).
 - **One save per browser**, in local storage — no cloud saves, by design (no
   backend).
 - **The third-person camera avoids walls but not low objects**: it may pull in

@@ -91,7 +91,7 @@ him to post files there. By Chapter 3 he knows one file was a real exam paper
 and stays silent because he needs the money and fears expulsion.
 
 **Development:** can confess and help bring the scheme down, or protect himself
-and betray the player in Chapter 5 (STORYLINE.md M13).
+and betray the player in Chapter 5 (STORYLINE.md M14).
 
 ---
 
@@ -190,7 +190,7 @@ front company linked to Crestline. Selasi found out and decided to say nothing
 until after the election.
 
 **Development:** can come clean and lose votes, win while hiding it, or
-betray the player to protect her campaign (STORYLINE.md M13).
+betray the player to protect her campaign (STORYLINE.md M14).
 
 ---
 
@@ -356,8 +356,8 @@ the player.
 
 | Who | Role |
 | --- | --- |
-| **Kojo Badu** | KB's cousin; lived in A-214 until he was rusticated two years ago. The player reaches him through a number the unknown sender provides; whether they ever meet in person depends on the player's choices (STORYLINE S09). He did not send the messages and does not know who did. Initial attitude −20 (wary). Not simply a victim: he did buy past questions once — just not the paper he was blamed for. Wants his name cleared so he can finish his degree. |
-| **Uncle Bright** | Gate porter. Signs the player in on day one; remembers late arrivals — and remembers Kojo. Initial attitude +10. Placeholder look: khaki uniform, grey hair. |
+| **Kojo Badu** | KB's cousin; lived in A-214 until he was rusticated two years ago. The player first meets him in M02, briefly, on the road outside the main gate — he cannot come in — when he asks them to find the phone that never came back from his room. Whether he ever tells his story, and in person, still depends on the player's choices (STORYLINE S09); M02 sets his starting trust. Gives the player his number only if trust reaches 10 by the end of M02. Placeholder look: slate-teal T-shirt, white trainers. He did not send the messages and does not know who did. Initial attitude −20 (wary). Not simply a victim: he did buy past questions once — just not the paper he was blamed for. Wants his name cleared so he can finish his degree. |
+| **Uncle Bright** | Gate porter. Signs the player in on day one outside the lodge; from day two he is behind the counter in the Porter's Lodge, with the sign-in book and the lost-property cabinet. Remembers late arrivals — and remembers Kojo ("Polite boy. Always signing in late."), though he will not say what happened to him. Remembers being lied to, too. Initial attitude +10. Placeholder look: khaki uniform, grey hair. |
 | **Mrs. Agyeman** | Registry clerk at the Administration Block. Issues the player's student ID in M01; brisk, fond of rules and photocopies, soft under it. She hesitates over the room number A-214 — she remembers what happened to its last occupant, and says nothing. Initial attitude 0; accent colour purple. |
 | **Crestline Developments** | Fictional property company behind the hostel deal. Never shown as a real firm. |
 | **The Founders' Scholarship Board** | Committee that decides Abiba's future in Chapter 6. |
@@ -370,7 +370,7 @@ the player.
 | Between | Relationship | Pressure point |
 | --- | --- | --- |
 | Player – Nii | Roommates, instant friends | Nii's secret role in the leak |
-| Player – Kojo (offstage) | Strangers linked by a room and a phone | Can the player trust a rusticated student's story? |
+| Player – Kojo | Strangers linked by a room and a phone; first met outside the gate in M02 | Can the player trust a rusticated student's story? |
 | KB – Kojo | Cousins | KB's hidden investigation is for Kojo |
 | Player – Yaw | Block A vs Block B rivals | Becomes alliance when the field is threatened |
 | Abiba – Dr. Sarpong | Student and champion | Sarpong's cover-up could cost Abiba her scholarship |
