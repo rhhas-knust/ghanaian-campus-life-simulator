@@ -152,6 +152,25 @@ export const THIRD_PERSON_SETTINGS = {
   avatarTurnSharpness: 10,
 } as const;
 
+/**
+ * How the rigged player body (`ModelAvatar`) blends its clips by speed, in
+ * metres per second. The natural speeds are how fast each clip's feet travel
+ * at a timescale of 1 on a 1.75 m body; playing a clip at `speed / natural`
+ * keeps the feet from sliding. Walking is already a brisk 4.2 m/s, so the
+ * keyboard's normal pace is a jog; the walk clip shows at partial joystick tilt.
+ */
+export const BODY_MOTION_SETTINGS = {
+  /** Below this the body stands. */
+  standingSpeed: 0.15,
+  walkNatural: 1.35,
+  jogNatural: 3.4,
+  /** Fully walking at this speed; fully jogging at `jogFrom`. */
+  walkFrom: 1.2,
+  jogFrom: 2.8,
+  /** Faster than this looks like a cartoon, so sprinting just strides longer. */
+  maxTimeScale: 1.7,
+} as const;
+
 /** Touch joystick geometry, in CSS pixels. Must match `styles.css`. */
 export const TOUCH_SETTINGS = {
   joystickRadius: 66,

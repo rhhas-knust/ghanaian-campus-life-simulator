@@ -8,8 +8,8 @@
  * campus budget of ~38 draw calls.
  *
  * They are not batched with the campus because they turn to face the player
- * when spoken to, and because rigged, animated characters replace them in
- * roadmap stage D (CHARACTER_BIBLE.md §4).
+ * when spoken to. They are the FALLBACK now: when the character models load,
+ * `CharacterFigures` draws the same cast as rigged, animated bodies instead.
  */
 
 import {
@@ -30,7 +30,17 @@ import type { FigurePlacement } from './storyPlacements';
 
 const BASE_HEIGHT = 1.75;
 
-export class NpcFigures {
+/** What the game needs from whoever draws the cast. */
+export interface StoryFigures {
+  arrange(placements: readonly FigurePlacement[]): void;
+  face(id: string, x: number, z: number): void;
+  /** The character being spoken to, or `null`; animated figures gesture. */
+  setTalking(id: string | null): void;
+  update(delta: number): void;
+  dispose(): void;
+}
+
+export class NpcFigures implements StoryFigures {
   private readonly group = new Group();
   private readonly material = new MeshLambertMaterial({ vertexColors: true });
   private readonly meshes = new Map<string, Mesh>();
@@ -83,6 +93,14 @@ export class NpcFigures {
       // A figure faces -Z at rotation 0, like the player's avatar.
       mesh.rotation.y = Math.atan2(-dx, -dz);
     }
+  }
+
+  setTalking(): void {
+    // Placeholder figures have no gestures.
+  }
+
+  update(): void {
+    // Nothing moves.
   }
 
   dispose(): void {

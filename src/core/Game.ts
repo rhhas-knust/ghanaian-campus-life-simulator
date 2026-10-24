@@ -51,7 +51,8 @@ import {
   type CameraMode,
   type QualityLevel,
 } from '../config/settings';
-import { NpcFigures } from '../actors/NpcFigures';
+import { CharacterFigures } from '../actors/CharacterFigures';
+import { NpcFigures, type StoryFigures } from '../actors/NpcFigures';
 import { ObjectiveBeacon } from '../actors/ObjectiveBeacon';
 import { buildStoryPlacements, openingFigures } from '../actors/storyPlacements';
 import { InputState } from '../input/InputState';
@@ -59,9 +60,10 @@ import { KeyboardMouseInput } from '../input/KeyboardMouseInput';
 import { TouchInput } from '../input/TouchInput';
 import { InteractionSystem } from '../interaction/InteractionSystem';
 import { CollisionSystem } from '../physics/CollisionSystem';
-import { Avatar } from '../player/Avatar';
+import { Avatar, type PlayerBody } from '../player/Avatar';
 import { CameraRig } from '../player/CameraRig';
 import { CinematicCamera } from '../player/CinematicCamera';
+import { ModelAvatar } from '../player/ModelAvatar';
 import { PlayerController } from '../player/PlayerController';
 import type { CampusBounds, GamePhase, Interactable, Vec2Tuple } from '../types';
 import { guessQualityLevel, isTouchPrimary, readStoredValue, writeStoredValue } from '../utils/device';
@@ -101,6 +103,7 @@ import { buildWorld, disposeWorld, type BuiltWorld } from '../world/WorldBuilder
 import { resolveZoneName } from '../world/zones';
 import { installDebugApi, isDebugEnabled, type CampusDebugApi } from './debug';
 import { Engine } from './Engine';
+import { NO_MODELS, loadModels, type LoadedModels } from './loadModels';
 
 /** Enough state to put the player back where they were after a rebuild. */
 interface PlayerSnapshot {
@@ -124,8 +127,10 @@ export class Game {
   private readonly input = new InputState();
   private readonly keyboardMouse: KeyboardMouseInput;
   private readonly touchInput: TouchInput;
-  private readonly avatar: Avatar;
-  private readonly npcs: NpcFigures;
+  /** Placeholder bodies until `load()` swaps in the rigged models, if they load. */
+  private avatar: PlayerBody;
+  private npcs: StoryFigures;
+  private models: LoadedModels = NO_MODELS;
   private readonly beacon: ObjectiveBeacon;
   private readonly cinematicCamera: CinematicCamera;
   private readonly cinematicOverlay: CinematicOverlay;
@@ -284,7 +289,11 @@ export class Game {
 
   /** Builds the campus, yielding to the browser so the loading bar animates. */
   async load(): Promise<void> {
-    this.overlays.setLoadingProgress(0.08, 'Laying out the campus…');
+    this.overlays.setLoadingProgress(0.04, 'Fetching characters and furniture…');
+    this.models = await loadModels((fraction) => this.overlays.setLoadingProgress(0.04 + fraction * 0.3, 'Fetching characters and furniture…'));
+    this.useLoadedBodies();
+
+    this.overlays.setLoadingProgress(0.36, 'Laying out the campus…');
     await nextFrame();
 
     this.buildSceneContents();
@@ -294,8 +303,19 @@ export class Game {
     this.overlays.setLoadingProgress(0.8, 'Preparing the graphics…');
     await nextFrame();
     // Compiling up front avoids a multi-second freeze the first time a
-    // material appears on screen — very noticeable on mobile GPUs.
+    // material appears on screen — very noticeable on mobile GPUs. Compiling
+    // skips hidden objects, and every character is hidden at this point, so
+    // the cast stands in front of the camera for one frame, under the loading
+    // screen: that compiles the skinned shaders, shadow pass included.
+    this.player.getFlatForward(this.scratchForward);
+    const aheadX = this.player.position.x + this.scratchForward.x * 4;
+    const aheadZ = this.player.position.z + this.scratchForward.z * 4;
+    this.npcs.arrange(
+      CAST.filter((member) => member.figure).map((member, index) => ({ id: member.id, x: aheadX + index * 0.01, z: aheadZ, yawDegrees: 0 })),
+    );
     await this.engine.webglRenderer.compileAsync(this.engine.scene, this.engine.camera);
+    this.renderFrame(0);
+    this.npcs.arrange([]);
 
     this.overlays.setLoadingProgress(1, 'Ready');
     await nextFrame();
@@ -329,11 +349,37 @@ export class Game {
     this.engine.dispose();
   }
 
+  /**
+   * Swaps the placeholder player and cast for the rigged ones. Done once, in
+   * `load()`, before anything is placed; without the models the placeholders
+   * simply stay.
+   */
+  private useLoadedBodies(): void {
+    const bodies = this.models.bodies;
+    if (!bodies) {
+      return;
+    }
+    this.avatar.dispose();
+    this.avatar = new ModelAvatar(this.engine.scene, bodies);
+    this.npcs.dispose();
+    this.npcs = new CharacterFigures(this.engine.scene, CAST, bodies);
+  }
+
+  /** The player's body follows how they asked to be addressed; there is no body picker yet. */
+  private applyPlayerBody(): void {
+    if (this.avatar instanceof ModelAvatar && this.story) {
+      this.avatar.setBody(this.story.profile.address === 'she' ? 'woman' : 'man');
+    }
+  }
+
   // ======================================================= scene contents
 
   private buildSceneContents(): void {
     const quality = QUALITY_PRESETS[this.qualityLevel];
     this.materials = new MaterialLibrary(this.qualityLevel === 'low' ? 'lambert' : 'standard');
+    if (this.models.furniture) {
+      this.materials.registerTextured('furnitureKit', this.models.furniture.texture);
+    }
 
     const world = buildWorld(quality, this.materials);
     this.engine.scene.add(world.group);
@@ -400,7 +446,7 @@ export class Game {
         if (this.interior) {
           disposeInterior(this.interior);
         }
-        this.interior = buildInterior(def, quality, this.materials);
+        this.interior = buildInterior(def, quality, this.materials, this.models.furniture);
         this.engine.scene.add(this.interior.group);
       }
       world.group.visible = false;
@@ -482,6 +528,12 @@ export class Game {
       this.renderFrame(delta);
       return;
     }
+    if (this.phase === 'dialogue' && this.models.bodies) {
+      // Keep drawing so the speaker visibly talks; placeholders do not move,
+      // so without the models the paused-style single frame is enough.
+      this.renderFrame(delta);
+      return;
+    }
     if (this.needsRender) {
       this.needsRender = false;
       this.renderFrame(0);
@@ -535,6 +587,7 @@ export class Game {
         this.avatar.update(delta, this.player);
       }
     }
+    this.npcs.update(delta);
     if (this.lighting) {
       // The sky dome must travel with the camera. Centred on the world origin,
       // its far side drops beyond the camera's far plane on a campus this big
@@ -635,6 +688,7 @@ export class Game {
     this.creation.hide();
     this.story = new StoryState(profile, FIRST_MISSION_ID);
     this.director = new StoryDirector(this.story);
+    this.applyPlayerBody();
     this.player.reset(SPAWN);
     this.placementSignature = '';
     this.persistStory();
@@ -644,6 +698,7 @@ export class Game {
   private continueStory(saved: StoryState): void {
     this.story = saved;
     this.director = new StoryDirector(saved);
+    this.applyPlayerBody();
     // Back where they saved: on campus, or inside the room they were in.
     this.location = saved.position?.location ?? 'campus';
     this.applyLocationContents();
@@ -935,6 +990,7 @@ export class Game {
     }
     this.conversation = { runner: new DialogueRunner(tree, story), who };
     this.npcs.face(who, this.player.position.x, this.player.position.z);
+    this.npcs.setTalking(who);
     this.phase = 'dialogue';
     this.releaseForUi();
     this.showDialogueLine();
@@ -971,6 +1027,7 @@ export class Game {
 
   private endDialogue(): void {
     this.conversation = null;
+    this.npcs.setTalking(null);
     this.dialogueBox.hide();
     // Every conversation can change the story, so every one ends with a save
     // (GAME_DESIGN.md §7 asks for one after any major decision at least).
@@ -1260,6 +1317,10 @@ export class Game {
         interiorBatches: this.interior?.stats.batches ?? 0,
         geometries: this.engine.webglRenderer.info.memory.geometries,
         textures: this.engine.webglRenderer.info.memory.textures,
+        drawCalls: this.engine.webglRenderer.info.render.calls,
+        frameTriangles: this.engine.webglRenderer.info.render.triangles,
+        riggedCharacters: this.models.bodies !== null,
+        furnitureKit: this.models.furniture !== null,
       }),
       getPhase: () => this.phase,
       getLocation: () => this.location,

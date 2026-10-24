@@ -118,6 +118,12 @@ export const MATERIAL_LIBRARY = {
    * atlas key, so building an interior never replaces the campus atlas.
    */
   interiorSignText: { colour: 0xffffff, roughness: 0.8, metalness: 0 },
+  /**
+   * Every piece of the KayKit furniture kit. A placeholder like `signText`:
+   * the real material carries the kit's palette texture and is registered by
+   * the game once the kit has loaded, so all its furniture is one draw call.
+   */
+  furnitureKit: { colour: 0xffffff, roughness: 1, metalness: 0 },
 
   /**
    * Text on signs and building name boards. The colour is a placeholder: the

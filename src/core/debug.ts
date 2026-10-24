@@ -31,6 +31,12 @@ export interface CampusDebugApi {
     interiorBatches: number;
     geometries: number;
     textures: number;
+    /** Draw calls and triangles in the last frame drawn (shadow pass included). */
+    drawCalls: number;
+    frameTriangles: number;
+    /** Whether the CC0 models loaded, or the placeholders are in use. */
+    riggedCharacters: boolean;
+    furnitureKit: boolean;
   };
   /** Current state machine phase. */
   getPhase(): string;

@@ -1,8 +1,10 @@
 /**
  * Who is on campus in the story build, where they stand, and what they say.
  *
- * Placeholder figures only: the real characters need the rigged models in
- * CHARACTER_BIBLE.md §4 (roadmap stage D).
+ * `figure` describes how a character looks: which body, skin, hair and
+ * clothes. The game dresses a rigged CC0 body in those colours, or the
+ * procedural placeholder figure if the models did not load. Neither is the
+ * final art in CHARACTER_BIBLE.md §4.
  *
  * `posts` are checked top to bottom and the first whose condition holds is
  * where the character is now; if none holds, they are not around. A post
@@ -17,8 +19,10 @@
 import type { InteriorId } from '../../config/interiors';
 import type { Condition } from '../types';
 
-/** Colours for the placeholder figure, as 0xRRGGBB. */
+/** How a character looks. Colours are 0xRRGGBB. */
 export interface FigureLook {
+  /** Which rigged body to dress; `man` if omitted. */
+  readonly body?: 'man' | 'woman';
   readonly skin: number;
   readonly hair: number;
   readonly top: number;
@@ -80,7 +84,7 @@ export const CAST: readonly CastMember[] = [
     role: 'Registry clerk',
     accent: '#7a5aa6',
     initialAttitude: 0,
-    figure: { skin: 0x5a3a26, hair: 0x1c1410, top: 0x7a5aa6, bottom: 0x2f2a3a, shoes: 0x1e1a16, height: 1.64 },
+    figure: { body: 'woman', skin: 0x5a3a26, hair: 0x1c1410, top: 0x7a5aa6, bottom: 0x2f2a3a, shoes: 0x1e1a16, height: 1.64 },
     // In the recess of the H, in front of the Administration entrance.
     posts: [{ at: [880, 268], yawDegrees: 180 }],
     opening: { at: [880, 268], yawDegrees: 180 },

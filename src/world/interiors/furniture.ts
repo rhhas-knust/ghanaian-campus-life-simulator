@@ -6,24 +6,42 @@
  * `place` turns that into world space, so a desk reads the same whichever wall
  * it stands against. Solid furniture registers a box collider; things on walls
  * and ceilings do not.
+ *
+ * When the KayKit furniture kit has loaded, the kinds listed in
+ * `FURNITURE_MODELS` are drawn from it instead of from boxes. The collider is
+ * registered either way, from the same footprint, so the kit changes how a
+ * room looks and never where the player can walk.
  */
 
+import { Euler, Matrix4, Quaternion, Vector3 } from 'three';
+
+import { FURNITURE_MODELS } from '../../config/furnitureModels';
 import type { PropDef } from '../../config/interiors';
 import type { MaterialKey } from '../../config/palette';
-import { offsetLocal } from '../../utils/shapes';
+import { degToRad, offsetLocal } from '../../utils/shapes';
 import type { WorldBuildContext } from '../context';
+import type { FurnitureKit } from './furnitureKit';
 
 export interface FurnitureContext {
   readonly world: WorldBuildContext;
   readonly wallHeight: number;
+  /** `null` when the kit did not load: everything is built from boxes. */
+  readonly kit: FurnitureKit | null;
 }
 
 type Place = (material: MaterialKey, lx: number, y0: number, lz: number, w: number, h: number, d: number) => void;
 
 export function buildProp(context: FurnitureContext, prop: PropDef, index: number): void {
   const { shapes, sink } = context.world;
-  /** Box by the centre of its bottom face, in the prop's local frame. */
+  const fromKit = placeKitParts(context, prop);
+  /**
+   * Box by the centre of its bottom face, in the prop's local frame. Skipped
+   * when the kit drew the prop: the cases below then only add its collider.
+   */
   const place: Place = (material, lx, y0, lz, w, h, d) => {
+    if (fromKit) {
+      return;
+    }
     const at = offsetLocal(prop.at, prop.rotationY, lx, lz);
     shapes.box(material, [at[0], y0 + h / 2, at[1]], [w, h, d], prop.rotationY);
   };
@@ -220,6 +238,10 @@ export function buildProp(context: FurnitureContext, prop: PropDef, index: numbe
       place('kenteGreen', 0.2, 1.33, 0, 0.18, 0.24, 0.14);
       return;
     }
+    case 'rug': {
+      place(prop.colour ?? 'fabricOrange', 0, 0, 0, 1.2, 0.01, 0.9);
+      return;
+    }
     case 'openDoor': {
       // A door swung open against the wall, hinged at the frame.
       place('doorWood', 0, 0, 0, 0.05, 2.1, 0.95);
@@ -228,6 +250,36 @@ export function buildProp(context: FurnitureContext, prop: PropDef, index: numbe
       return;
     }
   }
+}
+
+const scratchMatrix = new Matrix4();
+const scratchPosition = new Vector3();
+const scratchRotation = new Quaternion();
+const scratchEuler = new Euler();
+const scratchScale = new Vector3();
+
+/** Draws a prop from the furniture kit, if it has a model there. Returns whether it did. */
+function placeKitParts(context: FurnitureContext, prop: PropDef): boolean {
+  const model = FURNITURE_MODELS[prop.kind];
+  const kit = context.kit;
+  if (!model || !kit) {
+    return false;
+  }
+  const parts = (prop.colour && model.byColour?.[prop.colour]) || model.parts;
+  for (const part of parts) {
+    const geometry = kit.pieces.get(part.piece);
+    if (!geometry) {
+      return false;
+    }
+    const [lx, lz] = part.at ?? [0, 0];
+    const [x, z] = offsetLocal(prop.at, prop.rotationY, lx, lz);
+    scratchPosition.set(x, part.y ?? 0, z);
+    scratchRotation.setFromEuler(scratchEuler.set(0, degToRad(prop.rotationY + (part.rotationY ?? 0)), 0));
+    scratchScale.set(...part.scale);
+    scratchMatrix.compose(scratchPosition, scratchRotation, scratchScale);
+    context.world.shapes.imported('furnitureKit', geometry, scratchMatrix);
+  }
+  return true;
 }
 
 /** One cell of the interior's sign atlas, on the prop's front face. */

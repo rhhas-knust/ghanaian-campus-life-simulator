@@ -84,6 +84,7 @@ export type PropKind =
   | 'keyBoard'
   | 'cabinet'
   | 'shelf'
+  | 'rug'
   | 'openDoor';
 
 export interface PropDef {
@@ -209,6 +210,7 @@ const HOSTEL_A_2F: InteriorDef = {
     { kind: 'poster', at: [11.9, 4.4], rotationY: -90, colour: 'kenteGreen' },
     { kind: 'poster', at: [8.1, 4.4], rotationY: 90, colour: 'fabricOrange' },
     { kind: 'looseTile', at: [10.55, 4.25], rotationY: 0 },
+    { kind: 'rug', at: [10, 3], rotationY: 0, colour: 'fabricOrange' },
     { kind: 'fan', at: [10, 3.4], rotationY: 0 },
     // Corridor: buckets queue outside the washroom.
     { kind: 'bucket', at: [12.3, -0.95], rotationY: 0, colour: 'plasticBlue' },

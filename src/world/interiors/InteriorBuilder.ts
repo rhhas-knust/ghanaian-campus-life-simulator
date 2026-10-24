@@ -23,6 +23,7 @@ import { ShapeBuilder, degToRad } from '../../utils/shapes';
 import type { WorldBuildContext, WorldSink } from '../context';
 import { SignAtlas } from '../SignAtlas';
 import { buildProp, propLabels } from './furniture';
+import type { FurnitureKit } from './furnitureKit';
 
 const WALL_THICKNESS = 0.2;
 /** Height of the painted lower band on every wall. */
@@ -49,7 +50,11 @@ export interface BuiltInterior {
   readonly signAtlas: SignAtlas;
 }
 
-export function buildInterior(def: InteriorDef, quality: QualityPreset, materials: MaterialLibrary): BuiltInterior {
+/**
+ * `kit` is the loaded furniture kit, or `null` to build every prop from boxes.
+ * With a kit, its material must already be registered under `furnitureKit`.
+ */
+export function buildInterior(def: InteriorDef, quality: QualityPreset, materials: MaterialLibrary, kit: FurnitureKit | null): BuiltInterior {
   const batcher = new GeometryBatcher();
   const shapes = new ShapeBuilder(batcher);
 
@@ -86,7 +91,7 @@ export function buildInterior(def: InteriorDef, quality: QualityPreset, material
   def.walls.forEach((wall, index) => buildWall(world, wall, height, `${def.id}:wall-${index}`));
   buildDoors(world, def);
   buildDoorwayPlates(world, def);
-  def.props.forEach((prop, index) => buildProp({ world, wallHeight: height }, prop, index));
+  def.props.forEach((prop, index) => buildProp({ world, wallHeight: height, kit }, prop, index));
 
   for (const exit of def.exits) {
     sink.addInteractable({

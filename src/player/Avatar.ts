@@ -7,8 +7,9 @@
  * so unlike the campus it is NOT merged into the static batches: about ten
  * small meshes, only drawn in third person.
  *
- * Replacing it with the artist's rigged glTF character is a Phase 2 task; the
- * interface (`update`, `setVisible`, `dispose`) is what the game depends on.
+ * It is the FALLBACK body now: when the character models load, `ModelAvatar`
+ * draws a rigged, animated student instead. `PlayerBody` is what the game
+ * depends on, so either can stand in.
  */
 
 import {
@@ -35,12 +36,19 @@ const COLOURS = {
   backpack: 0x6b4a2e,
 } as const;
 
+/** What the game needs from whatever draws the player in third person. */
+export interface PlayerBody {
+  setVisible(visible: boolean): void;
+  update(delta: number, player: PlayerController): void;
+  dispose(): void;
+}
+
 /** One limb: a group pivoting at the joint, with the mesh hanging below it. */
 interface Limb {
   readonly pivot: Group;
 }
 
-export class Avatar {
+export class Avatar implements PlayerBody {
   private readonly root = new Group();
   private readonly materials: Material[] = [];
   private readonly geometries: BufferGeometry[] = [];
