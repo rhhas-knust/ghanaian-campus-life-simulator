@@ -1,0 +1,39 @@
+{
+  "id": "m02-nii-handset",
+  "start": "look",
+  "nodes": {
+    "look": {
+      "speaker": "nii",
+      "text": "Is that it? Old Tecno! Chale, give it here — I'll charge it and see if it still turns on.",
+      "choices": [
+        {
+          "text": "Go on, check it.",
+          "next": "charged",
+          "effects": [
+            { "type": "relationship", "who": "nii", "delta": 5 },
+            { "type": "flag", "flag": "phone_opened" },
+            { "type": "flag", "flag": "phone_decision" }
+          ]
+        },
+        {
+          "text": "No. It's Kojo's — he should be the first to switch it on.",
+          "next": "sealed",
+          "effects": [
+            { "type": "relationship", "who": "nii", "delta": -2 },
+            { "type": "reputation", "axis": "integrity", "delta": 5 },
+            { "type": "flag", "flag": "phone_kept_sealed" },
+            { "type": "flag", "flag": "phone_decision" }
+          ]
+        }
+      ]
+    },
+    "charged": {
+      "speaker": "nii",
+      "text": "…It works. Locked with a PIN. I didn't try to get in. …Okay, I tried once. 1234 never works any more."
+    },
+    "sealed": {
+      "speaker": "nii",
+      "text": "Hmm. Principles. You'll go far — or you'll go broke."
+    }
+  }
+}

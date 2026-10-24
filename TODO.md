@@ -94,9 +94,50 @@ none of it has been played on a real phone yet.
 - [ ] **Play the story on a real Android phone**: typing a name with the
       on-screen keyboard in fullscreen landscape, reading the dialogue box and
       phone at arm's length, tapping replies
-- [ ] M02 "First Lecture" — finding Kojo's phone under the floor of A-214
-- [ ] Interiors, starting with room A-214 (currently a story card)
-- [ ] Rigged characters to replace the standing placeholders (stage D)
+- [x] Rigged characters to replace the standing placeholders — as a **trial**
+      with free CC0 packs (README "Free model trial"); smoke test (models
+      load and rig; the game still loads with placeholders when `*.glb` is
+      blocked) and screenshots
+- [ ] **Owner's verdict on the free model trial**, on a real phone: do the
+      characters and furniture look right, and is it fast enough?
+- [ ] If the trial is kept: re-download the two Quaternius packs from
+      quaternius.com (the trial used GitHub mirrors) and rebuild with
+      `scripts/assets/build_models.py`; an appearance picker; more outfits
+- [ ] If the trial is kept: GitHub Pages may not gzip `.glb`; check the
+      real download size (~1.2 MB uncompressed) on mobile data
+
+## Phase 2 — interiors and M02 (stage C+)
+
+Verified in headless Chromium (SwiftShader) and with synthetic touch; not on a
+real phone.
+
+- [x] Interior system: enter, explore, leave; fade transitions; collision;
+      floor-plan minimap; indoor lighting; third-person camera under the
+      ceiling — smoke test and screenshots
+- [x] Entering and leaving repeatedly frees the interior — smoke test (GPU
+      geometries unchanged after a round trip; five round trips checked by hand)
+- [x] Changing graphics quality while indoors rebuilds the room around you —
+      checked in the browser
+- [x] Block A second floor: corridor, 13 closed doors with knocks, stairwell,
+      A-214, common room — screenshots at 960 × 540 and 800 × 360
+- [x] Porter's Lodge with counter, sign-in book, key board, lost-property
+      cabinet — screenshots
+- [x] M01 ends in the real A-214 — played to the end on a phone-sized touch
+      screen in the browser, plus smoke test
+- [x] M02 "Kojo's Missing Phone" — played to the end twice (kind and harsh
+      choices: Kojo +20 with his number, or −27 without), plus smoke test
+- [x] Save inside a building, reload mid-M02, finish M02 into free roam —
+      smoke test
+- [x] Saves from the previous release (no location; M01 done before M02
+      existed, or mid-M01) — both load; the first continues into M02
+- [ ] **Play it on a real Android phone**: the corridor with the thumbstick,
+      tapping INTERACT at doors, frame rate indoors, the fade on a slow phone
+- [ ] M03 "First Lecture" — the phone under the floor of A-214
+- [ ] More interiors: the library and a lecture theatre
+- [ ] Owner check: M02 adapts the brief to the story bible (Kojo is
+      rusticated, so you meet him outside the gate, and the missing phone is
+      his confiscated one, not the one under the floor); and missions from the
+      old M02 onwards are renumbered M03–M17 (STORYLINE §2, §8)
 - [ ] Owner check: the registry clerk **Mrs. Agyeman** is a new minor
       character, added for M01 step 4; and M01's signpost step now comes
       before the Administration Block (STORYLINE §2)

@@ -77,6 +77,8 @@ export interface Condition {
   readonly flag?: string;
   readonly notFlag?: string;
   readonly programme?: ProgrammeId;
+  /** A relationship value at or above a threshold, e.g. Kojo's trust ≥ 10. */
+  readonly atLeast?: { readonly who: string; readonly value: number };
 }
 
 /** Something a dialogue line or choice does to the story state. */

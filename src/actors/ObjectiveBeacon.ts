@@ -10,7 +10,7 @@ import { Mesh, MeshBasicMaterial, OctahedronGeometry, type Scene } from 'three';
 
 import type { Vec2Tuple } from '../types';
 
-const HOVER_HEIGHT = 2.9;
+const DEFAULT_HOVER_HEIGHT = 2.9;
 const BOB_METRES = 0.18;
 /**
  * Hidden this close to the target. Up close it would float over the face of
@@ -22,6 +22,7 @@ export class ObjectiveBeacon {
   private readonly mesh: Mesh;
   private time = 0;
   private hasTarget = false;
+  private hoverHeight = DEFAULT_HOVER_HEIGHT;
 
   constructor(scene: Scene) {
     const geometry = new OctahedronGeometry(0.32, 0);
@@ -32,11 +33,13 @@ export class ObjectiveBeacon {
     scene.add(this.mesh);
   }
 
-  setTarget(target: Vec2Tuple | null): void {
+  /** `hoverHeight` is lower indoors, to stay under the ceiling. */
+  setTarget(target: Vec2Tuple | null, hoverHeight = DEFAULT_HOVER_HEIGHT): void {
     this.hasTarget = target !== null;
     this.mesh.visible = this.hasTarget;
+    this.hoverHeight = hoverHeight;
     if (target) {
-      this.mesh.position.set(target[0], HOVER_HEIGHT, target[1]);
+      this.mesh.position.set(target[0], hoverHeight, target[1]);
     }
   }
 
@@ -48,7 +51,7 @@ export class ObjectiveBeacon {
     }
     this.time += delta;
     this.mesh.rotation.y = this.time * 1.6;
-    this.mesh.position.y = HOVER_HEIGHT + Math.sin(this.time * 2.2) * BOB_METRES;
+    this.mesh.position.y = this.hoverHeight + Math.sin(this.time * 2.2) * BOB_METRES;
   }
 
   dispose(): void {

@@ -59,6 +59,7 @@ export class KeyboardMouseInput {
     window.addEventListener('blur', this.handleBlur);
     document.addEventListener('mousemove', this.handleMouseMove);
     document.addEventListener('pointerlockchange', this.handlePointerLockChange);
+    this.options.target.addEventListener('click', this.handleClick);
     this.attached = true;
   }
 
@@ -71,6 +72,7 @@ export class KeyboardMouseInput {
     window.removeEventListener('blur', this.handleBlur);
     document.removeEventListener('mousemove', this.handleMouseMove);
     document.removeEventListener('pointerlockchange', this.handlePointerLockChange);
+    this.options.target.removeEventListener('click', this.handleClick);
     this.attached = false;
   }
 
@@ -141,6 +143,18 @@ export class KeyboardMouseInput {
       this.pressed.add(event.code);
       this.updateMovement();
       event.preventDefault();
+    }
+  };
+
+  /**
+   * A lock requested outside a click (after a conversation ended on a key
+   * press, or after the fade into a building) can be refused by the browser.
+   * Clicking the view while playing asks again, so mouse look is never lost
+   * for good.
+   */
+  private readonly handleClick = (): void => {
+    if (!this.hasPointerLock && this.options.isLookEnabled() && supportsLock()) {
+      this.requestPointerLock();
     }
   };
 
@@ -219,4 +233,8 @@ function isTextEntry(target: EventTarget | null): boolean {
     return target.type === 'text' || target.type === 'search';
   }
   return target instanceof HTMLTextAreaElement || (target instanceof HTMLElement && target.isContentEditable);
+}
+
+function supportsLock(): boolean {
+  return typeof document.exitPointerLock === 'function';
 }

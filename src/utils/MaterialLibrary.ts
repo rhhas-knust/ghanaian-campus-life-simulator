@@ -17,6 +17,7 @@ import {
   MeshLambertMaterial,
   MeshStandardMaterial,
   type Material,
+  type Texture,
 } from 'three';
 
 import { MATERIAL_LIBRARY, type MaterialDef, type MaterialKey } from '../config/palette';
@@ -48,6 +49,20 @@ export class MaterialLibrary {
     this.cache.get(key)?.dispose();
     material.name = key;
     this.cache.set(key, material);
+  }
+
+  /**
+   * Builds a key's material around a texture, with the library's shading
+   * model — the furniture kit's palette texture, for instance. The texture is
+   * not owned: disposing the library leaves it for its loader to keep.
+   */
+  registerTextured(key: MaterialKey, map: Texture): void {
+    const def = MATERIAL_LIBRARY[key];
+    const material =
+      this.shading === 'lambert'
+        ? new MeshLambertMaterial({ map })
+        : new MeshStandardMaterial({ map, roughness: def.roughness, metalness: def.metalness });
+    this.register(key, material);
   }
 
   /** Frees every GPU-side material. Called when the game tears down. */

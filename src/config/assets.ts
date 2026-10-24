@@ -1,9 +1,10 @@
 /**
  * Asset manifest — EDITABLE DATA FILE.
  *
- * Phase 1 ships with ZERO binary assets: every building, tree and bench is
- * procedural placeholder geometry built from boxes, cylinders and icosahedra.
- * This manifest is the hand-off point for the artist.
+ * The campus itself is still procedural: every building, tree and bench is
+ * placeholder geometry built from boxes, cylinders and icosahedra. The only
+ * binary models are the characters and the interior furniture (trial of free
+ * CC0 packs, below). This manifest is the hand-off point for the artist.
  *
  * HOW THE ARTIST REPLACES A PLACEHOLDER
  * -------------------------------------
@@ -40,17 +41,43 @@ export interface ModelAsset {
 }
 
 /**
- * glTF / GLB building and prop models.
+ * glTF / GLB models.
  *
- * EMPTY IN PHASE 1 — this is intentional. Phase 2 fills it in. Example:
+ * The characters and the interior furniture are free CC0 packs, slimmed by
+ * `scripts/assets/build_models.py` (see `public/assets/models/CREDITS.md`).
+ * The game loads them during the loading screen; if any of them fails to
+ * load, it falls back to the procedural figures and furniture, so a missing
+ * file costs looks, never the game.
  *
- * ```ts
- * export const MODEL_ASSETS = {
- *   greatHall: { path: 'assets/models/great-hall.glb', scale: 1 },
- * } satisfies Record<string, ModelAsset>;
- * ```
+ * Buildings can point at a key here too (`model` in `campusLayout.ts`), once
+ * the artist delivers them.
  */
-export const MODEL_ASSETS = {} satisfies Record<string, ModelAsset>;
+export const MODEL_ASSETS = {
+  /** Quaternius "Modular Men", casual outfit, recoloured at runtime. */
+  studentMan: {
+    path: 'assets/models/characters/student-man.glb',
+    scale: 1,
+    credit: 'Quaternius, Modular Men pack (CC0)',
+  },
+  /** Quaternius "Modular Women", casual outfit, recoloured at runtime. */
+  studentWoman: {
+    path: 'assets/models/characters/student-woman.glb',
+    scale: 1,
+    credit: 'Quaternius, Modular Women pack (CC0)',
+  },
+  /** Quaternius Universal Animation Library clips, retargeted onto both bodies at load. */
+  characterAnimations: {
+    path: 'assets/models/characters/animations.glb',
+    scale: 1,
+    credit: 'Quaternius, Universal Animation Library (CC0)',
+  },
+  /** KayKit Furniture Bits pieces, sharing one palette texture. */
+  furnitureKit: {
+    path: 'assets/models/furniture/furniture-kit.glb',
+    scale: 1,
+    credit: 'Kay Lousberg, KayKit Furniture Bits 1.0 (CC0)',
+  },
+} satisfies Record<string, ModelAsset>;
 
 export type ModelKey = keyof typeof MODEL_ASSETS;
 

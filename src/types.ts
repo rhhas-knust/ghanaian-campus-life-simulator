@@ -57,7 +57,12 @@ export interface CampusBounds {
  */
 export type InteractAction =
   | { readonly kind: 'talk'; readonly who: string }
-  | { readonly kind: 'sleep' };
+  /** A story place: the bed, the wardrobe, the lost-property cabinet. */
+  | { readonly kind: 'place'; readonly place: string }
+  /** A door from the campus into an interior. */
+  | { readonly kind: 'enter'; readonly entrance: string }
+  /** The way back out of an interior. */
+  | { readonly kind: 'exit'; readonly entrance: string };
 
 /** Anything the player can walk up to and read, talk to or use. */
 export interface Interactable {
@@ -141,5 +146,7 @@ export type GamePhase =
   | 'paused'
   /** A sign or story card is open. */
   | 'reading'
+  /** Fading between the campus and an interior. */
+  | 'transition'
   | 'dialogue'
   | 'phone';

@@ -13,7 +13,7 @@ onto the phases below; this file stays the source of truth for order.
 | Phase | Theme | Status |
 | --- | --- | --- |
 | 1 | Playable campus | **Built** — awaiting a test on real Android hardware |
-| 2 | Real assets and a living campus | **In progress** — story foundation (stages A–C) built; assets, traversal and campus life not started |
+| 2 | Real assets and a living campus | **In progress** — story foundation (stages A–C), interiors and M02 built; assets and campus life not started |
 | 3 | Student life systems | Not started |
 | 4 | Academics and progression | Not started |
 | 5 | Social life, story and polish | Not started |
@@ -72,12 +72,39 @@ new art; it uses placeholder characters on the existing campus.
   cinematic, character creation (name, address, programme, home), and M01
   "Akwaaba" with Uncle Bright, Mrs. Agyeman and Nii as standing placeholders.
 
-Still open from stage C's neighbours: Mission 2 onwards, interiors (room A-214
-is a story card), and the rigged characters of stage D.
+### Interiors and Mission 2 — built (stage C+)
+Also at the owner's request.
+- **Interior system:** floor plans as data, built on entry and freed on exit,
+  one at a time; fade transitions; collision, interactables, indoor lighting,
+  a floor-plan minimap and a ceiling for the third-person camera; the save
+  remembers which building the player is in, and older saves still load.
+- **Interiors:** Hastech Block A second floor (corridor, room A-214, common
+  room) and the Porter's Lodge.
+- **M02 "Kojo's Missing Phone"**, using both interiors, with choices that
+  change Kojo's, Uncle Bright's and Nii's standing.
+
+Still open: Mission 3 onwards, more interiors, and the rigged characters of
+stage D.
+
+### Free model trial — built, awaiting the owner's verdict
+Also at the owner's request, after asking whether a realistic open-source
+life game's graphics could be reused (they cannot; the open-source Sims
+remakes need EA's files).
+- **Rigged, animated characters** from free CC0 packs (Quaternius bodies,
+  Quaternius Universal Animation Library clips retargeted at load) for the
+  player and the whole cast, one draw call each, recoloured per character.
+- **KayKit furniture** in A-214 and the Block A common room, one draw call
+  per room.
+- A **GLB loader** (`src/core/loadModels.ts`) with a full fallback to the
+  procedural art, and a script that rebuilds the model files from the packs.
+
+This is a trial: if the owner likes the look on their phone, stage D can
+build on it (more bodies and outfits, an appearance picker); if not, deleting
+the model files puts the game back exactly as it was.
 
 ### Assets
-- glTF/GLB loader honouring `MODEL_ASSETS`; any building with `model` set uses
-  the real mesh (the hook already exists in `Buildings.ts`).
+- Buildings honouring `model` in `campusLayout.ts` through the GLB loader
+  the model trial added (`src/core/loadModels.ts`).
 - Models built from the elevation sheets in `GAME_ART/buildings/`.
 - A rigged student character replacing the procedural avatar, with proper
   walk and idle animations.
@@ -86,7 +113,8 @@ is a story card), and the rigged characters of stage D.
 ### Traversal
 - **Ground height and step height**, so verandahs, steps and plinths become
   walkable rather than part of the building colliders.
-- At least one interior — the library is the obvious first.
+- More interiors on the same system — the library and a lecture theatre
+  next (two are built: Block A's second floor and the Porter's Lodge).
 
 ### Life
 - Students walking between buildings on a path graph (instanced, not batched).

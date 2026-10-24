@@ -45,6 +45,15 @@ export interface OverlaySettings {
   readonly cameraMode: CameraMode;
 }
 
+/** Must match the `.transition` fade in styles.css. */
+const TRANSITION_MS = 260;
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
+
 export class Overlays {
   private readonly loadingScreen = requireElement('loading-screen');
   private readonly loadingText = requireElement('loading-text');
@@ -80,6 +89,9 @@ export class Overlays {
   private readonly infoTitle = requireElement('info-title');
   private readonly infoBody = requireElement('info-body');
   private readonly infoClose = requireElement<HTMLButtonElement>('info-close');
+
+  private readonly transition = requireElement('transition');
+  private readonly transitionText = requireElement('transition-text');
 
   constructor(private readonly callbacks: OverlayCallbacks) {
     this.startButton.addEventListener('click', () => this.callbacks.onStart());
@@ -242,6 +254,31 @@ export class Overlays {
 
   get isMapVisible(): boolean {
     return !this.mapScreen.hidden;
+  }
+
+  // ------------------------------------------------------------- transition
+
+  /**
+   * Fades to black with the destination's name. Resolves once the screen is
+   * fully covered, so the swap behind it is never seen.
+   */
+  coverForTransition(text: string): Promise<void> {
+    this.transitionText.textContent = text;
+    this.transition.hidden = false;
+    // Force a style flush so the opacity change animates rather than snapping.
+    void this.transition.offsetWidth;
+    this.transition.classList.add('is-covering');
+    return wait(TRANSITION_MS);
+  }
+
+  /** Fades back in from black. */
+  revealAfterTransition(): void {
+    this.transition.classList.remove('is-covering');
+    window.setTimeout(() => {
+      if (!this.transition.classList.contains('is-covering')) {
+        this.transition.hidden = true;
+      }
+    }, TRANSITION_MS);
   }
 
   // ------------------------------------------------------------------- info

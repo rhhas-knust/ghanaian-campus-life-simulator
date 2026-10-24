@@ -18,13 +18,16 @@ not change.)
 the courtyard, lecture halls, library, student centre, cafeteria, hostels and
 sports fields, in first or third person, and read the signs.
 
-**Phase 2 has started with the story opening** (roadmap stages A–C): **New
-Story** plays a skippable arrival cinematic, then character creation, then the
-first mission, **M01 "Akwaaba"** — sign in at the gate, collect your student ID,
-meet your roommate Nii and join the hostel group chat. Conversations have
-choices, the phone holds your objectives and messages, and progress is saved
-on the device. After M01 the campus is free to explore; Mission 2 is not built
-yet. Buildings cannot be entered yet either — interiors are a later stage.
+**Phase 2 has started with the story.** **New Story** plays a skippable
+arrival cinematic, then character creation, then two missions:
+**M01 "Akwaaba"** — sign in at the gate, collect your student ID, meet your
+roommate Nii, and climb to room A-214 to sleep — and **M02 "Kojo's Missing
+Phone"**, in which the room's previous occupant asks you to find something he
+left behind. You can **walk into buildings**: the Block A second floor (with
+your room and the common room) and the Porter's Lodge. Conversations have
+choices that people remember, the phone holds your objectives and messages,
+and progress is saved on the device. After M02 the campus is free roam;
+Mission 3 is not built yet.
 
 **Design documents** for the full game — systems, cast and story; most of it
 not built yet: [GAME_DESIGN.md](GAME_DESIGN.md),
@@ -177,8 +180,8 @@ Traced from the master plan in `GAME_ART/campus-map/`:
 
 ## The story so far
 
-Phase 2, roadmap stages A–C of [GAME_DESIGN.md](GAME_DESIGN.md) §12. Story
-text follows [STORYLINE.md](STORYLINE.md) §2.
+Phase 2, roadmap stages A–C and C+ of [GAME_DESIGN.md](GAME_DESIGN.md) §12.
+Story text follows [STORYLINE.md](STORYLINE.md) §2.
 
 - **Title screen.** **New Story**, or **Continue Story** when there is a save
   (with a second button to start over, which asks twice).
@@ -189,27 +192,50 @@ text follows [STORYLINE.md](STORYLINE.md) §2.
 - **Character creation** — name (with an Akan day-name suggestion), how you
   are addressed (he / she / they), programme (Engineering, Computer Science,
   Business Administration, Communication Studies, Architecture) and home.
-  Appearance waits for the rigged 3D characters (stage D).
+  There is no appearance picker yet: a player addressed as "she" gets the
+  woman's body, anyone else the man's.
 - **M01 "Akwaaba"**, seven steps: sign in with **Uncle Bright** at the
   porter's lodge → read the AKWAABA board → check the courtyard signpost →
   collect your student ID from **Mrs. Agyeman** at the Administration Block →
   meet **Nii** at the Block A gateway → read the Block A group chat on your
-  phone → go up to room A-214 and sleep. Day one ends with something buzzing
-  under the floor.
+  phone → climb the Block A stairs, find room A-214 and sleep in your bed.
+  Day one ends with something buzzing under the floor.
+- **M02 "Kojo's Missing Phone"**, day two: a message from Uncle Bright → meet
+  **Kojo** on the road outside the gate (he cannot come in) → search A-214 →
+  ask Nii in the common room where lost things go → talk Uncle Bright into
+  opening the lost-property cabinet in the Porter's Lodge → take the phone
+  back to Kojo. How you treat Kojo, Bright and Nii changes their standing,
+  what they say later, and whether Kojo gives you his number. The mystery
+  under the floor stays unsolved.
+- **Buildings you can enter**: the stairs in the Block A court lead to the
+  second floor — a corridor of numbered doors (knock on them), room A-214
+  with its beds, desks, wardrobe and loose tile, and the common room. The
+  Porter's Lodge by the gate opens from day two. Going in or out fades
+  through black; inside, the minimap becomes a floor plan, the location pill
+  names the room, and objective markers point at the door you need.
 - **Conversations** are data — one JSON file each in
   `src/story/data/dialogue/` — with 2–4 replies, conditions (some lines only
   exist for one programme) and effects on flags, relationships and
   reputation. Text only; no voice acting.
 - **Objectives** on a card under the pause button, as a gold marker on the
-  minimap and the campus map, and as a gold diamond floating over the target.
+  minimap and the campus map, and as a gold diamond floating over the target —
+  or over the door to it, when the target is inside a building or a room.
 - **The phone**: the mission checklist, message threads (admissions, Mum, the
-  Block A group chat) and a profile with your reputation and the people you
-  have met.
+  Block A group chat, the Porter's Lodge, and Kojo if he trusts you) and a
+  profile with your reputation and the people you have met.
 - **Saving**: automatic, in the browser's local storage, after every
-  conversation, mission step, sleep and pause. There is one save slot per
-  browser; clearing site data starts again.
-- **Placeholder characters**: simple standing figures, one draw call each,
-  until the rigged models exist.
+  conversation, mission step, sleep, building transition and pause — and it
+  remembers which building you were in. There is one save slot per browser;
+  clearing site data starts again. Saves from the previous release still load.
+- **Animated characters (trial)**: the player and the cast are rigged,
+  animated low-poly bodies from free CC0 packs (Quaternius), recoloured per
+  character — they breathe while standing, gesture while talking, and the
+  player blends from idle to walk to jog with speed. Room A-214 and the
+  common room are furnished from the CC0 KayKit Furniture Bits pack. Both are
+  a **trial** of free art, not the final look: see
+  [Free model trial](#free-model-trial) below. If the models cannot be
+  downloaded, the game falls back to the old procedural figures and
+  furniture.
 
 ---
 
@@ -251,11 +277,14 @@ src/
 │   ├── campusLayout.ts        The whole campus, in master-plan pixels
 │   ├── palette.ts             Material colours (from GAME_ART)
 │   ├── settings.ts            Movement, camera, touch-look, quality presets
+│   ├── interiors.ts           Interior floor plans and the doors into them
+│   ├── furnitureModels.ts     Which KayKit pieces stand in for which props
 │   └── assets.ts              Runtime asset manifest + budgets
 │
 ├── core/
 │   ├── Engine.ts            Renderer, scene, camera, resize, quality switching
 │   ├── Game.ts              State machine and the wiring between subsystems
+│   ├── loadModels.ts        Loads the CC0 models; falls back to placeholders
 │   └── debug.ts             Opt-in `?debug=1` inspection API
 │
 ├── story/                   ── Story data and logic. No Three.js, no DOM. ──
@@ -265,7 +294,7 @@ src/
 │   │   ├── cast.ts            Who stands where, and what they say
 │   │   ├── missions.ts        Mission steps, as flags to set
 │   │   ├── opening.ts         The arrival cinematic's camera shots
-│   │   └── places.ts          Story places (the stairs to A-214), story cards
+│   │   └── places.ts          Story places (the bed, the wardrobe, the cabinet), cards
 │   ├── StoryState.ts          Flags, relationships, reputation, clock, save format
 │   ├── StoryDirector.ts       Current objective, worked out from the flags
 │   ├── dialogue.ts            JSON validation and the dialogue runner
@@ -274,9 +303,11 @@ src/
 │   └── types.ts               Programmes, homes, conditions, effects
 │
 ├── actors/                  ── Story things in the 3D world. ──
-│   ├── NpcFigures.ts          Placeholder characters, one draw call each
+│   ├── characterRig.ts        CC0 bodies: merge, recolour, retarget clips at load
+│   ├── CharacterFigures.ts    The cast as rigged, animated characters
+│   ├── NpcFigures.ts          Fallback placeholder figures, one draw call each
 │   ├── ObjectiveBeacon.ts     The floating objective marker
-│   └── storyPlacements.ts     Cast + places -> interactables and colliders
+│   └── storyPlacements.ts     Cast, places, doors -> what is here, now
 │
 ├── world/                   ── Reads config/, emits geometry + colliders. ──
 │   ├── WorldBuilder.ts        Orchestrator; owns batching and the sign atlas
@@ -288,14 +319,19 @@ src/
 │   ├── Vegetation.ts          Five tree species, seeded scatter, hedges
 │   ├── Signage.ts             Welcome board, signpost, notice board
 │   ├── SignAtlas.ts           All sign lettering in one texture
-│   ├── Lighting.ts            Sun, sky dome, fog, player-following shadows
-│   └── zones.ts               Position -> HUD place name
+│   ├── Lighting.ts            Sun, sky dome, fog, shadows; indoor lighting
+│   ├── zones.ts               Position -> HUD place name
+│   └── interiors/
+│       ├── InteriorBuilder.ts   One interior: floors, walls, doors, lettering
+│       ├── furniture.ts         Beds, desks, wardrobes, sofas, the stairwell…
+│       └── furnitureKit.ts      The KayKit pieces, as geometry for the batcher
 │
 ├── player/
 │   ├── PlayerController.ts  Body: position, look, velocity, auto-level
 │   ├── CameraRig.ts         First/third-person framing, wall avoidance
 │   ├── CinematicCamera.ts   Camera flights for the arrival cinematic
-│   └── Avatar.ts            Third-person student model and walk cycle
+│   ├── ModelAvatar.ts       Third-person rigged student, clips blended by speed
+│   └── Avatar.ts            Fallback procedural student and walk cycle
 ├── physics/CollisionSystem.ts       Circle vs rotated box/circle
 ├── interaction/InteractionSystem.ts Proximity + facing focus selection
 │
@@ -357,6 +393,22 @@ save.
 - **A mission step:** `src/story/data/missions.ts`. A step is done when its
   flag is set; reading anything sets `seen:<interactable id>`.
 - **A phone message:** `src/story/data/messages.json`.
+- **Where someone stands:** `posts` in `cast.ts`, each with an optional
+  condition and an optional interior. A conversation can fork on what the
+  player did earlier with a `branch` node:
+  `{ "branch": [{ "if": { "flag": "lied_to_bright" }, "next": "…" }], "next": "…" }`;
+  `"if"` also takes `"atLeast": { "who": "kojo", "value": 10 }`.
+- **Something to inspect:** `src/story/data/places.ts` — readings are tried in
+  order, and the first whose condition holds is shown (and may set a flag).
+
+### Editing an interior
+
+Interiors are floor plans in `src/config/interiors.ts`, in local metres:
+rooms (floor and name), axis-aligned walls with `openings` (doorways) and
+`windows`, closed `doors` with a number plate and a knock, `props` from the
+furniture list, ceiling `lights` and `exits`. `ENTRANCES` puts a door on
+campus (in master-plan pixels) and says where the player stands on each side.
+An interior is built when the player goes in and freed when they leave.
 
 ---
 
@@ -403,6 +455,7 @@ Target: a mid-range Android phone at 30+ fps.
 | --- | --- | --- |
 | Draw calls (campus) | ~38 | ~38 |
 | Draw calls (story characters, objective marker) | +4 | +4 |
+| Draw calls indoors (campus hidden) | ~24 + characters | ~24 + characters |
 | Triangles | ~70,000 | ~46,000 |
 | Pixel ratio cap | 2.0 / 1.5 | 1.0 |
 | Shadows | yes, following the player | off |
@@ -420,13 +473,52 @@ How:
    so they stay sharp near you at a fixed cost.
 4. **Pixel-ratio capping** — a 3x-density phone screen would otherwise render
    nine times the pixels.
-5. **Story characters are one mesh each.** A placeholder figure is merged
-   into a single vertex-coloured mesh sharing one material, instead of the
-   dozen meshes the player's avatar uses.
+5. **Characters are one mesh each.** Each rigged body's parts are merged at
+   load into one skinned mesh coloured per vertex, sharing one material, so a
+   character is one draw call (two with its shadow). The procedural fallback
+   figures are merged the same way.
+6. **Animation is retargeted once, at load**, and baked into ordinary clips;
+   nothing is retargeted per frame, and characters out of sight are not
+   animated.
+7. **All the furniture is one draw call per room.** The KayKit pieces share
+   one 15 KB palette texture, so they batch together under one material like
+   any palette colour.
 
-Download: ~180 KB of gzipped JavaScript (Three.js split into its own cacheable
-chunk) plus a 68 KB title image. The 140 KB campus map image only downloads the
-first time the map is opened.
+Download: ~225 KB of gzipped JavaScript (Three.js split into its own cacheable
+chunk), a 68 KB title image and ~1.2 MB of models (two bodies ~470 KB each,
+animations 120 KB, furniture 150 KB). The 140 KB campus map image only
+downloads the first time the map is opened.
+
+### Free model trial
+
+The owner asked whether a realistic open-source life game's graphics could be
+reused. None could (the open-source Sims remakes need EA's game files), so
+this trial uses free **CC0** packs instead — public domain, no attribution
+required, credited anyway in
+[`public/assets/models/CREDITS.md`](public/assets/models/CREDITS.md):
+
+| What | Pack | Where in the game |
+| --- | --- | --- |
+| Two bodies, man and woman | Quaternius Ultimate Modular Men / Women ("Casual") | The player and all five cast members, recoloured from `cast.ts` |
+| Idle, talking, walk, jog | Quaternius Universal Animation Library (free) | Retargeted onto both bodies at load (`src/actors/characterRig.ts`) |
+| Beds, desk, chair, lamp, books, rug, sofa, table | KayKit Furniture Bits 1.0 | A-214 and the Block A common room (`src/config/furnitureModels.ts`) |
+
+Measured in headless Chromium with software rendering (SwiftShader), **not on
+a phone**, at the same viewpoints with and without the models:
+
+| View | Draw calls (models / placeholders) | Triangles drawn (models / placeholders) |
+| --- | --- | --- |
+| Gate, third person, Uncle Bright in view | 66 / 91 | 164k / 145k |
+| Block A common room, third person, Nii in view | 19 / 34 | 18.6k / 5.8k |
+| Room A-214, first person | 21 / 22 | 6.5k / 3.0k |
+
+The rigged bodies cost *fewer* draw calls than the placeholders (the old
+avatar was a dozen meshes, each drawn again for its shadow) but about 6,300
+triangles each instead of ~500. Software-rendered frame rates were too noisy
+to compare; only a real phone can say whether this is fast enough.
+
+The models are rebuilt from the source packs by
+[`scripts/assets/build_models.py`](scripts/assets/README.md).
 
 ---
 
@@ -443,13 +535,19 @@ CI runs the same checks, and the Pages deploy does not publish if any fail.
 ### Browser smoke test
 
 `scripts/smoke-test.mjs` drives the real production build in headless
-Chromium and asserts on game state — **62 checks**: world generation, the
+Chromium and asserts on game state — **93 checks**: world generation, the
+character and furniture models loading (and the game still loading, with
+placeholders, when the model files are blocked), the
 arrival cinematic and Skip, character creation, walking, collision at the
 Library, reading the campus sign, a full conversation with Uncle Bright
 (choices, relationship change, mission progress), the phone, the save and
 **Continue**, both camera modes and third-person wall avoidance, pause, the
-campus map, the quality rebuild, and on a phone-sized touch screen the story
-start, the joystick, the swipe fix, vertical look and the camera button.
+campus map, the quality rebuild; going into Block A, corridor collision, the
+A-214 doorway, sleeping and waking inside, leaving, and geometry being freed;
+M02 from the message to the completion card, including a reload inside the
+Porter's Lodge halfway through; a save from the previous release; and on a
+phone-sized touch screen the story start, the joystick, the swipe fix,
+vertical look, the camera button and entering Block A with INTERACT.
 
 ```bash
 npm i -D playwright && npx playwright install chromium   # first time only
@@ -472,8 +570,12 @@ feels or performs on a real phone.
       **Skip** works
 - [ ] Character creation: the name box takes typing on a phone keyboard
 - [ ] Play M01 to the end: Uncle Bright, the board, the signpost, Mrs.
-      Agyeman, Nii, the group chat, sleeping in A-214
-- [ ] Reload: **Continue Story** puts you back where you were
+      Agyeman, Nii, the group chat, climbing to A-214 and sleeping in your bed
+- [ ] Play M02 to the end, once kindly and once badly; check Kojo's number
+      appears (or not) on the phone
+- [ ] Walk the Block A corridor and the Porter's Lodge with the thumbstick;
+      knock on a door; try third person in A-214
+- [ ] Reload inside a building: **Continue Story** puts you back in the room
 - [ ] Walk in through the gate; the AKWAABA board shows a prompt
 - [ ] You cannot walk through buildings, the fence, trees, posts or cars
 - [ ] The location pill and minimap update as you move
@@ -490,9 +592,14 @@ Add `?debug=1` to the URL to get `window.__campusDebug`:
 ```js
 __campusDebug.getPlayer()    // { x, z, yawDegrees, pitch, speed }
 __campusDebug.getCamera()    // { mode, x, y, z }
-__campusDebug.getStats()     // batches, triangles, colliders, interactables
+__campusDebug.getStats()     // batches, triangles, colliders, interactables,
+                             // interiorBatches, GPU geometries and textures,
+                             // last frame's draw calls and triangles, and
+                             // whether the character and furniture models loaded
 __campusDebug.getPhase()     // 'loading' | 'ready' | 'cinematic' | 'creating' | 'playing'
-                             // | 'paused' | 'reading' | 'dialogue' | 'phone'
+                             // | 'paused' | 'reading' | 'transition' | 'dialogue' | 'phone'
+__campusDebug.getLocation()  // 'campus' | 'hostel-a-2f' | 'porters-lodge'
+__campusDebug.setFlags([...])// mark story flags as earned, to jump to a scene
 __campusDebug.getStory()     // name, mission, objective, step, day, clock, flags, relationships
 __campusDebug.getFocusId()   // id of the interactable in range, or null
 __campusDebug.getZoneName()  // the HUD place name
@@ -514,14 +621,24 @@ and troubleshooting: **[DEPLOYMENT.md](DEPLOYMENT.md)**.
 Deliberate Phase 1 boundaries:
 
 - **The world is flat and movement is 2D** — no stairs, no climbing onto
-  verandahs (they are inside the building colliders), no interiors.
+  verandahs (they are inside the building colliders). Going "upstairs" to the
+  Block A second floor is a fade, not a climb.
 - **Buildings are procedural placeholders** that follow the art; real models
   are Phase 2.
 - **No crowds, moving vehicles, time of day (the clock runs, the sky does not
-  change), inventory or audio.** Story characters stand still at their posts.
-- **Only M01 is playable.** After it the campus is free roam until Mission 2
-  is built.
-- **No interiors**: rooms, including A-214, are reached through story cards.
+  change), inventory or audio.** Story characters idle and gesture at their
+  posts; they do not walk anywhere.
+- **The characters and furniture are a trial of free CC0 packs**, not
+  commissioned art: two bodies recoloured for everyone, no faces to speak of,
+  no appearance picker, and the man's body wears shorts. Nii's bed is no longer
+  orange — the kit's two beds have the same blue bedding.
+- **M01 and M02 are playable.** After them the campus is free roam until
+  Mission 3 is built.
+- **Two interiors**: the Block A second floor and the Porter's Lodge. The
+  other doors in Block A are closed; the other buildings cannot be entered
+  yet. The night in A-214 is still told on a card.
+- **The campus map is the master plan**: inside a building it marks the
+  building's door, not your spot in the room (the minimap shows the room).
 - **One save per browser**, in local storage — no cloud saves, by design (no
   backend).
 - **The third-person camera avoids walls but not low objects**: it may pull in

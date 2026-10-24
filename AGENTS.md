@@ -8,11 +8,15 @@ Read this before touching code.
 A browser-based first-person 3D Ghanaian university campus: Three.js +
 TypeScript + Vite, deployed as a static site to GitHub Pages.
 
-**Phase 1 is a walkable campus; Phase 2 has started with the story opening
-only** — game state, dialogue, the arrival cinematic, character creation and
-mission M01 (GAME_DESIGN.md §12, stages A–C), because the owner asked for it.
-Do not start the rest of Phase 2 or later work (more missions, interiors, glTF
-loading, crowds, life systems, a backend) unless you have been asked to. The
+**Phase 1 is a walkable campus; Phase 2 has started with the story only** —
+game state, dialogue, the arrival cinematic, character creation, missions M01
+and M02, and the interior system with two interiors (Block A's second floor,
+the Porter's Lodge), because the owner asked for them (GAME_DESIGN.md §12,
+stages A–C and C+). The owner also asked for a **trial of free CC0 models**:
+rigged, animated characters for the player and cast, and KayKit furniture in
+Block A (README "Free model trial"). Do not start Mission 3, more interiors,
+models for buildings or the campus, or the rest of Phase 2 and later work
+(crowds, life systems, a backend) unless you have been asked to. The
 phases are in [PROJECT_PHASES.md](PROJECT_PHASES.md).
 
 **The art lives in [`GAME_ART/`](GAME_ART/README.md). Read
@@ -61,6 +65,12 @@ Likewise:
   configuration, not state.)
 - `PlayerController` owns the body. `CameraRig` frames it and `Avatar` draws
   it; the player knows nothing about either.
+- **Interiors are world modules too.** `src/world/interiors/` builds one
+  interior from `src/config/interiors.ts` into batches, colliders and
+  interactables, and knows nothing about the story. `Game` owns the
+  location: it builds the interior on the way in, disposes it on the way out,
+  and swaps the collision and interaction sets with `replace()` — it never
+  creates a new `PlayerController`, `CameraRig` or `CollisionSystem`.
 - **`src/story/` is data and logic only: no Three.js, no DOM.** A mission step
   is a flag; the director works out the objective from the flags; the dialogue
   runner applies effects to `StoryState`. `Game.ts` is the only place the story
@@ -84,6 +94,12 @@ it with a glTF loader.
 | Add or change a mission step | `src/story/data/missions.ts` (a step = a flag) |
 | Add a phone message thread | `src/story/data/messages.json` |
 | Change the arrival cinematic | `src/story/data/opening.ts` (shots in master-plan pixels) |
+| Add or change an interior, or the door into it | `src/config/interiors.ts` (local metres; `ENTRANCES` in plan pixels) |
+| Add a piece of furniture | `PropKind` in `interiors.ts` + a case in `src/world/interiors/furniture.ts` |
+| Add something to inspect (bed, wardrobe, cabinet) | `src/story/data/places.ts` |
+| Swap which kit piece draws a prop, or its scale | `src/config/furnitureModels.ts` |
+| Change a character's body or colours | `figure` in `src/story/data/cast.ts` |
+| Rebuild the CC0 model files | `scripts/assets/build_models.py` (see `scripts/assets/README.md`) |
 | Look up the concept art | `GAME_ART/` — reference only, never shipped |
 | Check how a planned system, character or mission should work | `GAME_DESIGN.md`, `CHARACTER_BIBLE.md`, `STORYLINE.md` — designs, not descriptions of current code |
 | Change how buildings are *generated* | `src/world/Buildings.ts` |
@@ -120,8 +136,8 @@ that consumes it, rather than special-casing inside an existing one.
 
 - **Static geometry goes through `GeometryBatcher`.** Never `scene.add()` a
   one-off mesh for scenery. The campus is ~5,600 pieces in ~38 draw calls; one
-  careless `scene.add` in a loop undoes that. The avatar is the one deliberate
-  exception, because it moves.
+  careless `scene.add` in a loop undoes that. The characters (the avatar and
+  the cast) are the deliberate exception, because they move.
 - **Sign lettering goes through `SignAtlas`.** A `CanvasTexture` per sign is a
   draw call per sign. Register the text in `WorldBuilder.collectLabels()` (or
   the data it reads) and draw it with `shapes.label`.
@@ -129,6 +145,8 @@ that consumes it, rather than special-casing inside an existing one.
   and frozen. Phase 2's moving things go into the scene directly, and should be
   instanced where there are many of them.
 - **One material per palette key.** Adding a material is adding a draw call.
+  The furniture kit follows the rule: all its pieces share one texture and
+  batch under the `furnitureKit` key. A new kit piece must use that texture.
 - **No per-frame DOM writes.** `Hud` compares against the last value and only
   writes when it actually changed. Keep that pattern.
 - **Seeded randomness only** (`SeededRandom`). `Math.random()` in world
@@ -140,7 +158,7 @@ that consumes it, rather than special-casing inside an existing one.
 ```bash
 npm run verify
 npm run preview &
-npm run test:smoke   # 62 checks; needs playwright, see README
+npm run test:smoke   # 93 checks; needs playwright, see README
 # then actually walk around — in both camera modes
 ```
 
@@ -152,6 +170,8 @@ __campusDebug.getPlayer()   // { x, z, yawDegrees, pitch, speed }
 __campusDebug.getCamera()   // { mode, x, y, z }
 __campusDebug.getStats()    // batches, triangles, colliders, interactables
 __campusDebug.getStory()    // mission, objective, step, flags, relationships
+__campusDebug.getLocation() // 'campus' or an interior id
+__campusDebug.setFlags([])  // jump to a story state without replaying it
 __campusDebug.teleport(x, z, yawDegrees)
 ```
 
@@ -189,9 +209,35 @@ Watch `getStats().batches`. If it jumps, something stopped batching.
 - **The keyboard handler swallows W, E, Space and Tab.** It skips text
   inputs (`isTextEntry` in `KeyboardMouseInput.ts`); without that, nobody
   could type a name with a W or an E in it in character creation.
-- **Dialogue placeholder figures are one merged mesh each.** Do not build NPCs
-  out of separate meshes like the avatar: four characters would cost more draw
-  calls than half the campus.
+- **Interior lettering has its own material key** (`interiorSignText`).
+  Building an interior registers a fresh atlas material under it; reusing
+  `signText` would dispose the campus atlas and blank every campus sign.
+- **Story points mix units on purpose**: a cast post, place or mission target
+  with no `location` is in campus master-plan pixels; one with a `location`
+  is in that interior's local metres. Convert with `locationPoint`, never by
+  hand.
+- **Indoors there is no sun.** Shadows, the sky dome and campus lamp lights
+  are switched off (`setIndoorLighting`); the third-person boom is capped
+  under the ceiling (`CameraRig.setCeiling`). Forget either and rooms are
+  dark or the camera pokes through the roof.
+- **Steps complete from flags, so gate the things that set them.** A step's
+  conversation or place is conditioned on the previous step's flag
+  (`talks`/`readings` `when`), otherwise exploring early completes steps out
+  of order.
+- **Characters are one merged mesh each** — the rigged bodies (parts merged
+  into one skinned mesh at load, `characterRig.ts`) and the placeholder
+  figures alike. Do not build NPCs out of separate meshes: five characters
+  would cost more draw calls than half the campus.
+- **The animation file has no skin, so its joints load as plain nodes**, not
+  `Bone`s. Look the library's skeleton up by name (`nodesByName`); filtering
+  on `isBone` finds nothing and the rig silently falls back to placeholders.
+- **A model that fails to load must cost looks, not the game.**
+  `loadModels.ts` catches every failure and the game keeps the procedural
+  avatar, figures and furniture; the smoke test blocks `*.glb` to prove it.
+  Keep that path working when you add a model.
+- **GPU geometry counts grow the first time something is drawn.** Each
+  character uploads its mesh the first time it comes into view, so a leak
+  check must compare steady-state round trips, not the first one.
 
 ## Commit and PR
 

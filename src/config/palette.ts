@@ -94,6 +94,37 @@ export const MATERIAL_LIBRARY = {
   kenteGreen: { colour: 0x006b3f, roughness: 0.85, metalness: 0 },
   kenteBlack: { colour: 0x1b1b1b, roughness: 0.85, metalness: 0 },
 
+  // -------------------------------------------------------------- interiors
+  floorTerrazzo: { colour: 0xcfc6b4, roughness: 0.6, metalness: 0 },
+  floorTile: { colour: 0xb9a07a, roughness: 0.7, metalness: 0 },
+  wallPaint: { colour: 0xf1ead9, roughness: 0.95, metalness: 0 },
+  /** The lower band of hostel corridor walls, painted to hide scuffs. */
+  wallDado: { colour: 0x6f9a7c, roughness: 0.9, metalness: 0 },
+  ceilingWhite: { colour: 0xf7f4ec, roughness: 1, metalness: 0 },
+  doorWood: { colour: 0x7a4f2c, roughness: 0.8, metalness: 0 },
+  fabricBlue: { colour: 0x3e5f8a, roughness: 1, metalness: 0 },
+  fabricOrange: { colour: 0xd9772f, roughness: 1, metalness: 0 },
+  plasticBlue: { colour: 0x2f7fc1, roughness: 0.5, metalness: 0 },
+  /** Daylight through a window, self-lit so rooms read as bright without real lights. */
+  windowDaylight: {
+    colour: 0xd9ecf5,
+    roughness: 0.3,
+    metalness: 0,
+    emissive: 0xc8e2f0,
+    emissiveIntensity: 0.75,
+  },
+  /**
+   * Lettering inside the current interior (door numbers, notices). A second
+   * atlas key, so building an interior never replaces the campus atlas.
+   */
+  interiorSignText: { colour: 0xffffff, roughness: 0.8, metalness: 0 },
+  /**
+   * Every piece of the KayKit furniture kit. A placeholder like `signText`:
+   * the real material carries the kit's palette texture and is registered by
+   * the game once the kit has loaded, so all its furniture is one draw call.
+   */
+  furnitureKit: { colour: 0xffffff, roughness: 1, metalness: 0 },
+
   /**
    * Text on signs and building name boards. The colour is a placeholder: the
    * real material is built from the generated sign-text atlas

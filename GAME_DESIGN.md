@@ -18,17 +18,18 @@ Delivery order: [PROJECT_PHASES.md](PROJECT_PHASES.md).
 **Only the left-hand column exists in code.** Everything else in this document
 is a design to build against, not a description of the game today.
 
-| Implemented (Phase 1, and stages A–C of §12) | Planned |
+| Implemented (Phase 1, stages A–C of §12, and interiors with M02) | Planned |
 | --- | --- |
 | Game title and UCIS University name on the title, loading and pause screens and the welcome sign | — |
 | M00 arrival cinematic (camera flight with captions, Skip) | Longer cinematic with students and surveyors' pegs on the field |
-| Walkable 3D campus traced from the master plan | Interiors (room A-214 is a story card) |
+| Walkable 3D campus traced from the master plan | — |
+| Enterable buildings: Hastech Block A second floor (corridor, room A-214, common room) and the Porter's Lodge, with transitions, collision and a floor-plan minimap | More interiors: lecture halls, the library, the cafeteria |
 | First- and third-person cameras, toggle | — |
 | Character creation: name, address, programme, home | Appearance options (body, skin, face, hair, outfit) |
-| One fixed procedural student avatar; standing placeholder figures for Uncle Bright, Mrs. Agyeman and Nii | Rigged, animated characters (player and NPCs) |
+| Rigged, animated CC0 bodies (trial) for the player and the cast, recoloured per character, idling and gesturing at posts set by story state and location; procedural figures as the fallback | Rigged, animated characters (player and NPCs) |
 | Keyboard/mouse and touch controls | — |
-| Dialogue from JSON with choices, conditions and effects; relationship and reputation values | Portrait art; skill checks; money and item effects |
-| Mission M01 "Akwaaba"; objective card, minimap and map markers, floating beacon | M02–M16, side stories, chapters, endings |
+| Dialogue from JSON with choices, conditions (flags, programme, relationship thresholds), silent branches and effects; relationship and reputation values | Portrait art; skill checks; money and item effects |
+| Missions M01 "Akwaaba" and M02 "Kojo's Missing Phone"; objective card, minimap and map markers and a floating beacon that route through doors | M03–M17, side stories, chapters, endings |
 | A game clock and days that end by sleeping | Time of day, timetable, energy, money, grades |
 | Phone: objectives, messages, profile; one save slot in local storage | Timetable and wallet in the phone |
 | Collision; readable signs and plaques | — |
@@ -93,9 +94,12 @@ Missions never trap the player. Between story beats the whole campus is open.
 - **Time-locked spaces:** the library closes at 22:00, the cafeteria serves at
   set hours, the gate closes at 22:00 (late entry costs reputation with the
   porter).
-- **Interiors:** Phase 1 has none. Planned interiors are limited to the
-  library ground floor, one lecture theatre, the player's hostel room and the
-  cafeteria hall, each loaded on entry rather than kept in memory.
+- **Interiors:** built on entry and released on exit, one at a time, from
+  floor-plan data (`src/config/interiors.ts`). Built: the Block A second floor
+  (corridor, the player's room A-214, the common room) and the Porter's
+  Lodge. Planned: the library ground floor, one lecture theatre and the
+  cafeteria hall. Doors are entered with the same INTERACT button as
+  everything else; objectives inside a building point at its door first.
 
 ---
 
@@ -242,7 +246,7 @@ short event, not a punishing system.
 
 | Type | Purpose | Example |
 | --- | --- | --- |
-| **Main** | Advance the chapter story | M03 "The Group Chat" |
+| **Main** | Advance the chapter story | M04 "The Group Chat" |
 | **Side story** | Character arcs, optional | Hajia Zainab's debts |
 | **Routine** | Repeatable life tasks | Attend a lecture, buy lunch |
 | **Event** | Timed campus events | Hall week, SRC debate, a match on the field |
@@ -293,19 +297,24 @@ delivery order.
 | **A. Game state foundation** ✅ | Save/load, flags, game clock, phone menu shell, objective tracker | Nothing new — code only | 2 |
 | **B. Dialogue** ✅ | Dialogue runner, JSON format, choice UI, relationship/reputation values | A | 2 |
 | **C. Opening and first mission** ✅ | Title card, skippable opening cinematic using the existing campus, M01 "Akwaaba" with placeholder NPCs | A, B | 2 |
+| **C+. Interiors and second mission** ✅ | Reusable interior system; Block A second floor and the Porter's Lodge; M02 "Kojo's Missing Phone" | C | 2 |
 | **D. Character pipeline** | Shared rig, first rigged hero model, character creation, player customisation | Character art (CHARACTER_BIBLE §4) | 2 |
 | **E. Living campus** | NPC schedules, crowd students, time of day | D | 2 |
 | **F. Life systems** | Energy, money, timetable, attendance, study, grades | A, E | 3–4 |
-| **G. Chapters 1–3** | Main missions M01–M07, first side stories | B, C, F | 5 |
-| **H. Chapters 4–6 and endings** | M08–M16, ending resolution, epilogue | G | 5 |
-| **I. Polish** | Audio, interiors, localisation, accessibility | Any | 5 |
+| **G. Chapters 1–3** | Main missions M01–M08, first side stories | B, C, F | 5 |
+| **H. Chapters 4–6 and endings** | M09–M17, ending resolution, epilogue | G | 5 |
+| **I. Polish** | Audio, the remaining interiors, localisation, accessibility | Any | 5 |
 
-Stages A–C are built (✅): see README.md, "The story so far". They brought
-forward the art-free part of character creation (name, address, programme,
-home); the appearance options stay in stage D.
+Stages A–C and C+ are built (✅): see README.md, "The story so far". They
+brought forward the art-free part of character creation (name, address,
+programme, home); the appearance options stay in stage D. C+ added the
+interior system the owner asked for, which stage I had down as polish.
 
 Stage D is blocked on rigged character models — concept art alone is not
-enough (CHARACTER_BIBLE.md §4).
+enough (CHARACTER_BIBLE.md §4). A trial with free CC0 bodies and animations
+(README.md, "Free model trial") built the pipeline stage D needs — GLB
+loading, a shared rig, retargeted clips, per-character colours — so
+commissioned models could drop into it.
 
 ---
 

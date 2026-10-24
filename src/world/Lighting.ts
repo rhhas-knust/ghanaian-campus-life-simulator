@@ -200,3 +200,31 @@ export function disposeLighting(handles: LightingHandles): void {
     material.dispose();
   }
 }
+
+/** Outdoor values, captured once so indoors can be undone exactly. */
+const outdoorIntensity = new WeakMap<LightingHandles, { hemisphere: number; ambient: number }>();
+
+/**
+ * Indoors there is no sun or sky: the campus sun would light rooms through the
+ * ceiling and throw the ceiling's shadow over everything. Interiors are lit by
+ * a brighter, warmer fill instead, with glowing lamp and window panels for
+ * the look of light sources — no real point lights, which are expensive on
+ * phones.
+ */
+export function setIndoorLighting(handles: LightingHandles, scene: Scene, indoor: boolean, quality: QualityPreset): void {
+  let saved = outdoorIntensity.get(handles);
+  if (!saved) {
+    saved = { hemisphere: handles.hemisphere.intensity, ambient: handles.ambient.intensity };
+    outdoorIntensity.set(handles, saved);
+  }
+  handles.sun.visible = !indoor;
+  handles.sky.visible = !indoor;
+  for (const lamp of handles.lampLights) {
+    lamp.visible = !indoor;
+  }
+  handles.hemisphere.intensity = indoor ? 1.55 : saved.hemisphere;
+  handles.ambient.intensity = indoor ? 0.75 : saved.ambient;
+  scene.fog = indoor
+    ? null
+    : new Fog(ATMOSPHERE.fogColour, quality.drawDistance * quality.fogNearFactor, quality.drawDistance * quality.fogFarFactor);
+}

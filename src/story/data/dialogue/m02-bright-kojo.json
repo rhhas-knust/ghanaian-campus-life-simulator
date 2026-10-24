@@ -1,0 +1,15 @@
+{
+  "id": "m02-bright-kojo",
+  "start": "kojo",
+  "nodes": {
+    "kojo": {
+      "speaker": "uncle-bright",
+      "text": "So you've met Kojo. Polite boy. Always signing in late, always saying sorry. What happened to him… it is not my place to say.",
+      "next": "room"
+    },
+    "room": {
+      "speaker": "uncle-bright",
+      "text": "His phone? Have you looked in the room properly? Freshers never look properly."
+    }
+  }
+}

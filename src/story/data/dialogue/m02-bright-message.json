@@ -1,0 +1,10 @@
+{
+  "id": "m02-bright-message",
+  "start": "go",
+  "nodes": {
+    "go": {
+      "speaker": "uncle-bright",
+      "text": "Did you see my message? The young man is outside the gate, on the road. Go, go — he has been standing there since six."
+    }
+  }
+}

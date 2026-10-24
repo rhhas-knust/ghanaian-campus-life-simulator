@@ -1,15 +1,15 @@
 /**
- * Placeholder figures for the story characters standing on campus.
+ * Placeholder figures for the story characters, on campus and indoors.
  *
  * Each figure is the same simple body as the player's avatar, standing still,
- * merged into ONE mesh with per-vertex colours. Four characters therefore cost
- * four draw calls and one shared material, instead of the dozen meshes and six
+ * merged into ONE mesh with per-vertex colours. Five characters therefore cost
+ * at most five draw calls and one shared material, instead of the dozen meshes and six
  * materials an unmerged avatar would add each — which matters against a
  * campus budget of ~38 draw calls.
  *
  * They are not batched with the campus because they turn to face the player
- * when spoken to, and because rigged, animated characters replace them in
- * roadmap stage D (CHARACTER_BIBLE.md §4).
+ * when spoken to. They are the FALLBACK now: when the character models load,
+ * `CharacterFigures` draws the same cast as rigged, animated bodies instead.
  */
 
 import {
@@ -25,65 +25,88 @@ import {
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
-import { planPoint } from '../config/campusLayout';
 import type { CastMember, FigureLook } from '../story/data/cast';
+import type { FigurePlacement } from './storyPlacements';
 
 const BASE_HEIGHT = 1.75;
 
-interface Figure {
-  readonly mesh: Mesh;
-  readonly member: CastMember;
+/** What the game needs from whoever draws the cast. */
+export interface StoryFigures {
+  arrange(placements: readonly FigurePlacement[]): void;
+  face(id: string, x: number, z: number): void;
+  /** The character being spoken to, or `null`; animated figures gesture. */
+  setTalking(id: string | null): void;
+  update(delta: number): void;
+  dispose(): void;
 }
 
-export class NpcFigures {
+export class NpcFigures implements StoryFigures {
   private readonly group = new Group();
   private readonly material = new MeshLambertMaterial({ vertexColors: true });
-  private readonly figures = new Map<string, Figure>();
+  private readonly meshes = new Map<string, Mesh>();
 
   constructor(scene: Scene, cast: readonly CastMember[]) {
     this.group.name = 'npc-figures';
     for (const member of cast) {
-      if (!member.figure || !member.post) {
+      if (!member.figure) {
         continue;
       }
       const mesh = new Mesh(buildFigureGeometry(member.figure), this.material);
-      const [x, z] = planPoint(member.post.at);
-      mesh.position.set(x, 0, z);
-      mesh.rotation.y = (member.post.yawDegrees * Math.PI) / 180;
       mesh.castShadow = true;
       mesh.name = `npc:${member.id}`;
-      mesh.visible = member.appears === 'always';
+      mesh.visible = false;
       this.group.add(mesh);
-      this.figures.set(member.id, { mesh, member });
+      this.meshes.set(member.id, mesh);
     }
     scene.add(this.group);
   }
 
-  /** During the arrival cinematic, show the characters who only appear in it. */
-  setOpening(opening: boolean): void {
-    for (const figure of this.figures.values()) {
-      figure.mesh.visible = figure.member.appears === 'always' || opening;
+  /**
+   * Shows exactly the characters listed, where listed, and hides everyone
+   * else. Called when the location or the story changes; the meshes are built
+   * once and reused, so moving between the campus and an interior allocates
+   * nothing.
+   */
+  arrange(placements: readonly FigurePlacement[]): void {
+    for (const mesh of this.meshes.values()) {
+      mesh.visible = false;
+    }
+    for (const placement of placements) {
+      const mesh = this.meshes.get(placement.id);
+      if (mesh) {
+        mesh.position.set(placement.x, 0, placement.z);
+        mesh.rotation.y = (placement.yawDegrees * Math.PI) / 180;
+        mesh.visible = true;
+      }
     }
   }
 
   /** Turns a character to look at a point on the ground. */
   face(id: string, x: number, z: number): void {
-    const figure = this.figures.get(id);
-    if (!figure) {
+    const mesh = this.meshes.get(id);
+    if (!mesh) {
       return;
     }
-    const dx = x - figure.mesh.position.x;
-    const dz = z - figure.mesh.position.z;
+    const dx = x - mesh.position.x;
+    const dz = z - mesh.position.z;
     if (Math.hypot(dx, dz) > 1e-3) {
       // A figure faces -Z at rotation 0, like the player's avatar.
-      figure.mesh.rotation.y = Math.atan2(-dx, -dz);
+      mesh.rotation.y = Math.atan2(-dx, -dz);
     }
+  }
+
+  setTalking(): void {
+    // Placeholder figures have no gestures.
+  }
+
+  update(): void {
+    // Nothing moves.
   }
 
   dispose(): void {
     this.group.removeFromParent();
-    for (const figure of this.figures.values()) {
-      figure.mesh.geometry.dispose();
+    for (const mesh of this.meshes.values()) {
+      mesh.geometry.dispose();
     }
     this.material.dispose();
   }

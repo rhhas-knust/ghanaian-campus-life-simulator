@@ -1,0 +1,69 @@
+{
+  "id": "m02-bright-drawer",
+  "start": "hello",
+  "nodes": {
+    "hello": {
+      "speaker": "uncle-bright",
+      "text": "Ah, {name}. Still looking for the young man's phone?",
+      "next": "ask"
+    },
+    "ask": {
+      "speaker": "player",
+      "text": "Things from room clearances come here, don't they? Lost property?",
+      "next": "who"
+    },
+    "who": {
+      "speaker": "uncle-bright",
+      "text": "They do. But lost property goes back to its owner. Who says that phone is for you?",
+      "choices": [
+        {
+          "text": "Kojo asked me to collect it for him.",
+          "next": "truth",
+          "effects": [
+            { "type": "relationship", "who": "uncle-bright", "delta": 5 },
+            { "type": "reputation", "axis": "integrity", "delta": 2 },
+            { "type": "flag", "flag": "told_bright_truth" }
+          ]
+        },
+        {
+          "text": "It's mine. I lost it yesterday.",
+          "next": "lie",
+          "effects": [
+            { "type": "relationship", "who": "uncle-bright", "delta": -5 },
+            { "type": "reputation", "axis": "integrity", "delta": -5 },
+            { "type": "flag", "flag": "lied_to_bright" }
+          ]
+        },
+        {
+          "text": "His charger was in my wardrobe — look, his name is on it.",
+          "if": { "flag": "found_charger" },
+          "next": "charger",
+          "effects": [
+            { "type": "relationship", "who": "uncle-bright", "delta": 3 },
+            { "type": "flag", "flag": "told_bright_truth" }
+          ]
+        }
+      ]
+    },
+    "truth": {
+      "speaker": "uncle-bright",
+      "text": "Kojo. Hmm. If he sent you, he trusts you. That is not nothing.",
+      "next": "open"
+    },
+    "lie": {
+      "speaker": "uncle-bright",
+      "text": "Yesterday? That cabinet has not been opened since the rains. …I'm too old to argue with freshers.",
+      "next": "open"
+    },
+    "charger": {
+      "speaker": "uncle-bright",
+      "text": "KOJO, all capitals. That's his hand — I've seen it in my book a hundred times.",
+      "next": "open"
+    },
+    "open": {
+      "speaker": "uncle-bright",
+      "text": "The cabinet is behind you. I've unlocked it. Take only what is his.",
+      "effects": [{ "type": "flag", "flag": "bright_opened_drawer" }]
+    }
+  }
+}

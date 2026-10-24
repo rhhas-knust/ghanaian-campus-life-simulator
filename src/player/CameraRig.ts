@@ -30,6 +30,8 @@ export class CameraRig {
   private readonly target = new Vector3();
   private readonly desired = new Vector3();
   private snapNext = true;
+  /** Indoors, the third-person camera must stay under the ceiling. */
+  private ceiling: number | null = null;
 
   constructor(
     private readonly camera: PerspectiveCamera,
@@ -42,6 +44,12 @@ export class CameraRig {
 
   setMode(mode: CameraMode): void {
     this.currentMode = mode;
+    this.snapNext = true;
+  }
+
+  /** `null` outdoors; the ceiling height in metres indoors. */
+  setCeiling(height: number | null): void {
+    this.ceiling = height;
     this.snapNext = true;
   }
 
@@ -97,6 +105,13 @@ export class CameraRig {
         free = Math.max(settings.minDistance, (distance - settings.distance / BOOM_SAMPLES) * 0.95);
         break;
       }
+    }
+
+    // Indoors, a boom long enough to clear the player's shoulders would poke
+    // through the ceiling: shorten it so the camera stays in the room.
+    if (this.ceiling !== null && dirY > 1e-3) {
+      const headroom = this.ceiling - 0.3 - this.target.y;
+      free = Math.min(free, Math.max(settings.minDistance, headroom / dirY));
     }
 
     // Pull in instantly so the camera never visibly passes through a wall;

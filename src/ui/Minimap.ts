@@ -24,6 +24,7 @@ import {
   planRect,
   type PlanRect,
 } from '../config/campusLayout';
+import type { InteriorDef } from '../config/interiors';
 import type { Vec2Tuple } from '../types';
 
 /** Base-map resolution, in canvas pixels per world metre. */
@@ -31,6 +32,20 @@ const PIXELS_PER_METRE = 3;
 /** Width of world shown across the minimap, in metres. */
 const VIEW_METRES = 72;
 const MARGIN_METRES = 30;
+/** Indoors the map zooms in: rooms are metres across, not tens of metres. */
+const INTERIOR_PIXELS_PER_METRE = 14;
+const INTERIOR_VIEW_METRES = 20;
+const INTERIOR_MARGIN_METRES = 12;
+
+/** A pre-drawn base map and how it maps onto world metres. */
+interface MapSource {
+  readonly base: HTMLCanvasElement;
+  readonly originX: number;
+  readonly originZ: number;
+  readonly pixelsPerMetre: number;
+  readonly viewMetres: number;
+  readonly background: string;
+}
 const REDRAW_INTERVAL_MS = 66;
 
 const COLOURS = {
@@ -63,16 +78,25 @@ const MAP_LABELS: Record<string, string> = {
 };
 
 export class Minimap {
-  private readonly base: HTMLCanvasElement;
   private readonly originX: number;
   private readonly originZ: number;
+  private readonly campus: MapSource;
+  private source: MapSource;
   private readonly context: CanvasRenderingContext2D | null;
   private lastDraw = 0;
 
   constructor(private readonly canvas: HTMLCanvasElement) {
     this.originX = CAMPUS_BOUNDS.minX - MARGIN_METRES;
     this.originZ = CAMPUS_BOUNDS.minZ - MARGIN_METRES;
-    this.base = this.renderBase();
+    this.campus = {
+      base: this.renderBase(),
+      originX: this.originX,
+      originZ: this.originZ,
+      pixelsPerMetre: PIXELS_PER_METRE,
+      viewMetres: VIEW_METRES,
+      background: COLOURS.lawn,
+    };
+    this.source = this.campus;
 
     // Match the canvas buffer to its on-screen size, capped at 2x for memory.
     const ratio = Math.min(window.devicePixelRatio || 1, 2);
@@ -92,17 +116,18 @@ export class Minimap {
 
     const context = this.context;
     const size = this.canvas.width;
-    const sourceSize = VIEW_METRES * PIXELS_PER_METRE;
-    const sourceX = (x - this.originX) * PIXELS_PER_METRE - sourceSize / 2;
-    const sourceY = (z - this.originZ) * PIXELS_PER_METRE - sourceSize / 2;
+    const map = this.source;
+    const sourceSize = map.viewMetres * map.pixelsPerMetre;
+    const sourceX = (x - map.originX) * map.pixelsPerMetre - sourceSize / 2;
+    const sourceY = (z - map.originZ) * map.pixelsPerMetre - sourceSize / 2;
 
-    context.fillStyle = COLOURS.lawn;
+    context.fillStyle = map.background;
     context.fillRect(0, 0, size, size);
-    context.drawImage(this.base, sourceX, sourceY, sourceSize, sourceSize, 0, 0, size, size);
+    context.drawImage(map.base, sourceX, sourceY, sourceSize, sourceSize, 0, 0, size, size);
 
     const scale = size / 132;
     if (target) {
-      this.drawTarget(context, size, scale, (target[0] - x) * (size / VIEW_METRES), (target[1] - z) * (size / VIEW_METRES));
+      this.drawTarget(context, size, scale, (target[0] - x) * (size / map.viewMetres), (target[1] - z) * (size / map.viewMetres));
     }
 
     // Heading arrow. Screen-up is north; yaw 0 faces north, positive yaw turns
@@ -122,6 +147,16 @@ export class Minimap {
     context.fill();
     context.stroke();
     context.restore();
+  }
+
+  /**
+   * Switches to an interior's floor plan, or back to the campus with `null`.
+   * The plan is drawn from the same data the interior is built from, so the
+   * map and the rooms can never disagree.
+   */
+  setInterior(interior: InteriorDef | null): void {
+    this.source = interior ? renderInteriorBase(interior) : this.campus;
+    this.lastDraw = 0;
   }
 
   /**
@@ -247,4 +282,86 @@ export class Minimap {
     }
     return canvas;
   }
+}
+
+/** A floor plan: rooms in their floor colours, walls dark, rooms labelled. */
+function renderInteriorBase(interior: InteriorDef): MapSource {
+  const [bx0, bz0, bx1, bz1] = interior.bounds;
+  const originX = bx0 - INTERIOR_MARGIN_METRES;
+  const originZ = bz0 - INTERIOR_MARGIN_METRES;
+  const scale = INTERIOR_PIXELS_PER_METRE;
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.ceil((bx1 - bx0 + INTERIOR_MARGIN_METRES * 2) * scale);
+  canvas.height = Math.ceil((bz1 - bz0 + INTERIOR_MARGIN_METRES * 2) * scale);
+  const context = canvas.getContext('2d');
+  const background = '#2a2e2c';
+  const source: MapSource = { base: canvas, originX, originZ, pixelsPerMetre: scale, viewMetres: INTERIOR_VIEW_METRES, background };
+  if (!context) {
+    return source;
+  }
+  const px = (x: number): number => (x - originX) * scale;
+  const pz = (z: number): number => (z - originZ) * scale;
+
+  context.fillStyle = background;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  for (const room of interior.rooms) {
+    const [x0, z0, x1, z1] = room.rect;
+    context.fillStyle = room.floor === 'floorTile' ? '#c9b18a' : room.floor === 'concrete' ? '#a9a59b' : '#ddd5c4';
+    context.fillRect(px(x0), pz(z0), (x1 - x0) * scale, (z1 - z0) * scale);
+  }
+
+  context.strokeStyle = '#3b4a40';
+  context.lineCap = 'square';
+  context.lineWidth = 0.28 * scale;
+  for (const wall of interior.walls) {
+    const alongX = Math.abs(wall.from[1] - wall.to[1]) < 1e-6;
+    const start = Math.min(alongX ? wall.from[0] : wall.from[1], alongX ? wall.to[0] : wall.to[1]);
+    const end = Math.max(alongX ? wall.from[0] : wall.from[1], alongX ? wall.to[0] : wall.to[1]);
+    const fixed = alongX ? wall.from[1] : wall.from[0];
+    const line = (a: number, b: number): void => {
+      if (b - a < 0.01) {
+        return;
+      }
+      context.beginPath();
+      if (alongX) {
+        context.moveTo(px(a), pz(fixed));
+        context.lineTo(px(b), pz(fixed));
+      } else {
+        context.moveTo(px(fixed), pz(a));
+        context.lineTo(px(fixed), pz(b));
+      }
+      context.stroke();
+    };
+    let cursor = start;
+    for (const cut of [...(wall.openings ?? [])].sort((a, b) => a.at - b.at)) {
+      line(cursor, cut.at - cut.width / 2);
+      cursor = cut.at + cut.width / 2;
+    }
+    line(cursor, end);
+  }
+
+  // Closed doors as small brown ticks, so the corridor reads as a corridor.
+  context.fillStyle = '#7a4f2c';
+  for (const door of interior.doors) {
+    const along = door.facing === 'north' || door.facing === 'south';
+    const w = (along ? 0.95 : 0.25) * scale;
+    const h = (along ? 0.25 : 0.95) * scale;
+    context.fillRect(px(door.at[0]) - w / 2, pz(door.at[1]) - h / 2, w, h);
+  }
+
+  context.font = `700 ${Math.round(scale * 0.95)}px "Trebuchet MS", "Segoe UI", Roboto, sans-serif`;
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  for (const room of interior.rooms) {
+    if (!room.mapLabel) {
+      continue;
+    }
+    const [x0, z0, x1, z1] = room.rect;
+    context.lineWidth = 4;
+    context.strokeStyle = COLOURS.labelShadow;
+    context.strokeText(room.mapLabel, px((x0 + x1) / 2), pz((z0 + z1) / 2));
+    context.fillStyle = COLOURS.label;
+    context.fillText(room.mapLabel, px((x0 + x1) / 2), pz((z0 + z1) / 2));
+  }
+  return source;
 }

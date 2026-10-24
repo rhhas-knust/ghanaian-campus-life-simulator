@@ -178,6 +178,14 @@ export class ShapeBuilder {
 
   constructor(private readonly batcher: GeometryBatcher) {}
 
+  /**
+   * Submits imported geometry (a model piece) with a full transform. The
+   * batcher copies it, so one piece can be placed any number of times.
+   */
+  imported(material: MaterialKey, geometry: BufferGeometry, transform: Matrix4): void {
+    this.batcher.add(material, geometry, transform);
+  }
+
   /** Box positioned by its centre. */
   box(material: MaterialKey, centre: Vec3Tuple, size: SizeTuple, rotationY = 0): void {
     this.compose(centre, size, rotationY);

@@ -15,8 +15,16 @@
  *   paused    — frozen; pause menu (and possibly the campus map) up; rendering
  *               suspended to save battery.
  *   reading   — a sign or story card is open; frozen, world visible behind it.
+ *   transition — fading between the campus and an interior.
  *   dialogue  — a conversation is on screen; frozen.
  *   phone     — the phone is open; frozen.
+ *
+ * LOCATIONS
+ *   The player is on the campus or inside one interior. Going in hides the
+ *   campus, builds the interior, swaps the colliders and interactables, and
+ *   switches the lighting and minimap; coming out disposes the interior. Only
+ *   one interior exists at a time, and the player, camera rig and collision
+ *   system objects are never replaced — they just get a different world.
  *
  * THE STORY
  *   The story layer (`src/story/`) is plain data and logic: flags, the
@@ -29,35 +37,45 @@ import { Vector3 } from 'three';
 
 import { CAMPUS_BOUNDS, SPAWN, planPoint } from '../config/campusLayout';
 import {
+  ENTRANCES,
+  INTERIORS,
+  findEntrance,
+  locationPoint,
+  roomAt,
+  type LocationId,
+} from '../config/interiors';
+import {
   MAX_FRAME_DELTA,
   QUALITY_PRESETS,
   STORAGE_KEYS,
   type CameraMode,
   type QualityLevel,
 } from '../config/settings';
-import { NpcFigures } from '../actors/NpcFigures';
+import { CharacterFigures } from '../actors/CharacterFigures';
+import { NpcFigures, type StoryFigures } from '../actors/NpcFigures';
 import { ObjectiveBeacon } from '../actors/ObjectiveBeacon';
-import { buildStoryPlacements, type StoryPlacements } from '../actors/storyPlacements';
+import { buildStoryPlacements, openingFigures } from '../actors/storyPlacements';
 import { InputState } from '../input/InputState';
 import { KeyboardMouseInput } from '../input/KeyboardMouseInput';
 import { TouchInput } from '../input/TouchInput';
 import { InteractionSystem } from '../interaction/InteractionSystem';
 import { CollisionSystem } from '../physics/CollisionSystem';
-import { Avatar } from '../player/Avatar';
+import { Avatar, type PlayerBody } from '../player/Avatar';
 import { CameraRig } from '../player/CameraRig';
 import { CinematicCamera } from '../player/CinematicCamera';
+import { ModelAvatar } from '../player/ModelAvatar';
 import { PlayerController } from '../player/PlayerController';
-import type { GamePhase, Interactable } from '../types';
+import type { CampusBounds, GamePhase, Interactable, Vec2Tuple } from '../types';
 import { guessQualityLevel, isTouchPrimary, readStoredValue, writeStoredValue } from '../utils/device';
 import { MaterialLibrary } from '../utils/MaterialLibrary';
 import { CAST, findCastMember } from '../story/data/cast';
-import { FIRST_MISSION_ID } from '../story/data/missions';
+import { FIRST_MISSION_ID, type MissionDef } from '../story/data/missions';
 import { OPENING_SHOTS } from '../story/data/opening';
-import { FIRST_NIGHT_CARD, ORDINARY_NIGHT_CARD, WAKE_SPOT } from '../story/data/places';
+import { FIRST_NIGHT_CARD, ORDINARY_NIGHT_CARD, STORY_PLACES, WAKE_SPOT } from '../story/data/places';
 import { DIALOGUES, DialogueRunner } from '../story/dialogue';
 import { MESSAGE_THREADS, hasUnreadThread, visibleThreads } from '../story/messages';
 import { deleteSavedStory, loadStory, saveStory } from '../story/save';
-import { StoryDirector } from '../story/StoryDirector';
+import { StoryDirector, type Objective } from '../story/StoryDirector';
 import { StoryState, formatClock } from '../story/StoryState';
 import {
   ADDRESS_LABELS,
@@ -73,9 +91,11 @@ import { DialogueBox, type DialogueSpeaker } from '../ui/DialogueBox';
 import { Hud } from '../ui/Hud';
 import { Overlays, type InfoContent } from '../ui/Overlays';
 import { PhoneMenu, type PhoneTab, type PhoneView } from '../ui/PhoneMenu';
+import { buildInterior, disposeInterior, type BuiltInterior } from '../world/interiors/InteriorBuilder';
 import {
   buildLighting,
   disposeLighting,
+  setIndoorLighting,
   updateShadowFocus,
   type LightingHandles,
 } from '../world/Lighting';
@@ -83,6 +103,7 @@ import { buildWorld, disposeWorld, type BuiltWorld } from '../world/WorldBuilder
 import { resolveZoneName } from '../world/zones';
 import { installDebugApi, isDebugEnabled, type CampusDebugApi } from './debug';
 import { Engine } from './Engine';
+import { NO_MODELS, loadModels, type LoadedModels } from './loadModels';
 
 /** Enough state to put the player back where they were after a rebuild. */
 interface PlayerSnapshot {
@@ -106,20 +127,30 @@ export class Game {
   private readonly input = new InputState();
   private readonly keyboardMouse: KeyboardMouseInput;
   private readonly touchInput: TouchInput;
-  private readonly avatar: Avatar;
-  private readonly npcs: NpcFigures;
+  /** Placeholder bodies until `load()` swaps in the rigged models, if they load. */
+  private avatar: PlayerBody;
+  private npcs: StoryFigures;
+  private models: LoadedModels = NO_MODELS;
   private readonly beacon: ObjectiveBeacon;
   private readonly cinematicCamera: CinematicCamera;
   private readonly cinematicOverlay: CinematicOverlay;
   private readonly creation: CharacterCreation;
   private readonly dialogueBox: DialogueBox;
   private readonly phone: PhoneMenu;
-  /** Story characters and places as interactables and colliders; data only, built once. */
-  private readonly storyPlacements: StoryPlacements = buildStoryPlacements();
-
   private story: StoryState | null = null;
   private director: StoryDirector | null = null;
   private conversation: { readonly runner: DialogueRunner; readonly who: string } | null = null;
+  /** The current objective, cached when the story changes rather than worked out every frame. */
+  private objective: Objective | null = null;
+  /** Story cards waiting to be shown, e.g. a mission-complete card after its last conversation. */
+  private readonly pendingCards: InfoContent[] = [];
+
+  private location: LocationId = 'campus';
+  private interior: BuiltInterior | null = null;
+  /** Identifies the characters and story interactables currently placed, to skip identical rebuilds. */
+  private placementSignature = '';
+  /** Where the objective marker points right now, in the current location's metres. */
+  private guidance: Vec2Tuple | null = null;
 
   private materials: MaterialLibrary;
   private world: BuiltWorld | null = null;
@@ -258,7 +289,11 @@ export class Game {
 
   /** Builds the campus, yielding to the browser so the loading bar animates. */
   async load(): Promise<void> {
-    this.overlays.setLoadingProgress(0.08, 'Laying out the campus…');
+    this.overlays.setLoadingProgress(0.04, 'Fetching characters and furniture…');
+    this.models = await loadModels((fraction) => this.overlays.setLoadingProgress(0.04 + fraction * 0.3, 'Fetching characters and furniture…'));
+    this.useLoadedBodies();
+
+    this.overlays.setLoadingProgress(0.36, 'Laying out the campus…');
     await nextFrame();
 
     this.buildSceneContents();
@@ -268,8 +303,19 @@ export class Game {
     this.overlays.setLoadingProgress(0.8, 'Preparing the graphics…');
     await nextFrame();
     // Compiling up front avoids a multi-second freeze the first time a
-    // material appears on screen — very noticeable on mobile GPUs.
+    // material appears on screen — very noticeable on mobile GPUs. Compiling
+    // skips hidden objects, and every character is hidden at this point, so
+    // the cast stands in front of the camera for one frame, under the loading
+    // screen: that compiles the skinned shaders, shadow pass included.
+    this.player.getFlatForward(this.scratchForward);
+    const aheadX = this.player.position.x + this.scratchForward.x * 4;
+    const aheadZ = this.player.position.z + this.scratchForward.z * 4;
+    this.npcs.arrange(
+      CAST.filter((member) => member.figure).map((member, index) => ({ id: member.id, x: aheadX + index * 0.01, z: aheadZ, yawDegrees: 0 })),
+    );
     await this.engine.webglRenderer.compileAsync(this.engine.scene, this.engine.camera);
+    this.renderFrame(0);
+    this.npcs.arrange([]);
 
     this.overlays.setLoadingProgress(1, 'Ready');
     await nextFrame();
@@ -303,21 +349,45 @@ export class Game {
     this.engine.dispose();
   }
 
+  /**
+   * Swaps the placeholder player and cast for the rigged ones. Done once, in
+   * `load()`, before anything is placed; without the models the placeholders
+   * simply stay.
+   */
+  private useLoadedBodies(): void {
+    const bodies = this.models.bodies;
+    if (!bodies) {
+      return;
+    }
+    this.avatar.dispose();
+    this.avatar = new ModelAvatar(this.engine.scene, bodies);
+    this.npcs.dispose();
+    this.npcs = new CharacterFigures(this.engine.scene, CAST, bodies);
+  }
+
+  /** The player's body follows how they asked to be addressed; there is no body picker yet. */
+  private applyPlayerBody(): void {
+    if (this.avatar instanceof ModelAvatar && this.story) {
+      this.avatar.setBody(this.story.profile.address === 'she' ? 'woman' : 'man');
+    }
+  }
+
   // ======================================================= scene contents
 
   private buildSceneContents(): void {
     const quality = QUALITY_PRESETS[this.qualityLevel];
     this.materials = new MaterialLibrary(this.qualityLevel === 'low' ? 'lambert' : 'standard');
+    if (this.models.furniture) {
+      this.materials.registerTextured('furnitureKit', this.models.furniture.texture);
+    }
 
     const world = buildWorld(quality, this.materials);
     this.engine.scene.add(world.group);
     this.world = world;
     this.lighting = buildLighting(this.engine.scene, quality);
 
-    this.collision = new CollisionSystem([...world.colliders, ...this.storyPlacements.colliders], CAMPUS_BOUNDS);
-    this.interaction = new InteractionSystem([...world.interactables, ...this.storyPlacements.interactables]);
-    this.player = new PlayerController(this.collision);
-    this.cameraRig = new CameraRig(this.engine.camera, this.collision);
+    // Rebuilds the current interior too, if the player is inside one.
+    this.applyLocationContents();
 
     if (import.meta.env.DEV) {
       // eslint-disable-next-line no-console
@@ -330,6 +400,10 @@ export class Game {
   }
 
   private teardownSceneContents(): void {
+    if (this.interior) {
+      disposeInterior(this.interior);
+      this.interior = null;
+    }
     if (this.world) {
       this.engine.scene.remove(this.world.group);
       disposeWorld(this.world);
@@ -343,6 +417,79 @@ export class Game {
     }
     this.materials.dispose();
     this.engine.scene.fog = null;
+  }
+
+  /**
+   * Makes the scene match `this.location`: the campus visible, or the
+   * campus hidden and the interior built. Also swaps lighting, the minimap
+   * plan and the camera's ceiling, then re-places the story's characters.
+   */
+  private applyLocationContents(): void {
+    const world = this.world;
+    const lighting = this.lighting;
+    if (!world || !lighting) {
+      return;
+    }
+    const quality = QUALITY_PRESETS[this.qualityLevel];
+    if (this.location === 'campus') {
+      if (this.interior) {
+        disposeInterior(this.interior);
+        this.interior = null;
+      }
+      world.group.visible = true;
+      setIndoorLighting(lighting, this.engine.scene, false, quality);
+      this.hud.setInterior(null);
+      this.cameraRig.setCeiling(null);
+    } else {
+      const def = INTERIORS[this.location];
+      if (this.interior?.def.id !== def.id) {
+        if (this.interior) {
+          disposeInterior(this.interior);
+        }
+        this.interior = buildInterior(def, quality, this.materials, this.models.furniture);
+        this.engine.scene.add(this.interior.group);
+      }
+      world.group.visible = false;
+      setIndoorLighting(lighting, this.engine.scene, true, quality);
+      this.hud.setInterior(def);
+      this.cameraRig.setCeiling(def.wallHeight);
+    }
+    this.placementSignature = '';
+    this.refreshPlacements();
+  }
+
+  /**
+   * Puts the story's characters, places and doors into the collision and
+   * interaction systems for the current location and story state. Cheap to
+   * call: nothing is rebuilt unless what should be here has changed.
+   */
+  private refreshPlacements(): void {
+    const base = this.location === 'campus' ? this.world : this.interior;
+    if (!base) {
+      return;
+    }
+    const placements = this.story ? buildStoryPlacements(this.location, this.story) : null;
+    const signature = placements?.signature ?? `none:${this.location}`;
+    if (signature === this.placementSignature) {
+      return;
+    }
+    this.placementSignature = signature;
+    this.collision.replace([...base.colliders, ...(placements?.colliders ?? [])], this.currentBounds());
+    this.interaction.replace([...base.interactables, ...(placements?.interactables ?? [])]);
+    if (this.phase !== 'cinematic') {
+      this.npcs.arrange(placements?.figures ?? []);
+    }
+    // Whatever was in focus may be gone; the next frame picks again.
+    this.currentFocus = null;
+    this.hud.setFocus(null, this.touchMode);
+  }
+
+  private currentBounds(): CampusBounds {
+    if (this.location === 'campus') {
+      return CAMPUS_BOUNDS;
+    }
+    const [minX, minZ, maxX, maxZ] = INTERIORS[this.location].bounds;
+    return { minX, maxX, minZ, maxZ };
   }
 
   // ============================================================ main loop
@@ -381,6 +528,12 @@ export class Game {
       this.renderFrame(delta);
       return;
     }
+    if (this.phase === 'dialogue' && this.models.bodies) {
+      // Keep drawing so the speaker visibly talks; placeholders do not move,
+      // so without the models the paused-style single frame is enough.
+      this.renderFrame(delta);
+      return;
+    }
     if (this.needsRender) {
       this.needsRender = false;
       this.renderFrame(0);
@@ -397,8 +550,9 @@ export class Game {
     this.story?.advanceClock(delta);
 
     const { x, z } = this.player.position;
+    this.updateGuidance();
     this.beacon.update(delta, x, z);
-    this.hud.setZoneName(resolveZoneName(x, z));
+    this.hud.setZoneName(this.interior ? (roomAt(this.interior.def, x, z)?.name ?? this.interior.def.name) : resolveZoneName(x, z));
     this.hud.updateMinimap(x, z, this.player.yaw);
 
     if (this.touchMode) {
@@ -433,6 +587,7 @@ export class Game {
         this.avatar.update(delta, this.player);
       }
     }
+    this.npcs.update(delta);
     if (this.lighting) {
       // The sky dome must travel with the camera. Centred on the world origin,
       // its far side drops beyond the camera's far plane on a campus this big
@@ -485,7 +640,11 @@ export class Game {
     this.input.clear();
     this.player.reset(SPAWN);
     this.avatar.setVisible(false);
-    this.npcs.setOpening(true);
+    if (this.location !== 'campus') {
+      this.location = 'campus';
+      this.applyLocationContents();
+    }
+    this.npcs.arrange(openingFigures());
     this.beacon.setTarget(null);
     this.cinematicCamera.start(OPENING_SHOTS);
     this.cinematicOverlay.show();
@@ -514,7 +673,7 @@ export class Game {
       return;
     }
     this.cinematicOverlay.hide();
-    this.npcs.setOpening(false);
+    this.npcs.arrange([]);
     this.applyCameraMode(this.cameraMode);
     this.cameraRig.snap();
     this.phase = 'creating';
@@ -529,7 +688,9 @@ export class Game {
     this.creation.hide();
     this.story = new StoryState(profile, FIRST_MISSION_ID);
     this.director = new StoryDirector(this.story);
+    this.applyPlayerBody();
     this.player.reset(SPAWN);
+    this.placementSignature = '';
     this.persistStory();
     this.beginPlay();
   }
@@ -537,8 +698,14 @@ export class Game {
   private continueStory(saved: StoryState): void {
     this.story = saved;
     this.director = new StoryDirector(saved);
+    this.applyPlayerBody();
+    // Back where they saved: on campus, or inside the room they were in.
+    this.location = saved.position?.location ?? 'campus';
+    this.applyLocationContents();
     if (saved.position) {
       this.player.reset({ position: [saved.position.x, saved.position.z], yawDegrees: saved.position.yawDegrees });
+    } else {
+      this.player.reset(SPAWN);
     }
     this.beginPlay();
   }
@@ -623,9 +790,28 @@ export class Game {
     }
   }
 
+  /**
+   * The campus map is the master plan, so indoors "you are here" is the door
+   * of the building you are in, and an indoor objective is marked at its
+   * building's door.
+   */
   private openMap(): void {
-    const target = this.director?.objective().target ?? null;
-    this.overlays.showMap(this.player.position.x, this.player.position.z, this.player.yaw, target);
+    let here: Vec2Tuple = [this.player.position.x, this.player.position.z];
+    if (this.location !== 'campus') {
+      const entrance = ENTRANCES.find((candidate) => candidate.interior === this.location);
+      if (entrance) {
+        here = planPoint(entrance.outdoor.at);
+      }
+    }
+    const target = this.objective?.target ?? null;
+    let mapTarget: Vec2Tuple | null = null;
+    if (target?.location === 'campus') {
+      mapTarget = [target.x, target.z];
+    } else if (target) {
+      const entrance = ENTRANCES.find((candidate) => candidate.interior === target.location);
+      mapTarget = entrance ? planPoint(entrance.outdoor.at) : null;
+    }
+    this.overlays.showMap(here[0], here[1], this.player.yaw, mapTarget);
   }
 
   private closeMap(): void {
@@ -654,20 +840,102 @@ export class Game {
   }
 
   private useInteractable(focus: Interactable): void {
-    if (focus.action?.kind === 'talk') {
-      this.startDialogue(focus.action.who);
+    const action = focus.action;
+    switch (action?.kind) {
+      case 'talk':
+        this.startDialogue(action.who);
+        return;
+      case 'place':
+        this.usePlace(action.place);
+        return;
+      case 'enter':
+        this.enterBuilding(action.entrance, focus);
+        return;
+      case 'exit':
+        this.leaveBuilding(action.entrance);
+        return;
+      default:
+        // Reading something is remembered, so a mission step like "read the
+        // campus sign" counts even if the player read it before being asked to.
+        if (this.story?.setFlag(`seen:${focus.id}`)) {
+          this.onStoryChanged(true);
+        }
+        this.openInfo(focus);
+    }
+  }
+
+  // ============================================================ buildings
+
+  private enterBuilding(entranceId: string, door: Interactable): void {
+    const entrance = findEntrance(entranceId);
+    if (!entrance || !this.story) {
       return;
     }
-    if (focus.action?.kind === 'sleep') {
-      this.sleep(focus);
+    if (!this.story.meets(entrance.requires)) {
+      this.openInfo(door);
       return;
     }
-    // Reading something is remembered, so a mission step like "read the
-    // campus sign" counts even if the player read it before being asked to.
-    if (this.story?.setFlag(`seen:${focus.id}`)) {
-      this.onStoryChanged(true);
+    void this.moveTo(entrance.interior, { at: entrance.indoorSpawn.at, yawDegrees: entrance.indoorSpawn.yawDegrees }, INTERIORS[entrance.interior].name);
+  }
+
+  private leaveBuilding(entranceId: string): void {
+    const entrance = findEntrance(entranceId);
+    if (!entrance) {
+      return;
     }
-    this.openInfo(focus);
+    const at = planPoint(entrance.outdoorSpawn.at);
+    void this.moveTo('campus', { at, yawDegrees: entrance.outdoorSpawn.yawDegrees }, resolveZoneName(at[0], at[1]));
+  }
+
+  /**
+   * Fades to black, swaps the world, places the player, and fades back in.
+   * The swap happens behind the black, so the player never sees the campus
+   * vanish or the room assemble.
+   */
+  private async moveTo(location: LocationId, spawn: { at: Vec2Tuple; yawDegrees: number }, label: string): Promise<void> {
+    if (this.phase !== 'playing') {
+      return;
+    }
+    this.phase = 'transition';
+    this.releaseForUi();
+    await this.overlays.coverForTransition(label);
+    this.location = location;
+    this.applyLocationContents();
+    this.player.reset({ position: [spawn.at[0], spawn.at[1]], yawDegrees: spawn.yawDegrees });
+    this.cameraRig.snap();
+    this.onStoryChanged(true);
+    this.renderFrame(0);
+    this.overlays.revealAfterTransition();
+    this.enterPlaying();
+  }
+
+  // ======================================================== story places
+
+  private usePlace(id: string): void {
+    const story = this.story;
+    const place = STORY_PLACES.find((candidate) => candidate.id === id);
+    if (!story || !place) {
+      return;
+    }
+    story.setFlag(`seen:place:${place.id}`);
+    if (place.action.kind === 'sleep' && story.meets(place.action.requires)) {
+      this.sleep();
+      return;
+    }
+    const reading = place.readings.find((candidate) => story.meets(candidate.when)) ?? place.readings[place.readings.length - 1];
+    if (!reading) {
+      return;
+    }
+    for (const effect of reading.effects ?? []) {
+      story.apply(effect);
+    }
+    this.onStoryChanged(true);
+    this.openInfo({
+      eyebrow: place.eyebrow,
+      title: reading.title ?? place.title,
+      body: reading.body,
+      ...(reading.bullets ? { bullets: reading.bullets } : {}),
+    });
   }
 
   /** Freezes play and shows a sign, plaque or story card. */
@@ -697,6 +965,11 @@ export class Game {
     if (this.phase !== 'reading') {
       return;
     }
+    const next = this.pendingCards.shift();
+    if (next) {
+      this.overlays.showInfo(next);
+      return;
+    }
     this.overlays.hideInfo();
     this.enterPlaying();
   }
@@ -717,6 +990,7 @@ export class Game {
     }
     this.conversation = { runner: new DialogueRunner(tree, story), who };
     this.npcs.face(who, this.player.position.x, this.player.position.z);
+    this.npcs.setTalking(who);
     this.phase = 'dialogue';
     this.releaseForUi();
     this.showDialogueLine();
@@ -753,10 +1027,16 @@ export class Game {
 
   private endDialogue(): void {
     this.conversation = null;
+    this.npcs.setTalking(null);
     this.dialogueBox.hide();
     // Every conversation can change the story, so every one ends with a save
     // (GAME_DESIGN.md §7 asks for one after any major decision at least).
     this.onStoryChanged(true);
+    const card = this.pendingCards.shift();
+    if (card) {
+      this.openInfo(card);
+      return;
+    }
     this.enterPlaying();
   }
 
@@ -770,17 +1050,20 @@ export class Game {
       : { name: id, role: '', accent: '#5b6168' };
   }
 
-  /** Ends the day, if the story allows it yet. */
-  private sleep(place: Interactable): void {
+  /** Ends the day: the night card, then morning beside the bed in A-214. */
+  private sleep(): void {
     const story = this.story;
-    if (!story || !story.hasFlag('met_nii')) {
-      this.openInfo(place);
+    if (!story) {
       return;
     }
     const day = story.day;
     story.sleep();
     story.setFlag(`slept_day_${day}`);
-    const [x, z] = planPoint(WAKE_SPOT.at);
+    if (this.location !== WAKE_SPOT.location) {
+      this.location = WAKE_SPOT.location;
+      this.applyLocationContents();
+    }
+    const [x, z] = locationPoint(WAKE_SPOT.location, WAKE_SPOT.at);
     this.player.reset({ position: [x, z], yawDegrees: WAKE_SPOT.yawDegrees });
     this.cameraRig.snap();
     this.onStoryChanged(true);
@@ -799,12 +1082,18 @@ export class Game {
     }
     // A finished mission hands over to the next one; repeat in case that one
     // is already satisfied by flags set earlier.
-    while (director.settle()) {
-      // settle() does the work.
+    for (let completed = director.settle(); completed; completed = director.settle()) {
+      const card = this.completionCard(completed);
+      if (card) {
+        this.pendingCards.push(card);
+      }
     }
-    const objective = director.objective();
-    this.hud.setObjective(objective.heading, objective.text, objective.target);
-    this.beacon.setTarget(objective.target);
+    this.objective = director.objective();
+    this.hud.setObjective(this.objective.heading, this.objective.text);
+    // Characters may have moved (Kojo leaves once he has his phone).
+    this.refreshPlacements();
+    this.guidance = null;
+    this.updateGuidance();
     this.hud.setPhoneBadge(hasUnreadThread(story));
     this.phone.refresh(this.buildPhoneView());
     if (save) {
@@ -817,8 +1106,62 @@ export class Game {
       return;
     }
     const snapshot = this.snapshotPlayer();
-    this.story.position = { x: snapshot.x, z: snapshot.z, yawDegrees: snapshot.yawDegrees };
+    this.story.position = { location: this.location, x: snapshot.x, z: snapshot.z, yawDegrees: snapshot.yawDegrees };
     saveStory(this.story);
+  }
+
+  /** A mission's own completion card, with how the people involved now feel. */
+  private completionCard(mission: MissionDef): InfoContent | null {
+    const story = this.story;
+    if (!mission.completion || !story) {
+      return null;
+    }
+    const people = mission.completion.people.flatMap((id) => {
+      const member = findCastMember(id);
+      return member ? [`${member.name}: ${standingLabel(story.relationship(id))}`] : [];
+    });
+    return {
+      eyebrow: `${mission.code} complete`,
+      title: mission.completion.title,
+      body: mission.completion.body,
+      bullets: [...people, `Next: ${mission.completion.next}`, 'Progress saved on this device'],
+    };
+  }
+
+  /**
+   * Points the marker — minimap and beacon — at the objective, or at the way
+   * to it. A target inside another building is reached through that
+   * building's door; from inside a building, through the way out; inside the
+   * right building but the wrong room, through the room's doorway. So the
+   * marker never asks the player to walk through a wall.
+   */
+  private updateGuidance(): void {
+    const target = this.objective?.target ?? null;
+    let next: Vec2Tuple | null = null;
+    if (target && target.location === this.location) {
+      next = [target.x, target.z];
+      if (this.interior) {
+        const room = roomAt(this.interior.def, target.x, target.z);
+        const here = roomAt(this.interior.def, this.player.position.x, this.player.position.z);
+        if (room?.door && here?.id !== room.id) {
+          next = room.door;
+        }
+      }
+    } else if (target && this.location === 'campus') {
+      const entrance = ENTRANCES.find((candidate) => candidate.interior === target.location);
+      next = entrance ? planPoint(entrance.outdoor.at) : null;
+    } else if (target && this.interior) {
+      const exit = this.interior.def.exits[0];
+      next = exit ? exit.at : null;
+    }
+    const current = this.guidance;
+    if (current === next || (current && next && current[0] === next[0] && current[1] === next[1])) {
+      return;
+    }
+    this.guidance = next;
+    this.hud.setGuidance(next);
+    // Indoors the beacon hangs lower, under the ceiling.
+    this.beacon.setTarget(next, this.interior ? 2.25 : 2.9);
   }
 
   private togglePhone(): void {
@@ -971,8 +1314,26 @@ export class Game {
         triangles: this.world?.stats.triangles ?? 0,
         colliders: this.collision.colliderCount,
         interactables: this.interaction.count,
+        interiorBatches: this.interior?.stats.batches ?? 0,
+        geometries: this.engine.webglRenderer.info.memory.geometries,
+        textures: this.engine.webglRenderer.info.memory.textures,
+        drawCalls: this.engine.webglRenderer.info.render.calls,
+        frameTriangles: this.engine.webglRenderer.info.render.triangles,
+        riggedCharacters: this.models.bodies !== null,
+        furnitureKit: this.models.furniture !== null,
       }),
       getPhase: () => this.phase,
+      getLocation: () => this.location,
+      setFlags: (flags) => {
+        if (!this.story) {
+          return;
+        }
+        for (const flag of flags) {
+          this.story.setFlag(flag);
+        }
+        this.onStoryChanged(true);
+        this.needsRender = true;
+      },
       getStory: () => {
         const story = this.story;
         const director = this.director;
