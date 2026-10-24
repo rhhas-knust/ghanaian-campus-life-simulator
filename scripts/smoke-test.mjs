@@ -96,6 +96,8 @@ check('loading finished, start screen shown', true);
 const stats = await debug(() => window.__campusDebug.getStats());
 check('world generated and batched', stats.batches > 20 && stats.batches < 60 && stats.triangles > 30000, JSON.stringify(stats));
 check('colliders registered', stats.colliders > 200, `${stats.colliders}`);
+check('CC0 character models load and rig', stats.riggedCharacters === true);
+check('furniture kit loads', stats.furnitureKit === true);
 check('interactables registered (signs + plaques)', stats.interactables >= 12, `${stats.interactables}`);
 
 check('title screen offers a new story', (await page.textContent('#start-button')) === 'New Story');
@@ -116,7 +118,9 @@ check('canvas renders a detailed scene', shot.length > 60000, `${(shot.length / 
 // simulated time per frame.
 const before = await debug(() => window.__campusDebug.getPlayer());
 await page.keyboard.down('w');
-await page.waitForTimeout(3000);
+// Longer than it looks necessary: the skinned characters at the gate slow
+// the software renderer further.
+await page.waitForTimeout(4500);
 await page.keyboard.up('w');
 await page.waitForTimeout(200);
 const after = await debug(() => window.__campusDebug.getPlayer());
@@ -197,6 +201,10 @@ check('W walks forward, into campus (-Z)', after.z < before.z - 1.5, `z ${before
   const [x, z] = plan(1012, 762);
   await debug(({ x, z }) => window.__campusDebug.teleport(x, z, 0), { x, z });
   await page.keyboard.press('v');
+  // The key is read on the next frame, which can be slow in software.
+  for (let i = 0; i < 30 && (await debug(() => window.__campusDebug.getCamera())).mode !== 'third'; i += 1) {
+    await page.waitForTimeout(150);
+  }
   await page.waitForTimeout(400);
   const camera = await debug(() => window.__campusDebug.getCamera());
   const player = await debug(() => window.__campusDebug.getPlayer());
@@ -342,15 +350,19 @@ async function converse(target, picks) {
 
   await debug(() => window.__campusDebug.teleport(-14, -1.8, 0));
   check('the stairs lead back out to the court', await goThrough(page, 'exit:hostel-a-2f:hostel-a', 'campus'));
-  // A second round trip must not leave geometry behind. (Measured after the
-  // first trip, because anything drawn for the first time — the beacon, a
-  // character — uploads its geometry once and keeps it.)
-  const memoryBefore = (await debug(() => window.__campusDebug.getStats())).geometries;
-  await debug(({ x, z }) => window.__campusDebug.teleport(x, z, 0), { x: sx, z: sz });
-  await goThrough(page, 'entrance:hostel-a', 'hostel-a-2f');
-  await debug(() => window.__campusDebug.teleport(-14, -1.8, 0));
-  await goThrough(page, 'exit:hostel-a-2f:hostel-a', 'campus');
-  const memoryAfter = (await debug(() => window.__campusDebug.getStats())).geometries;
+  // Further round trips must not leave geometry behind. Measured from the
+  // second trip on, because anything drawn for the first time — the beacon, a
+  // character who has just moved into view — uploads its geometry once and
+  // keeps it; only growth on EVERY trip is a leak.
+  const roundTrip = async () => {
+    await debug(({ x, z }) => window.__campusDebug.teleport(x, z, 0), { x: sx, z: sz });
+    await goThrough(page, 'entrance:hostel-a', 'hostel-a-2f');
+    await debug(() => window.__campusDebug.teleport(-14, -1.8, 0));
+    await goThrough(page, 'exit:hostel-a-2f:hostel-a', 'campus');
+    return (await debug(() => window.__campusDebug.getStats())).geometries;
+  };
+  const memoryBefore = await roundTrip();
+  const memoryAfter = await roundTrip();
   check('going in and out frees the interior', memoryAfter <= memoryBefore, `${memoryBefore} -> ${memoryAfter} geometries`);
 
   // ------------------------------------------------------------ M02
@@ -460,6 +472,26 @@ async function converse(target, picks) {
     `${story?.missionId}: ${story?.objective}`,
   );
   await legacy.close();
+}
+
+// ======================================================= missing models
+{
+  // A model that fails to download must cost looks, not the game: the
+  // procedural figures and furniture take over.
+  const bare = await browser.newContext({ viewport: { width: 960, height: 540 } });
+  await bare.route('**/*.glb', (route) => route.abort());
+  const bpage = await bare.newPage();
+  const bareErrors = [];
+  bpage.on('pageerror', (e) => bareErrors.push(e.message));
+  await bpage.goto(BASE + '?debug=1', { waitUntil: 'load' });
+  await bpage.waitForSelector('#start-screen:not([hidden])', { timeout: 90000 });
+  const bareStats = await bpage.evaluate(() => window.__campusDebug.getStats());
+  check(
+    'without the model files the game still loads, with placeholders',
+    bareStats.riggedCharacters === false && bareStats.furnitureKit === false && bareStats.batches > 20 && bareErrors.length === 0,
+    bareErrors.join(' | ').slice(0, 200),
+  );
+  await bare.close();
 }
 
 // ================================================================ touch

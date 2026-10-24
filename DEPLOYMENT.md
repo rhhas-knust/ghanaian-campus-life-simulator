@@ -169,7 +169,8 @@ bind to all interfaces; use the network address they print.
 
 Only `dist/` — the build output. That is `index.html`, the bundled JavaScript
 and CSS, and a copy of `public/` (the favicon and `public/assets/`, including
-the two derived images: `campus-map.webp` and `title-background.webp`).
+the two derived images: `campus-map.webp` and `title-background.webp`, and the
+~1.2 MB of trial character and furniture models in `assets/models/`).
 
 The concept art in `GAME_ART/` is **not** published: it is outside `public/`,
 so Vite never copies it. That keeps 29 MB of reference JPEGs out of every
@@ -183,6 +184,7 @@ deploy.
 | No **GitHub Actions** option under Pages → Source | Private repository on a free plan | Make it public, or upgrade (step 2) |
 | Blank page, console 404s on `/assets/*.js` | `base` does not match the repository name | Fix `BASE_PATH` in `vite.config.ts` |
 | Page loads, 3D area is black | WebGL unavailable or hardware acceleration off | The loading overlay says so; try an up-to-date Chrome or Firefox |
+| Characters are plain block figures, rooms have box furniture | The `.glb` files in `assets/models/` did not load (the console warns which) | Check they were committed and deployed; the game deliberately carries on with placeholders |
 | Title background or campus map missing | An image path hard-coded with a leading `/` | Use `resolveAssetUrl()` from `src/config/assets.ts` |
 | Old version still served | CDN cache | Hard-refresh, or wait a few minutes |
 | `npm ci` fails in CI | `package-lock.json` out of step with `package.json` | Run `npm install` locally and commit the lockfile |

@@ -86,9 +86,25 @@ Also at the owner's request.
 Still open: Mission 3 onwards, more interiors, and the rigged characters of
 stage D.
 
+### Free model trial — built, awaiting the owner's verdict
+Also at the owner's request, after asking whether a realistic open-source
+life game's graphics could be reused (they cannot; the open-source Sims
+remakes need EA's files).
+- **Rigged, animated characters** from free CC0 packs (Quaternius bodies,
+  Quaternius Universal Animation Library clips retargeted at load) for the
+  player and the whole cast, one draw call each, recoloured per character.
+- **KayKit furniture** in A-214 and the Block A common room, one draw call
+  per room.
+- A **GLB loader** (`src/core/loadModels.ts`) with a full fallback to the
+  procedural art, and a script that rebuilds the model files from the packs.
+
+This is a trial: if the owner likes the look on their phone, stage D can
+build on it (more bodies and outfits, an appearance picker); if not, deleting
+the model files puts the game back exactly as it was.
+
 ### Assets
-- glTF/GLB loader honouring `MODEL_ASSETS`; any building with `model` set uses
-  the real mesh (the hook already exists in `Buildings.ts`).
+- Buildings honouring `model` in `campusLayout.ts` through the GLB loader
+  the model trial added (`src/core/loadModels.ts`).
 - Models built from the elevation sheets in `GAME_ART/buildings/`.
 - A rigged student character replacing the procedural avatar, with proper
   walk and idle animations.

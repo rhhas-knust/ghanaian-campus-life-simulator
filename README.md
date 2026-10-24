@@ -192,7 +192,8 @@ Story text follows [STORYLINE.md](STORYLINE.md) §2.
 - **Character creation** — name (with an Akan day-name suggestion), how you
   are addressed (he / she / they), programme (Engineering, Computer Science,
   Business Administration, Communication Studies, Architecture) and home.
-  Appearance waits for the rigged 3D characters (stage D).
+  There is no appearance picker yet: a player addressed as "she" gets the
+  woman's body, anyone else the man's.
 - **M01 "Akwaaba"**, seven steps: sign in with **Uncle Bright** at the
   porter's lodge → read the AKWAABA board → check the courtyard signpost →
   collect your student ID from **Mrs. Agyeman** at the Administration Block →
@@ -226,8 +227,15 @@ Story text follows [STORYLINE.md](STORYLINE.md) §2.
   conversation, mission step, sleep, building transition and pause — and it
   remembers which building you were in. There is one save slot per browser;
   clearing site data starts again. Saves from the previous release still load.
-- **Placeholder characters**: simple standing figures, one draw call each,
-  until the rigged models exist.
+- **Animated characters (trial)**: the player and the cast are rigged,
+  animated low-poly bodies from free CC0 packs (Quaternius), recoloured per
+  character — they breathe while standing, gesture while talking, and the
+  player blends from idle to walk to jog with speed. Room A-214 and the
+  common room are furnished from the CC0 KayKit Furniture Bits pack. Both are
+  a **trial** of free art, not the final look: see
+  [Free model trial](#free-model-trial) below. If the models cannot be
+  downloaded, the game falls back to the old procedural figures and
+  furniture.
 
 ---
 
@@ -270,11 +278,13 @@ src/
 │   ├── palette.ts             Material colours (from GAME_ART)
 │   ├── settings.ts            Movement, camera, touch-look, quality presets
 │   ├── interiors.ts           Interior floor plans and the doors into them
+│   ├── furnitureModels.ts     Which KayKit pieces stand in for which props
 │   └── assets.ts              Runtime asset manifest + budgets
 │
 ├── core/
 │   ├── Engine.ts            Renderer, scene, camera, resize, quality switching
 │   ├── Game.ts              State machine and the wiring between subsystems
+│   ├── loadModels.ts        Loads the CC0 models; falls back to placeholders
 │   └── debug.ts             Opt-in `?debug=1` inspection API
 │
 ├── story/                   ── Story data and logic. No Three.js, no DOM. ──
@@ -293,7 +303,9 @@ src/
 │   └── types.ts               Programmes, homes, conditions, effects
 │
 ├── actors/                  ── Story things in the 3D world. ──
-│   ├── NpcFigures.ts          Placeholder characters, one draw call each
+│   ├── characterRig.ts        CC0 bodies: merge, recolour, retarget clips at load
+│   ├── CharacterFigures.ts    The cast as rigged, animated characters
+│   ├── NpcFigures.ts          Fallback placeholder figures, one draw call each
 │   ├── ObjectiveBeacon.ts     The floating objective marker
 │   └── storyPlacements.ts     Cast, places, doors -> what is here, now
 │
@@ -311,13 +323,15 @@ src/
 │   ├── zones.ts               Position -> HUD place name
 │   └── interiors/
 │       ├── InteriorBuilder.ts   One interior: floors, walls, doors, lettering
-│       └── furniture.ts         Beds, desks, wardrobes, sofas, the stairwell…
+│       ├── furniture.ts         Beds, desks, wardrobes, sofas, the stairwell…
+│       └── furnitureKit.ts      The KayKit pieces, as geometry for the batcher
 │
 ├── player/
 │   ├── PlayerController.ts  Body: position, look, velocity, auto-level
 │   ├── CameraRig.ts         First/third-person framing, wall avoidance
 │   ├── CinematicCamera.ts   Camera flights for the arrival cinematic
-│   └── Avatar.ts            Third-person student model and walk cycle
+│   ├── ModelAvatar.ts       Third-person rigged student, clips blended by speed
+│   └── Avatar.ts            Fallback procedural student and walk cycle
 ├── physics/CollisionSystem.ts       Circle vs rotated box/circle
 ├── interaction/InteractionSystem.ts Proximity + facing focus selection
 │
@@ -459,13 +473,52 @@ How:
    so they stay sharp near you at a fixed cost.
 4. **Pixel-ratio capping** — a 3x-density phone screen would otherwise render
    nine times the pixels.
-5. **Story characters are one mesh each.** A placeholder figure is merged
-   into a single vertex-coloured mesh sharing one material, instead of the
-   dozen meshes the player's avatar uses.
+5. **Characters are one mesh each.** Each rigged body's parts are merged at
+   load into one skinned mesh coloured per vertex, sharing one material, so a
+   character is one draw call (two with its shadow). The procedural fallback
+   figures are merged the same way.
+6. **Animation is retargeted once, at load**, and baked into ordinary clips;
+   nothing is retargeted per frame, and characters out of sight are not
+   animated.
+7. **All the furniture is one draw call per room.** The KayKit pieces share
+   one 15 KB palette texture, so they batch together under one material like
+   any palette colour.
 
-Download: ~180 KB of gzipped JavaScript (Three.js split into its own cacheable
-chunk) plus a 68 KB title image. The 140 KB campus map image only downloads the
-first time the map is opened.
+Download: ~225 KB of gzipped JavaScript (Three.js split into its own cacheable
+chunk), a 68 KB title image and ~1.2 MB of models (two bodies ~470 KB each,
+animations 120 KB, furniture 150 KB). The 140 KB campus map image only
+downloads the first time the map is opened.
+
+### Free model trial
+
+The owner asked whether a realistic open-source life game's graphics could be
+reused. None could (the open-source Sims remakes need EA's game files), so
+this trial uses free **CC0** packs instead — public domain, no attribution
+required, credited anyway in
+[`public/assets/models/CREDITS.md`](public/assets/models/CREDITS.md):
+
+| What | Pack | Where in the game |
+| --- | --- | --- |
+| Two bodies, man and woman | Quaternius Ultimate Modular Men / Women ("Casual") | The player and all five cast members, recoloured from `cast.ts` |
+| Idle, talking, walk, jog | Quaternius Universal Animation Library (free) | Retargeted onto both bodies at load (`src/actors/characterRig.ts`) |
+| Beds, desk, chair, lamp, books, rug, sofa, table | KayKit Furniture Bits 1.0 | A-214 and the Block A common room (`src/config/furnitureModels.ts`) |
+
+Measured in headless Chromium with software rendering (SwiftShader), **not on
+a phone**, at the same viewpoints with and without the models:
+
+| View | Draw calls (models / placeholders) | Triangles drawn (models / placeholders) |
+| --- | --- | --- |
+| Gate, third person, Uncle Bright in view | 66 / 91 | 164k / 145k |
+| Block A common room, third person, Nii in view | 19 / 34 | 18.6k / 5.8k |
+| Room A-214, first person | 21 / 22 | 6.5k / 3.0k |
+
+The rigged bodies cost *fewer* draw calls than the placeholders (the old
+avatar was a dozen meshes, each drawn again for its shadow) but about 6,300
+triangles each instead of ~500. Software-rendered frame rates were too noisy
+to compare; only a real phone can say whether this is fast enough.
+
+The models are rebuilt from the source packs by
+[`scripts/assets/build_models.py`](scripts/assets/README.md).
 
 ---
 
@@ -482,7 +535,9 @@ CI runs the same checks, and the Pages deploy does not publish if any fail.
 ### Browser smoke test
 
 `scripts/smoke-test.mjs` drives the real production build in headless
-Chromium and asserts on game state — **90 checks**: world generation, the
+Chromium and asserts on game state — **93 checks**: world generation, the
+character and furniture models loading (and the game still loading, with
+placeholders, when the model files are blocked), the
 arrival cinematic and Skip, character creation, walking, collision at the
 Library, reading the campus sign, a full conversation with Uncle Bright
 (choices, relationship change, mission progress), the phone, the save and
@@ -538,7 +593,9 @@ Add `?debug=1` to the URL to get `window.__campusDebug`:
 __campusDebug.getPlayer()    // { x, z, yawDegrees, pitch, speed }
 __campusDebug.getCamera()    // { mode, x, y, z }
 __campusDebug.getStats()     // batches, triangles, colliders, interactables,
-                             // interiorBatches, GPU geometries and textures
+                             // interiorBatches, GPU geometries and textures,
+                             // last frame's draw calls and triangles, and
+                             // whether the character and furniture models loaded
 __campusDebug.getPhase()     // 'loading' | 'ready' | 'cinematic' | 'creating' | 'playing'
                              // | 'paused' | 'reading' | 'transition' | 'dialogue' | 'phone'
 __campusDebug.getLocation()  // 'campus' | 'hostel-a-2f' | 'porters-lodge'
@@ -569,7 +626,12 @@ Deliberate Phase 1 boundaries:
 - **Buildings are procedural placeholders** that follow the art; real models
   are Phase 2.
 - **No crowds, moving vehicles, time of day (the clock runs, the sky does not
-  change), inventory or audio.** Story characters stand still at their posts.
+  change), inventory or audio.** Story characters idle and gesture at their
+  posts; they do not walk anywhere.
+- **The characters and furniture are a trial of free CC0 packs**, not
+  commissioned art: two bodies recoloured for everyone, no faces to speak of,
+  no appearance picker, and the man's body wears shorts. Nii's bed is no longer
+  orange — the kit's two beds have the same blue bedding.
 - **M01 and M02 are playable.** After them the campus is free roam until
   Mission 3 is built.
 - **Two interiors**: the Block A second floor and the Porter's Lodge. The

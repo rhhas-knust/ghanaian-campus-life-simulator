@@ -26,7 +26,7 @@ is a design to build against, not a description of the game today.
 | Enterable buildings: Hastech Block A second floor (corridor, room A-214, common room) and the Porter's Lodge, with transitions, collision and a floor-plan minimap | More interiors: lecture halls, the library, the cafeteria |
 | First- and third-person cameras, toggle | — |
 | Character creation: name, address, programme, home | Appearance options (body, skin, face, hair, outfit) |
-| One fixed procedural student avatar; standing placeholder figures for Uncle Bright, Mrs. Agyeman, Nii and Kojo, posted by story state and location | Rigged, animated characters (player and NPCs) |
+| Rigged, animated CC0 bodies (trial) for the player and the cast, recoloured per character, idling and gesturing at posts set by story state and location; procedural figures as the fallback | Rigged, animated characters (player and NPCs) |
 | Keyboard/mouse and touch controls | — |
 | Dialogue from JSON with choices, conditions (flags, programme, relationship thresholds), silent branches and effects; relationship and reputation values | Portrait art; skill checks; money and item effects |
 | Missions M01 "Akwaaba" and M02 "Kojo's Missing Phone"; objective card, minimap and map markers and a floating beacon that route through doors | M03–M17, side stories, chapters, endings |
@@ -311,7 +311,10 @@ programme, home); the appearance options stay in stage D. C+ added the
 interior system the owner asked for, which stage I had down as polish.
 
 Stage D is blocked on rigged character models — concept art alone is not
-enough (CHARACTER_BIBLE.md §4).
+enough (CHARACTER_BIBLE.md §4). A trial with free CC0 bodies and animations
+(README.md, "Free model trial") built the pipeline stage D needs — GLB
+loading, a shared rig, retargeted clips, per-character colours — so
+commissioned models could drop into it.
 
 ---
 

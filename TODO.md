@@ -94,7 +94,17 @@ none of it has been played on a real phone yet.
 - [ ] **Play the story on a real Android phone**: typing a name with the
       on-screen keyboard in fullscreen landscape, reading the dialogue box and
       phone at arm's length, tapping replies
-- [ ] Rigged characters to replace the standing placeholders (stage D)
+- [x] Rigged characters to replace the standing placeholders — as a **trial**
+      with free CC0 packs (README "Free model trial"); smoke test (models
+      load and rig; the game still loads with placeholders when `*.glb` is
+      blocked) and screenshots
+- [ ] **Owner's verdict on the free model trial**, on a real phone: do the
+      characters and furniture look right, and is it fast enough?
+- [ ] If the trial is kept: re-download the two Quaternius packs from
+      quaternius.com (the trial used GitHub mirrors) and rebuild with
+      `scripts/assets/build_models.py`; an appearance picker; more outfits
+- [ ] If the trial is kept: GitHub Pages may not gzip `.glb`; check the
+      real download size (~1.2 MB uncompressed) on mobile data
 
 ## Phase 2 — interiors and M02 (stage C+)
 

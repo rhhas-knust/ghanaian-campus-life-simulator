@@ -77,6 +77,16 @@ props-sheet style in boxes: metal-framed beds, timber desks and wardrobes,
 plastic buckets. Interior sheets — the hostel corridor, a student room, the
 porter's lodge — would be the most useful next art.
 
+**Free model trial.** Room A-214 and the Block A common room now use the
+CC0 *KayKit Furniture Bits* pack (beds, desk, chair, lamp, books, rug, sofa,
+table) instead of boxes; everything else indoors is still boxes. KayKit's
+soft, rounded, saturated style is close to the props sheet but brighter and
+toy-like; both A-214 beds have the kit's blue bedding. The characters are the
+CC0 *Quaternius* casual bodies, recoloured to the skin, hair and clothing in
+CHARACTER_BIBLE.md §4 — a stand-in for the commissioned characters, not a
+substitute: two bodies for everyone, simple faces, and the man's body wears
+shorts. Credits: [`public/assets/models/CREDITS.md`](../public/assets/models/CREDITS.md).
+
 The story screens have no mock-ups yet, so they extend the same language:
 a round **phone button** beside the pause button; an **objective card** (dark
 pill, gold left edge) under it; a **gold diamond** as the objective marker on
@@ -116,8 +126,9 @@ To replace a placeholder with a real model:
 3. Put it in `public/assets/models/`, register it in `src/config/assets.ts`,
    and set `model: '<key>'` on the building in `campusLayout.ts`.
 
-Full brief: [`public/assets/README.md`](../public/assets/README.md). Loading
-`.glb` models is planned for Phase 2.
+Full brief: [`public/assets/README.md`](../public/assets/README.md). The game
+can load `.glb` models now (the free model trial uses it for characters and
+furniture); buildings with `model` set are still Phase 2.
 
 ## Open questions for the artist
 

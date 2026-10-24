@@ -4,9 +4,12 @@ Everything in `public/` is copied to the site root **verbatim** at build time an
 is **not** processed by Vite. Files land at
 `https://rhhas-knust.github.io/ghanaian-campus-life-simulator/assets/<folder>/<file>`.
 
-Phase 1 ships **no binary assets at all** — every building, tree, bench and sign
-is procedural placeholder geometry. These folders exist so the artist can start
-delivering without anybody restructuring the project first.
+The campus is still **procedural** — every building, tree, bench and sign is
+placeholder geometry. The only models so far are a trial of free CC0 packs in
+`models/characters/` and `models/furniture/` (credits in
+[`models/CREDITS.md`](models/CREDITS.md); rebuilt by
+`scripts/assets/build_models.py`). The folders exist so the artist can deliver
+without anybody restructuring the project first.
 
 ```
 public/assets/
@@ -38,8 +41,9 @@ the site is served from a sub-directory, which it is.
 ## Budgets
 
 Phase 1 targets a mid-range Android phone at 30+ fps. The whole campus is
-currently about 70,000 triangles in ~38 draw calls and about 166 KB of gzipped
-JavaScript, so there is real headroom — but it is finite.
+currently about 70,000 triangles in ~38 draw calls, about 225 KB of gzipped
+JavaScript and ~1.2 MB of trial models, so there is real headroom — but it is
+finite.
 
 | Thing | Budget |
 | --- | --- |
