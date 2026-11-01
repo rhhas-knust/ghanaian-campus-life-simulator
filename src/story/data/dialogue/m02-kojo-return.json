@@ -5,7 +5,7 @@
     "open": {
       "branch": [{ "if": { "flag": "phone_opened" }, "next": "switched-on" }],
       "next": "sealed",
-      "effects": [{ "type": "flag", "flag": "returned_kojo_phone" }]
+      "effects": [{ "type": "flag", "flag": "returned_kojo_phone" }, { "type": "flag", "flag": "phone_decision" }]
     },
     "sealed": {
       "speaker": "kojo",

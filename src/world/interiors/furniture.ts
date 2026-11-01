@@ -238,6 +238,35 @@ export function buildProp(context: FurnitureContext, prop: PropDef, index: numbe
       place('kenteGreen', 0.2, 1.33, 0, 0.18, 0.24, 0.14);
       return;
     }
+    case 'lectureBench': {
+      // A fixed desk and bench for four, the student facing local -Z (the
+      // board): desk on that side, seat behind it. Steel frame, timber tops.
+      for (const lx of [-1.6, 0, 1.6]) {
+        place('fenceMetal', lx, 0, -0.18, 0.05, 0.74, 0.05);
+        place('fenceMetal', lx, 0, 0.36, 0.05, 0.44, 0.05);
+        place('fenceMetal', lx, 0.2, 0.09, 0.04, 0.04, 0.6);
+      }
+      place('woodWarm', 0, 0.74, -0.22, 3.4, 0.04, 0.42);
+      place('woodWarm', 0, 0.44, 0.36, 3.4, 0.04, 0.3);
+      solid(1.72, 0.42, 0, 0.07);
+      return;
+    }
+    case 'lectern': {
+      place('doorWood', 0, 0, 0, 0.6, 1.02, 0.45);
+      place('woodWarm', 0, 1.02, -0.04, 0.66, 0.05, 0.52);
+      place('canvasWhite', 0.05, 1.07, -0.02, 0.3, 0.01, 0.22);
+      solid(0.33, 0.26);
+      return;
+    }
+    case 'whiteboard': {
+      place('metalPole', 0, 0.85, 0, 3.6, 1.3, 0.04);
+      place('canvasWhite', 0, 0.89, 0.025, 3.48, 1.22, 0.01);
+      place('metalPole', 0, 0.82, 0.06, 3.2, 0.03, 0.1);
+      if (prop.label) {
+        label(context, prop, prop.label, 1.75, 0.03, 2.8);
+      }
+      return;
+    }
     case 'rug': {
       place(prop.colour ?? 'fabricOrange', 0, 0, 0, 1.2, 0.01, 0.9);
       return;

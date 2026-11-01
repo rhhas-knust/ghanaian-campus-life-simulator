@@ -71,7 +71,7 @@ import { MaterialLibrary } from '../utils/MaterialLibrary';
 import { CAST, findCastMember } from '../story/data/cast';
 import { FIRST_MISSION_ID, type MissionDef } from '../story/data/missions';
 import { OPENING_SHOTS } from '../story/data/opening';
-import { FIRST_NIGHT_CARD, ORDINARY_NIGHT_CARD, STORY_PLACES, WAKE_SPOT } from '../story/data/places';
+import { NIGHTS, ORDINARY_NIGHT_CARD, STORY_PLACES, WAKE_SPOT } from '../story/data/places';
 import { DIALOGUES, DialogueRunner } from '../story/dialogue';
 import { MESSAGE_THREADS, hasUnreadThread, visibleThreads } from '../story/messages';
 import { deleteSavedStory, loadStory, saveStory } from '../story/save';
@@ -1057,6 +1057,12 @@ export class Game {
       return;
     }
     const day = story.day;
+    // Chosen before the night's own flag is set, so "the first night" can be
+    // recognised by `slept_day_1` not being set yet.
+    const night = NIGHTS.find((candidate) => story.meets(candidate.when));
+    for (const effect of night?.effects ?? []) {
+      story.apply(effect);
+    }
     story.sleep();
     story.setFlag(`slept_day_${day}`);
     if (this.location !== WAKE_SPOT.location) {
@@ -1067,7 +1073,7 @@ export class Game {
     this.player.reset({ position: [x, z], yawDegrees: WAKE_SPOT.yawDegrees });
     this.cameraRig.snap();
     this.onStoryChanged(true);
-    this.openInfo(day === 1 ? FIRST_NIGHT_CARD : ORDINARY_NIGHT_CARD);
+    this.openInfo(night?.card ?? ORDINARY_NIGHT_CARD);
   }
 
   /**

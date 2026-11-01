@@ -1,0 +1,10 @@
+{
+  "id": "sarpong-idle",
+  "start": "open",
+  "nodes": {
+    "open": {
+      "speaker": "sarpong",
+      "text": "Office hours are Thursdays, Faculty of Engineering, second floor. Bring questions, not excuses."
+    }
+  }
+}

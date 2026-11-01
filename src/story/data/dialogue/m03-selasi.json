@@ -1,0 +1,53 @@
+{
+  "id": "m03-selasi",
+  "start": "open",
+  "nodes": {
+    "open": {
+      "speaker": "selasi",
+      "text": "You survived KB. Did he promise you free data bundles yet? He promises everyone free data bundles.",
+      "effects": [{ "type": "flag", "flag": "met_selasi" }],
+      "choices": [
+        { "text": "He promised me a lucky room.", "next": "lucky" },
+        { "text": "What are you collecting names for?", "next": "pitch" }
+      ]
+    },
+    "lucky": {
+      "speaker": "selasi",
+      "text": "KB thinks luck is a policy. I'm Selasi — Economics, Level 300. I'm running against him.",
+      "next": "pitch"
+    },
+    "pitch": {
+      "speaker": "selasi",
+      "text": "Volunteers. For an SRC that publishes its accounts and answers its emails. Radical, I know. Will you put your name down?",
+      "choices": [
+        {
+          "text": "Put me down.",
+          "next": "yes",
+          "major": true,
+          "effects": [
+            { "type": "relationship", "who": "selasi", "delta": 10 },
+            { "type": "flag", "flag": "selasi_volunteer" }
+          ]
+        },
+        { "text": "Maybe later. I'm still finding the lecture halls.", "next": "later" },
+        {
+          "text": "Why should I trust you more than KB?",
+          "next": "trust",
+          "effects": [{ "type": "relationship", "who": "selasi", "delta": 2 }]
+        }
+      ]
+    },
+    "yes": {
+      "speaker": "selasi",
+      "text": "Good. I'll message you. When I say a meeting starts at six, it starts at six."
+    },
+    "later": {
+      "speaker": "selasi",
+      "text": "Fair. Find your lecture halls. Then find out who decides what happens in them."
+    },
+    "trust": {
+      "speaker": "selasi",
+      "text": "You shouldn't trust either of us. Check. Ask for the receipts. That's my whole campaign — and it's more than he'll tell you."
+    }
+  }
+}

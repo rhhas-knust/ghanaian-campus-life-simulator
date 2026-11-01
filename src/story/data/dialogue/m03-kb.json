@@ -1,0 +1,59 @@
+{
+  "id": "m03-kb",
+  "start": "open",
+  "nodes": {
+    "open": {
+      "speaker": "kb",
+      "text": "Welcome, welcome! Freshers eat first, that's the rule. KB — Business, Level 400, future SRC president, if God and the voters agree. And you are?",
+      "effects": [{ "type": "flag", "flag": "met_kb" }],
+      "choices": [
+        {
+          "text": "{name}. {programme}. Thanks for the food.",
+          "next": "room",
+          "effects": [
+            { "type": "relationship", "who": "kb", "delta": 5 },
+            { "type": "reputation", "axis": "popularity", "delta": 2 }
+          ]
+        },
+        { "text": "Is this a party or a campaign rally?", "next": "both" }
+      ]
+    },
+    "both": {
+      "speaker": "kb",
+      "text": "Both! On this campus everything is both. Eat first, judge later. What's your name?",
+      "next": "room"
+    },
+    "room": {
+      "speaker": "kb",
+      "text": "And which hall? Let me guess — Block A, you have the Block A face.",
+      "choices": [
+        { "text": "Block A. Room A-214.", "next": "a214" },
+        {
+          "text": "I've seen your face before. In a photo.",
+          "next": "photo",
+          "if": { "flag": "saw_lockscreen_photo" },
+          "effects": [{ "type": "flag", "flag": "kb_photo_hint" }]
+        }
+      ]
+    },
+    "a214": {
+      "speaker": "kb",
+      "text": "A-214. …Nice room. Lucky room. Good view of the field — enjoy it while it's still a field.",
+      "next": "end"
+    },
+    "photo": {
+      "speaker": "kb",
+      "text": "Everybody says that. I have one of those faces — posters, flyers, you know. Which hall are you in?",
+      "choices": [{ "text": "Block A. Room A-214.", "next": "a214-quiet" }]
+    },
+    "a214-quiet": {
+      "speaker": "kb",
+      "text": "…A-214. Okay. Okay. Eat, my friend. We'll talk properly another time.",
+      "next": "end"
+    },
+    "end": {
+      "speaker": "kb",
+      "text": "And if a lady with a clipboard tries to recruit you outside — that's Selasi. Smart. Wrong about everything, but smart."
+    }
+  }
+}

@@ -88,6 +88,26 @@
           "text": "Remember what I said. Anything of mine in that room — not Admin. Not anybody."
         }
       ]
+    },
+    {
+      "id": "academic-affairs",
+      "title": "UCIS Academic Affairs",
+      "unlockedBy": "kojo_phone_charging",
+      "readFlag": "read_timetable",
+      "messages": [
+        {
+          "from": "UCIS Academic Affairs",
+          "text": "Good morning {name}. Welcome to the first week of lectures."
+        },
+        {
+          "from": "UCIS Academic Affairs",
+          "text": "TODAY: UCIS 101 Critical Thinking & Ethics, 8:00, Lecture Hall 2, Room 104. Dr. A. Sarpong. Compulsory for all first-years."
+        },
+        {
+          "from": "UCIS Academic Affairs",
+          "text": "{programme} courses begin next week. Timetables are on the SRC notice board."
+        }
+      ]
     }
   ]
 }

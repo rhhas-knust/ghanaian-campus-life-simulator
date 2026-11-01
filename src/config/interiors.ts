@@ -21,7 +21,7 @@ import type { Vec2Tuple } from '../types';
 import { planPoint, type PlanPoint } from './campusLayout';
 import type { MaterialKey } from './palette';
 
-export type InteriorId = 'hostel-a-2f' | 'porters-lodge';
+export type InteriorId = 'hostel-a-2f' | 'porters-lodge' | 'lecture-hall-2';
 /** The campus, or one of the interiors. */
 export type LocationId = 'campus' | InteriorId;
 
@@ -85,6 +85,9 @@ export type PropKind =
   | 'cabinet'
   | 'shelf'
   | 'rug'
+  | 'lectureBench'
+  | 'lectern'
+  | 'whiteboard'
   | 'openDoor';
 
 export interface PropDef {
@@ -271,16 +274,61 @@ const PORTERS_LODGE: InteriorDef = {
   exits: [{ at: [2.45, 0], radius: 1.4, promptLabel: 'Go back outside', entrance: 'porters-lodge' }],
 };
 
+// ===========================================================================
+// Lecture Hall 2 — one seminar room, where M03's first lecture is held
+// ===========================================================================
+//
+//   The door is in the east wall, facing the lecture precinct, as on campus.
+//   Four rows of benches face the whiteboard on the west wall, with an aisle
+//   down the middle (z = 0) from the door to the lectern.
+
+/** Two benches per row, either side of the aisle, facing west (the board). */
+const BENCH_ROWS = [-2.5, -0.3, 1.9, 4.1].flatMap((x): PropDef[] => [
+  { kind: 'lectureBench', at: [x, -2.7], rotationY: 90 },
+  { kind: 'lectureBench', at: [x, 2.7], rotationY: 90 },
+]);
+
+const LECTURE_HALL_2: InteriorDef = {
+  id: 'lecture-hall-2',
+  name: 'Lecture Hall 2',
+  bounds: [-7, -5, 7, 5],
+  wallHeight: 3.4,
+  rooms: [{ id: 'lh2-104', name: 'Lecture Hall 2 · Room 104', rect: [-7, -5, 7, 5], floor: 'floorTerrazzo', door: [7, 0], mapLabel: 'LH2 104' }],
+  walls: [
+    { from: [-7, -5], to: [7, -5], windows: [{ at: -3.5, width: 2 }, { at: 1.5, width: 2 }] },
+    { from: [-7, 5], to: [7, 5], windows: [{ at: -3.5, width: 2 }, { at: 1.5, width: 2 }] },
+    { from: [-7, -5], to: [-7, 5] },
+    { from: [7, -5], to: [7, 5], openings: [{ at: 0, width: 1.2 }] },
+  ],
+  doors: [],
+  props: [
+    { kind: 'whiteboard', at: [-6.9, 0], rotationY: 90, label: 'UCIS 101 · CRITICAL THINKING & ETHICS' },
+    { kind: 'lectern', at: [-5.2, 1.4], rotationY: 90 },
+    ...BENCH_ROWS,
+    { kind: 'noticeBoard', at: [6.9, -3.2], rotationY: -90, label: 'LH2 NOTICES' },
+    { kind: 'fan', at: [-3.5, 0], rotationY: 0 },
+    { kind: 'fan', at: [2, 0], rotationY: 0 },
+  ],
+  lights: [
+    [-3.5, -2.6],
+    [-3.5, 2.6],
+    [2, -2.6],
+    [2, 2.6],
+  ],
+  exits: [{ at: [6.4, 0], radius: 1.4, promptLabel: 'Go back outside', entrance: 'lecture-hall-2' }],
+};
+
 export const INTERIORS: Readonly<Record<InteriorId, InteriorDef>> = {
   'hostel-a-2f': HOSTEL_A_2F,
   'porters-lodge': PORTERS_LODGE,
+  'lecture-hall-2': LECTURE_HALL_2,
 };
 
 // ===========================================================================
 // Entrances: the doors between the campus and the interiors
 // ===========================================================================
 
-export type EntranceId = 'hostel-a' | 'porters-lodge';
+export type EntranceId = 'hostel-a' | 'porters-lodge' | 'lecture-hall-2';
 
 export interface EntranceDef {
   readonly id: EntranceId;
@@ -329,6 +377,24 @@ export const ENTRANCES: readonly EntranceDef[] = [
     visibleWhen: { flag: 'm01_complete' },
     outdoorSpawn: { at: [956, 958], yawDegrees: -90 },
     indoorSpawn: { at: [1.9, 0], yawDegrees: 90 },
+  },
+  {
+    // Only one room of Lecture Hall 2 is built: the one with the first
+    // lecture (M03). The door opens once M02 is over, and lets the player in
+    // once they know their timetable, so nobody wanders into an empty room.
+    id: 'lecture-hall-2',
+    interior: 'lecture-hall-2',
+    outdoor: { at: [786, 594], radius: 2.6 },
+    promptLabel: 'Go into Lecture Hall 2',
+    eyebrow: 'Lecture Hall 2',
+    lockedText: [
+      'A sheet of paper is taped to the door: "UCIS 101 — first-years, Room 104, 8 a.m."',
+      'Check your timetable before you go in.',
+    ],
+    requires: { flag: 'read_timetable' },
+    visibleWhen: { flag: 'm02_complete' },
+    outdoorSpawn: { at: [792, 594], yawDegrees: -90 },
+    indoorSpawn: { at: [5.8, 0], yawDegrees: 90 },
   },
 ];
 

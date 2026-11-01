@@ -1,0 +1,12 @@
+{
+  "id": "kb-idle",
+  "start": "fork",
+  "nodes": {
+    "fork": {
+      "branch": [{ "if": { "flag": "kb_photo_hint" }, "next": "wary" }],
+      "next": "plain"
+    },
+    "wary": { "speaker": "kb", "text": "{name} from A-214. You still owe me a proper conversation." },
+    "plain": { "speaker": "kb", "text": "Jollof is finished, but the vision continues! Vote KB." }
+  }
+}

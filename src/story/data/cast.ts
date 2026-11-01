@@ -110,6 +110,12 @@ export const CAST: readonly CastMember[] = [
     talks: [
       { dialogue: 'm01-nii', when: { flag: 'has_student_id', notFlag: 'met_nii' } },
       { dialogue: 'nii-early', when: { notFlag: 'met_nii' } },
+      // M03 first: its conditions imply M02 is over, so M02's conversations
+      // below can never shadow them.
+      { dialogue: 'm03-nii-phone', when: { flag: 'found_kojo_phone', notFlag: 'kojo_phone_charging' } },
+      { dialogue: 'm03-nii-screwdriver', when: { flag: 'heard_buzz_again', notFlag: 'has_screwdriver' } },
+      // Returning the phone to Kojo also sets `phone_decision`, so this one
+      // closes for good once the handset has gone back.
       { dialogue: 'm02-nii-handset', when: { flag: 'has_kojo_handset', notFlag: 'phone_decision' } },
       { dialogue: 'm02-nii-lost', when: { flag: 'm02_met_kojo', notFlag: 'knows_lost_property' } },
       { dialogue: 'nii-idle' },
@@ -131,6 +137,97 @@ export const CAST: readonly CastMember[] = [
       { dialogue: 'm02-kojo-waiting' },
     ],
   },
+  // ------------------------------------------------------------------ M03
+  {
+    // Senior Lecturer and Faculty Examinations Officer (CHARACTER_BIBLE.md).
+    // She takes UCIS 101, the course every first-year shares, so the first
+    // lecture is hers whatever the player studies.
+    id: 'sarpong',
+    name: 'Dr. Afua Sarpong',
+    role: 'Senior Lecturer · Engineering',
+    accent: '#5d6b7a',
+    initialAttitude: 0,
+    figure: { body: 'woman', skin: 0x4e3221, hair: 0x1a1512, top: 0x5d6b7a, bottom: 0x2b2f36, shoes: 0x1a1a1a, height: 1.68 },
+    posts: [{ when: { flag: 'm02_complete' }, location: 'lecture-hall-2', at: [-5.3, -0.4], yawDegrees: -90 }],
+    talks: [
+      { dialogue: 'm03-sarpong-lecture', when: { flag: 'read_timetable', notFlag: 'attended_lecture' } },
+      { dialogue: 'sarpong-early', when: { notFlag: 'attended_lecture' } },
+      { dialogue: 'sarpong-idle' },
+    ],
+  },
+  {
+    id: 'abiba',
+    name: 'Abiba Fuseini',
+    role: 'Electrical Engineering · Level 200',
+    accent: '#3b3f8f',
+    initialAttitude: 0,
+    // Indigo headscarf (the hair role), plain polo, dark trousers.
+    figure: { body: 'woman', skin: 0x3f2819, hair: 0x3b3f8f, top: 0xd9d4c4, bottom: 0x23262e, shoes: 0x3a3a3a, height: 1.74 },
+    // At the foot of the Library steps after the lecture, as Dr. Sarpong said,
+    // facing the road the player comes from. Any closer to the door and the
+    // verandah columns hide her.
+    posts: [{ when: { flag: 'attended_lecture' }, at: [518, 570], yawDegrees: -90 }],
+    talks: [
+      { dialogue: 'm03-abiba', when: { notFlag: 'met_abiba' } },
+      { dialogue: 'abiba-idle' },
+    ],
+  },
+  {
+    id: 'kb',
+    name: 'Kwabena "KB" Asante-Boakye',
+    role: 'Business Administration · Level 400',
+    accent: '#d8b45a',
+    initialAttitude: 15,
+    // White fitted shirt, gold trim, clean white sneakers.
+    figure: { skin: 0x5a3a26, hair: 0x120d0a, top: 0xf2f0ea, bottom: 0x2a2d33, shoes: 0xf4f4f0, height: 1.83 },
+    // Hosting on the Student Centre steps, facing the courtyard.
+    posts: [{ when: { flag: 'met_abiba' }, at: [1232, 570], yawDegrees: 90 }],
+    talks: [
+      { dialogue: 'm03-kb', when: { notFlag: 'met_kb' } },
+      { dialogue: 'kb-idle' },
+    ],
+  },
+  {
+    id: 'selasi',
+    name: 'Selasi Kumah',
+    role: 'Economics · Level 300',
+    accent: '#1f8a5b',
+    initialAttitude: 5,
+    // Emerald print top under a dark blazer.
+    figure: { body: 'woman', skin: 0x4a2f1f, hair: 0x15100c, top: 0x1f8a5b, bottom: 0x2d2a33, shoes: 0x1e1a16, height: 1.66 },
+    // Just outside the party, with a clipboard, where everyone leaving passes.
+    posts: [{ when: { flag: 'met_abiba' }, at: [1226, 606], yawDegrees: 70 }],
+    talks: [
+      { dialogue: 'm03-selasi', when: { flag: 'met_kb', notFlag: 'met_selasi' } },
+      { dialogue: 'selasi-early', when: { notFlag: 'met_selasi' } },
+      { dialogue: 'selasi-idle' },
+    ],
+  },
+  // Classmates: background only, so they have no conversations (and therefore
+  // no "Talk to" prompt). Before the lecture they wait at the front of Room
+  // 104, clear of the benches; afterwards they are at KB's party, so it is a
+  // party and not one man on some steps.
+  ...(
+    [
+      ['classmate-kwesi', 'Kwesi', 0x5a3a26, 0x1d4f8a, 'man', [-3.7, -3.1], -60, [1212, 556], 120],
+      ['classmate-efua', 'Efua', 0x4a2f1f, 0xb5473a, 'woman', [-3.7, 2.4], -120, [1205, 567], -60],
+      ['classmate-delali', 'Delali', 0x6b4430, 0x3e7a4a, 'man', [-3.2, 3.4], -100, [1210, 624], 90],
+    ] as const
+  ).map(
+    ([id, name, skin, top, body, at, yawDegrees, partyAt, partyYaw]): CastMember => ({
+      id,
+      name,
+      role: 'Classmate',
+      accent: '#5b6168',
+      initialAttitude: 0,
+      figure: { body, skin, hair: 0x15100c, top, bottom: 0x2c2f36, shoes: 0x2b2b2b, height: body === 'woman' ? 1.65 : 1.76 },
+      posts: [
+        { when: { flag: 'met_abiba', notFlag: 'm03_complete' }, at: partyAt, yawDegrees: partyYaw },
+        { when: { flag: 'm02_complete', notFlag: 'attended_lecture' }, location: 'lecture-hall-2', at, yawDegrees },
+      ],
+      talks: [],
+    }),
+  ),
   {
     // The "shadow beat" of the arrival cinematic (STORYLINE.md M00, shot 6).
     id: 'narh',

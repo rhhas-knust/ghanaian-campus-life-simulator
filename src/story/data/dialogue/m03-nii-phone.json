@@ -1,0 +1,59 @@
+{
+  "id": "m03-nii-phone",
+  "start": "open",
+  "nodes": {
+    "open": {
+      "speaker": "nii",
+      "text": "Where did you get THIS? Chale, this model is older than my little brother.",
+      "choices": [
+        {
+          "text": "It was under our floor. I think it's Kojo's.",
+          "next": "truth",
+          "major": true,
+          "effects": [
+            { "type": "relationship", "who": "nii", "delta": 5 },
+            { "type": "flag", "flag": "told_nii_kojo_phone" }
+          ]
+        },
+        {
+          "text": "It's an old phone of mine.",
+          "next": "lie",
+          "effects": [{ "type": "reputation", "axis": "integrity", "delta": -3 }]
+        },
+        {
+          "text": "Can you just charge it? No questions.",
+          "next": "noq",
+          "effects": [{ "type": "relationship", "who": "nii", "delta": -2 }]
+        }
+      ]
+    },
+    "truth": {
+      "speaker": "nii",
+      "text": "Under the FLOOR? …The guy at the gate. Then don't let anybody see it, okay? Not the porter, not the hall master. Nobody.",
+      "next": "charge"
+    },
+    "lie": {
+      "speaker": "nii",
+      "text": "Yours. With \"K.B.\" scratched on the back. Okay, {name}. Okay.",
+      "next": "charge"
+    },
+    "noq": { "speaker": "nii", "text": "No questions is extra ₵10. I'm joking. Mostly.", "next": "charge" },
+    "charge": {
+      "speaker": "nii",
+      "text": "There — my magic drawer always has the one. …It's alive. PIN-locked. And who is this big man in the photo with the gold earring?",
+      "effects": [
+        { "type": "flag", "flag": "kojo_phone_charging" },
+        { "type": "flag", "flag": "saw_lockscreen_photo" }
+      ],
+      "choices": [
+        { "text": "No idea. Yet.", "next": "end" },
+        { "text": "You don't know him?", "next": "dunno" }
+      ]
+    },
+    "dunno": {
+      "speaker": "nii",
+      "text": "Half this campus wears a gold stud, my friend. Leave it charging. Your lecture — don't you have a lecture?"
+    },
+    "end": { "speaker": "nii", "text": "\"Yet.\" Listen to you. Go and check your timetable, detective." }
+  }
+}

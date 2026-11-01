@@ -214,6 +214,12 @@ export class StoryState {
         }
       }
     }
+    // Saves from before M03 can hold a phone returned to Kojo with Nii's
+    // "shall I charge it?" question never settled; returning the phone now
+    // settles it, so Nii does not offer to charge a phone the player no longer has.
+    if (state.flags.has('returned_kojo_phone')) {
+      state.flags.add('phone_decision');
+    }
     if (isRecord(raw.relationships)) {
       for (const [id, value] of Object.entries(raw.relationships)) {
         if (isFiniteNumber(value)) {
