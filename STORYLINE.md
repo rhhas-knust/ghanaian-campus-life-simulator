@@ -7,9 +7,9 @@ The main story, its structure, choices and endings. Characters are defined in
 (dialogue, flags, relationships, reputation, time) are specified in
 [GAME_DESIGN.md](GAME_DESIGN.md).
 
-**Status:** design only. No mission, dialogue or story system exists in the
-game yet. This document fixes the narrative structure; dialogue is written
-later, mission by mission.
+**Status:** M00–M03 are built and playable (README.md, "The story so far");
+everything from M04 on is design. Dialogue is written mission by mission, in
+`src/story/data/dialogue/`.
 
 **Fiction notice:** UCIS University (*Until Christ is Seen*), Crestline
 Developments, the Founders' Scholarship and every person in the story are
@@ -164,6 +164,54 @@ Kojo, Uncle Bright and Nii now feel; free roam. Flags: `read_bright_message`,
 outside it, in daylight, and short: he tells the player nothing about why he
 left. S09 (below) is still the conversation where he tells his story, and it
 still depends on choices — now including the trust earned or lost in M02.
+
+### M03 — First Lecture
+
+**Day 3.** The phone under the floor turns up, the course starts, and the
+player meets the three students the campus story turns on. Uses A-214, the
+common room, Room 104 of Lecture Hall 2, the Library steps and the Student
+Centre.
+
+| Step | Objective | Where |
+| --- | --- | --- |
+| 1 | Sleep. At 3 a.m. the buzzing comes back, and this time a green glow shows round the loose tile | A-214 (night card) |
+| 2 | Find something to lift the tile: ask **Nii**, or take a screwdriver from his repair table without asking | Common room / A-214 |
+| 3 | Lift the tile. In a hollow under it, in a bread bag: a small black phone, flat, "K.B." scratched on the back. Its alarm has been going off in the dark for two years | A-214 |
+| 4 | Charge it: **Kojo's own charger** from M02 fits; otherwise Nii's drawer of chargers. PIN-locked. The lock-screen photo: Kojo with an older man in a white shirt and a gold stud | A-214 desk / common room |
+| 5 | Read the timetable from Academic Affairs: UCIS 101, 8:00, Lecture Hall 2, Room 104 | Phone |
+| 6 | **Dr. Sarpong**'s first lecture. She asks what you would do if someone sent you the exam questions the night before | Lecture Hall 2 |
+| 7 | Find **Abiba** on the Library steps, as Dr. Sarpong suggests | Library |
+| 8 | **KB**'s "welcome party" at the Student Centre. He asks which room you are in; "A-214" stops him for a moment | Student Centre |
+| 9 | **Selasi**, outside with a clipboard, recruiting volunteers | Student Centre |
+
+**Choices and what they change.**
+
+| Moment | Options | Effect |
+| --- | --- | --- |
+| The screwdriver | Ask Nii / take it from his table | Nii +3 and `told_nii_buzz` / `took_nii_screwdriver`, which Nii mentions later |
+| Charging with Nii | "It's Kojo's, from under our floor" / "It's an old one of mine" / "No questions" | Nii +5, `told_nii_kojo_phone` / Integrity −3 / Nii −2 |
+| Dr. Sarpong's question (major) | Report it / delete it and tell no one / read it, everybody will / *(Computer Science only)* find out who sent it | Sarpong +5, Integrity +5, Academic +2 / Sarpong +2, Integrity +2 / Sarpong −5, Integrity −5, Popularity +3 / Sarpong +3, Academic +3 |
+| Abiba | Ask to join her study circle / "Just new" / "So she sends you free tutoring?" | Abiba +10, `asked_study_circle` (S03) / +3 / −3 |
+| KB | Thank him / "Party or rally?"; *(if the lock screen was seen)* "I've seen your face in a photo" | KB +5, Popularity +2 / — / `kb_photo_hint`, and KB cuts the conversation short |
+| Selasi (major) | Volunteer / maybe later / "Why trust you more than KB?" | Selasi +10, `selasi_volunteer` / — / Selasi +2 |
+
+"Delete it and tell no one" is exactly what Abiba will have done before
+midsems (CHARACTER_BIBLE.md); Dr. Sarpong's reply — *think about who your
+silence protects* — is set up to land in M07.
+
+**The clues, kept small.** "K.B." is Kojo Badu's initials — and KB's. The
+gold stud in the lock-screen photo is KB's. Neither is confirmed here: KB
+recognising the phone is M09, and the unknown sender's first message is
+M05. The phone stays charging in A-214.
+
+**Outcome:** `found_kojo_phone`, `kojo_phone_charging`, `attended_lecture`,
+`met_abiba`, `met_kb`, `met_selasi`, `m03_complete`; a completion card shows
+Abiba's, KB's, Selasi's, Dr. Sarpong's and Nii's standing; free roam.
+
+**Adaptations.** The party is in the afternoon, not the evening: the sky
+does not follow the clock yet. Three background classmates (Kwesi, Efua,
+Delali) wait in the lecture room and then turn up at the party; they have no
+lines.
 
 ---
 

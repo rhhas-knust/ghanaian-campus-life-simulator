@@ -9,12 +9,12 @@ A browser-based first-person 3D Ghanaian university campus: Three.js +
 TypeScript + Vite, deployed as a static site to GitHub Pages.
 
 **Phase 1 is a walkable campus; Phase 2 has started with the story only** —
-game state, dialogue, the arrival cinematic, character creation, missions M01
-and M02, and the interior system with two interiors (Block A's second floor,
-the Porter's Lodge), because the owner asked for them (GAME_DESIGN.md §12,
-stages A–C and C+). The owner also asked for a **trial of free CC0 models**:
+game state, dialogue, the arrival cinematic, character creation, missions
+M01–M03, and the interior system with three interiors (Block A's second
+floor, the Porter's Lodge, a room in Lecture Hall 2), because the owner asked
+for them (GAME_DESIGN.md §12, stages A–C and C+). The owner also asked for a **trial of free CC0 models**:
 rigged, animated characters for the player and cast, and KayKit furniture in
-Block A (README "Free model trial"). Do not start Mission 3, more interiors,
+Block A (README "Free model trial"). Do not start Mission 4, more interiors,
 models for buildings or the campus, or the rest of Phase 2 and later work
 (crowds, life systems, a backend) unless you have been asked to. The
 phases are in [PROJECT_PHASES.md](PROJECT_PHASES.md).
@@ -158,7 +158,7 @@ that consumes it, rather than special-casing inside an existing one.
 ```bash
 npm run verify
 npm run preview &
-npm run test:smoke   # 93 checks; needs playwright, see README
+npm run test:smoke   # 109 checks; needs playwright, see README
 # then actually walk around — in both camera modes
 ```
 
@@ -201,8 +201,9 @@ Watch `getStats().batches`. If it jumps, something stopped batching.
   guards it. Do not "simplify" any of them away.
 - **SwiftShader runs the game at ~9 fps**, and the game caps simulated time
   per frame, so a key held for one second in a headless test moves the player
-  much less than one second's worth. Hold keys longer in tests rather than
-  loosening the frame cap. For the same reason, poll for a phase or a focus
+  much less than one second's worth. Hold a key until the outcome happens
+  (`holdUntil` in the smoke test) rather than for a fixed time, and never
+  loosen the frame cap. For the same reason, poll for a phase or a focus
   (`waitForPhase`, `waitForFocus` in the smoke test) instead of sleeping a
   fixed few hundred milliseconds — and leave the desktop page paused before
   the touch checks, or the two pages share the CPU.
@@ -235,6 +236,18 @@ Watch `getStats().batches`. If it jumps, something stopped batching.
   `loadModels.ts` catches every failure and the game keeps the procedural
   avatar, figures and furniture; the smoke test blocks `*.glb` to prove it.
   Keep that path working when you add a model.
+- **A character's conversations are checked in order, and the first match
+  wins.** An M02 conversation gated on a flag the player never set (Nii's
+  "shall I charge it?") shadowed M03's. Put later missions' conversations
+  first, and make the earlier ones close themselves.
+- **Story prompts closer than about a metre compete for focus.** The desk
+  socket and the loose tile in A-214 did, and which one the player got
+  depended on a few degrees of facing. Keep places apart, and test them from
+  where a player would stand.
+- **`setFlags` can finish a mission without its last conversation**, so its
+  completion card waits in the queue and appears after the next card the
+  player closes. That is the debug shortcut, not a bug; close every card in
+  scripted tests.
 - **GPU geometry counts grow the first time something is drawn.** Each
   character uploads its mesh the first time it comes into view, so a leak
   check must compare steady-state round trips, not the first one.

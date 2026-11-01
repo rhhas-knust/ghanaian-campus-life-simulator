@@ -7,8 +7,10 @@ Seen*) is fictional too.
 Companion documents: [GAME_DESIGN.md](GAME_DESIGN.md),
 [STORYLINE.md](STORYLINE.md).
 
-**Status:** design only. No character in this document exists in the game yet;
-Phase 1 has a single procedural placeholder avatar.
+**Status:** in the game so far (M01–M03): the player, Nii, Uncle Bright, Mrs. Agyeman, Kojo,
+Mr. Narh (cinematic only), Dr. Sarpong, Abiba, KB and Selasi — as recoloured
+free CC0 bodies, not the final character art in §4. Esi, Yaw and Hajia
+Zainab are design only.
 
 ---
 

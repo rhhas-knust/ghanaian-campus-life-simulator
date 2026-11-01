@@ -132,8 +132,8 @@ real phone.
       existed, or mid-M01) — both load; the first continues into M02
 - [ ] **Play it on a real Android phone**: the corridor with the thumbstick,
       tapping INTERACT at doors, frame rate indoors, the fade on a slow phone
-- [ ] M03 "First Lecture" — the phone under the floor of A-214
-- [ ] More interiors: the library and a lecture theatre
+- [x] M03 "First Lecture" — see the M03 section below
+- [ ] More interiors: the library (M03 meets Abiba on its steps, not inside)
 - [ ] Owner check: M02 adapts the brief to the story bible (Kojo is
       rusticated, so you meet him outside the gate, and the missing phone is
       his confiscated one, not the one under the floor); and missions from the
@@ -141,6 +141,32 @@ real phone.
 - [ ] Owner check: the registry clerk **Mrs. Agyeman** is a new minor
       character, added for M01 step 4; and M01's signpost step now comes
       before the Administration Block (STORYLINE §2)
+
+## Phase 2 — M03 "First Lecture"
+
+Verified in headless Chromium (SwiftShader); not on a real phone.
+
+- [x] The night after M02 brings the buzzing back and starts M03 — smoke test
+- [x] Screwdriver from Nii, or taken from his table without asking (Nii
+      remembers) — smoke test (asking) and a scripted run (taking)
+- [x] The tile lifts; the hidden phone; charging with Kojo's charger at the
+      desk, or by Nii — smoke test (desk) and a scripted run (Nii)
+- [x] Timetable on the phone; Lecture Hall 2 Room 104; Dr. Sarpong's
+      question, with an extra answer for Computer Science — smoke test and
+      screenshots
+- [x] Abiba on the Library steps; KB's party with classmates; Selasi —
+      smoke test and screenshots
+- [x] A save from the M02 release continues into M03, and Nii no longer
+      offers to charge the phone that was given back — smoke test
+- [ ] **Play M03 on a real Android phone**
+- [ ] Owner check: the hidden phone has "K.B." scratched on the back, and its
+      lock screen shows Kojo with a man wearing a gold stud — a deliberate
+      double hint (Kojo Badu, and KB, his cousin, revealed in M09). Dr. Sarpong
+      teaches UCIS 101, a course every first-year takes, so the first lecture
+      is hers whatever the player studies
+- [ ] Owner check: the party is "this afternoon" rather than in the evening,
+      because the sky does not change with the clock yet
+- [ ] Mission 4 "The Group Chat"
 
 ## Next, within Phase 1 scope
 
