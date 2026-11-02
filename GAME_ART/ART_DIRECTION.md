@@ -77,6 +77,12 @@ props-sheet style in boxes: metal-framed beds, timber desks and wardrobes,
 plastic buckets. Interior sheets — the hostel corridor, a student room, the
 porter's lodge — would be the most useful next art.
 
+**Lecture Hall 2, Room 104** (M03) follows the same language as the hostel:
+cream walls and the green lower band, green window frames on both long
+walls, terrazzo floor, ceiling fans, and four rows of steel-framed benches
+with timber tops facing a whiteboard and a timber lectern. The UCIS 101 title
+on the board is in the interior sign atlas.
+
 **Free model trial.** Room A-214 and the Block A common room now use the
 CC0 *KayKit Furniture Bits* pack (beds, desk, chair, lamp, books, rug, sofa,
 table) instead of boxes; everything else indoors is still boxes. KayKit's

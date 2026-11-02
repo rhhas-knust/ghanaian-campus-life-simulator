@@ -1,0 +1,64 @@
+{
+  "id": "m03-abiba",
+  "start": "open",
+  "nodes": {
+    "open": {
+      "speaker": "abiba",
+      "text": "Let me guess. Dr. Sarpong sent you. She sends me all the lost ones.",
+      "effects": [{ "type": "flag", "flag": "met_abiba" }],
+      "choices": [
+        {
+          "text": "She did. Could I join your study circle?",
+          "next": "circle",
+          "effects": [
+            { "type": "relationship", "who": "abiba", "delta": 10 },
+            { "type": "flag", "flag": "asked_study_circle" }
+          ]
+        },
+        {
+          "text": "I'm not lost. Just new.",
+          "next": "new",
+          "effects": [{ "type": "relationship", "who": "abiba", "delta": 3 }]
+        },
+        {
+          "text": "Does she send you people so you'll tutor them for free?",
+          "next": "free",
+          "effects": [{ "type": "relationship", "who": "abiba", "delta": -3 }]
+        }
+      ]
+    },
+    "circle": {
+      "speaker": "abiba",
+      "text": "Tuesdays and Thursdays, second floor, by the window that doesn't open. Come with your own pen. People who borrow pens don't come back.",
+      "next": "party"
+    },
+    "new": {
+      "speaker": "abiba",
+      "text": "Everybody is new once. Some of us stay new for a whole semester.",
+      "next": "party"
+    },
+    "free": {
+      "speaker": "abiba",
+      "text": "She sends them because I pass. You can find another tutor if you like. They'll charge you.",
+      "next": "party"
+    },
+    "party": {
+      "speaker": "abiba",
+      "text": "If you're looking for everyone else, they've gone to KB's \"welcome party\" at the Student Centre. Free jollof, long speeches. Campaign season starts early here.",
+      "choices": [
+        { "text": "Come with me?", "next": "no" },
+        { "text": "You don't like KB?", "next": "kb" },
+        { "text": "I'll go and see for myself.", "next": "see" }
+      ]
+    },
+    "no": {
+      "speaker": "abiba",
+      "text": "I have a circuits problem set and a scholarship to keep. Enjoy the rice."
+    },
+    "kb": {
+      "speaker": "abiba",
+      "text": "KB is not bad. He is loud. Loud people get believed. Quiet people get blamed. Go — eat."
+    },
+    "see": { "speaker": "abiba", "text": "Good. Seeing for yourself is the whole of Dr. Sarpong's course anyway." }
+  }
+}

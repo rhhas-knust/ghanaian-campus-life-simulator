@@ -1,0 +1,12 @@
+{
+  "id": "abiba-idle",
+  "start": "fork",
+  "nodes": {
+    "fork": {
+      "branch": [{ "if": { "flag": "asked_study_circle" }, "next": "circle" }],
+      "next": "plain"
+    },
+    "circle": { "speaker": "abiba", "text": "Tuesday. Your own pen. I'm serious about the pen." },
+    "plain": { "speaker": "abiba", "text": "The Library closes at ten. The good seats are gone by eight." }
+  }
+}

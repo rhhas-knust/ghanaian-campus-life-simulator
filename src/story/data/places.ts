@@ -95,6 +95,29 @@ export const STORY_PLACES: readonly StoryPlaceDef[] = [
     action: { kind: 'inspect' },
     readings: [
       {
+        when: { flag: 'found_kojo_phone' },
+        body: ['The tile sits back in place. Underneath, the hollow in the screed is empty now — just dust and a faint square where the bag lay.'],
+      },
+      {
+        when: { flag: 'has_screwdriver' },
+        title: 'Under the floor',
+        body: [
+          'You work the screwdriver into the gap and lever. The tile comes up with a dry crack.',
+          'Underneath, in a hollow somebody chipped out of the screed: a bread bag, folded tight. Inside it, a small black phone — older than the one in the lost-property cabinet, with "K.B." scratched into the back.',
+          'Its screen lights once when you touch it — 1% — and dies. The alarm that woke you was this. It has been waking up in the dark for two years.',
+          '"If you ever find anything of mine — anything — don\'t take it to Admin. Keep it, and tell me."',
+        ],
+        bullets: ['Found: a hidden phone, flat. "K.B." scratched on the back'],
+        effects: [{ type: 'flag', flag: 'found_kojo_phone' }],
+      },
+      {
+        when: { flag: 'heard_buzz_again' },
+        body: [
+          'It rocks, and a thread of dust puffs out of the gap. Your fingernails will not get under it.',
+          'You need something flat and strong. Nii fixes phones for a living — he will have tools.',
+        ],
+      },
+      {
         when: { flag: 'noticed_loose_tile' },
         body: ['Still loose. Still silent.'],
       },
@@ -122,8 +145,71 @@ export const STORY_PLACES: readonly StoryPlaceDef[] = [
     action: { kind: 'inspect' },
     readings: [
       {
+        when: { flag: 'has_screwdriver' },
         body: [
           'Screwdrivers, three dead phones and a soldering iron resting on a tin lid. A price list in marker: "Screen ₵80. Charging port ₵30. Unlocking — ask."',
+        ],
+      },
+      {
+        when: { flag: 'heard_buzz_again' },
+        title: 'A flat screwdriver',
+        body: [
+          'Among the tools: a long flat-head screwdriver, the handle wrapped in insulating tape. Exactly what the tile needs.',
+          'Nii is not here to ask. You take it anyway.',
+        ],
+        bullets: ["Taken: Nii's flat screwdriver"],
+        effects: [
+          { type: 'flag', flag: 'has_screwdriver' },
+          { type: 'flag', flag: 'took_nii_screwdriver' },
+        ],
+      },
+      {
+        body: [
+          'Screwdrivers, three dead phones and a soldering iron resting on a tin lid. A price list in marker: "Screen ₵80. Charging port ₵30. Unlocking — ask."',
+        ],
+      },
+    ],
+  },
+  {
+    // Where the hidden phone gets charged (M03). Kojo's own charger from M02
+    // fits; without it, Nii has a drawer of every charger ever made.
+    id: 'desk-socket',
+    location: 'hostel-a-2f',
+    // The west end of the desk: the middle is too close to the loose tile, and
+    // the two prompts competed for focus.
+    at: [9.5, 4.7],
+    radius: 1.1,
+    promptLabel: 'Charge the phone at the desk',
+    eyebrow: 'Room A-214',
+    title: 'The desk socket',
+    visibleWhen: { flag: 'found_kojo_phone' },
+    action: { kind: 'inspect' },
+    readings: [
+      {
+        when: { flag: 'kojo_phone_charging' },
+        body: [
+          'The old phone is charging. Locked with a PIN you do not know.',
+          'The lock-screen photo: Kojo, younger, laughing, his arm round an older guy in a white shirt — sharp edge-up, a small gold stud in one ear.',
+        ],
+      },
+      {
+        when: { flag: 'found_charger' },
+        title: 'It fits',
+        body: [
+          "None of your chargers fit the old port — but the one from the wardrobe does. KOJO, says the tape. Of course it fits.",
+          'After a minute the screen wakes: a battery outline, then a lock screen. A PIN you do not know.',
+          'The photo behind the clock: Kojo, younger, laughing, his arm round an older guy in a white shirt — sharp edge-up, a small gold stud in one ear.',
+        ],
+        bullets: ["Charging, with Kojo's own charger"],
+        effects: [
+          { type: 'flag', flag: 'kojo_phone_charging' },
+          { type: 'flag', flag: 'saw_lockscreen_photo' },
+        ],
+      },
+      {
+        body: [
+          'The socket works. Your charger does not fit this old phone — the port is a shape nobody has made for years.',
+          'Nii keeps a drawer of every charger ever made. He is in the common room.',
         ],
       },
     ],
@@ -234,9 +320,36 @@ export const FIRST_NIGHT_CARD: StoryCard = {
   bullets: ['M01 Akwaaba — complete', 'Progress saved on this device'],
 };
 
+/** The night that starts M03: the buzzing again, and this time a light. */
+export const SECOND_BUZZ_CARD: StoryCard = {
+  eyebrow: 'Night',
+  title: 'Room A-214',
+  body: [
+    'Three in the morning. The buzzing again — the same spot, under the loose tile. Three short pulses, then silence.',
+    'This time you are awake for it, and you see it: a thin green glow along the edge of the tile, and then dark.',
+    'Nii sleeps through it. You lie there until the sky goes grey. Tomorrow that tile comes up. And tomorrow is your first lecture.',
+  ],
+  bullets: ['M03 First Lecture — started', 'Progress saved on this device'],
+};
+
 export const ORDINARY_NIGHT_CARD: StoryCard = {
   eyebrow: 'Night',
   title: 'Lights out',
   body: ['You sleep through the night. Somewhere a generator hums; under the floor, nothing stirs.'],
   bullets: ['Progress saved on this device'],
 };
+
+/**
+ * Which card a night shows, checked top to bottom BEFORE the night's
+ * `slept_day_<n>` flag is set. A night's effects mark it as told, so each
+ * special night happens once.
+ */
+export const NIGHTS: readonly { readonly when?: Condition; readonly card: StoryCard; readonly effects?: readonly Effect[] }[] = [
+  { when: { notFlag: 'slept_day_1' }, card: FIRST_NIGHT_CARD },
+  {
+    when: { flag: 'm02_complete', notFlag: 'heard_buzz_again' },
+    card: SECOND_BUZZ_CARD,
+    effects: [{ type: 'flag', flag: 'heard_buzz_again' }],
+  },
+  { card: ORDINARY_NIGHT_CARD },
+];

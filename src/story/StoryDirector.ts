@@ -29,7 +29,7 @@ export interface Objective {
 
 export const FREE_ROAM: Objective = {
   heading: 'Free roam',
-  text: 'Explore UCIS University. Mission 3 is still being written — sleep in A-214 to end the day.',
+  text: 'Explore UCIS University. Mission 4 is still being written — sleep in A-214 to end the day.',
   target: null,
   step: 0,
   stepCount: 0,

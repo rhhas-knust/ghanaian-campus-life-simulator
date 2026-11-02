@@ -1,0 +1,12 @@
+{
+  "id": "selasi-idle",
+  "start": "fork",
+  "nodes": {
+    "fork": {
+      "branch": [{ "if": { "flag": "selasi_volunteer" }, "next": "vol" }],
+      "next": "plain"
+    },
+    "vol": { "speaker": "selasi", "text": "Meeting's on Thursday. Six o'clock means six o'clock, {name}." },
+    "plain": { "speaker": "selasi", "text": "The offer stands. Accountability doesn't expire." }
+  }
+}

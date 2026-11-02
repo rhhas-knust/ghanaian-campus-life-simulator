@@ -64,6 +64,23 @@ async function waitForFocus(target, id, timeout = 5000) {
   return focus;
 }
 
+/**
+ * Holds `key` until `done()` is true or `timeout` passes. Walking checks are
+ * about where the player ends up, not how fast the software renderer gets
+ * them there, so they poll the outcome instead of holding for a fixed time.
+ */
+async function holdUntil(target, key, done, timeout = 12000) {
+  await target.keyboard.down(key);
+  const end = Date.now() + timeout;
+  try {
+    while (Date.now() < end && !(await done())) {
+      await target.waitForTimeout(150);
+    }
+  } finally {
+    await target.keyboard.up(key);
+  }
+}
+
 /** New Story → arrival cinematic → Skip → character creation → Begin. */
 async function startNewStory(target, { name, programme, label }) {
   await target.click('#start-button');
@@ -117,11 +134,7 @@ check('canvas renders a detailed scene', shot.length > 60000, `${(shot.length / 
 // software renderer manages only a few frames a second, and the game caps the
 // simulated time per frame.
 const before = await debug(() => window.__campusDebug.getPlayer());
-await page.keyboard.down('w');
-// Longer than it looks necessary: the skinned characters at the gate slow
-// the software renderer further.
-await page.waitForTimeout(4500);
-await page.keyboard.up('w');
+await holdUntil(page, 'w', async () => (await debug(() => window.__campusDebug.getPlayer())).z < before.z - 1.6);
 await page.waitForTimeout(200);
 const after = await debug(() => window.__campusDebug.getPlayer());
 check('W walks forward, into campus (-Z)', after.z < before.z - 1.5, `z ${before.z.toFixed(2)} -> ${after.z.toFixed(2)}`);
@@ -331,9 +344,7 @@ async function converse(target, picks) {
 
   // Through the doorway into A-214.
   await debug(() => window.__campusDebug.teleport(9, 0, 180));
-  await page.keyboard.down('w');
-  await page.waitForTimeout(3500);
-  await page.keyboard.up('w');
+  await holdUntil(page, 'w', async () => (await page.textContent('#location-label')) === 'Room A-214');
   check('the A-214 doorway is walkable', (await page.textContent('#location-label')) === 'Room A-214');
 
   await debug(() => window.__campusDebug.teleport(10.4, 4.6, -90));
@@ -427,9 +438,81 @@ async function converse(target, picks) {
   await page.click('#info-close');
   await waitForPhase(page, 'playing');
   story = await debug(() => window.__campusDebug.getStory());
-  check('M02 completes into free roam', story.missionId === null && story.flags.includes('m02_complete'), story.objective);
+  check('M02 completes into M03', story.missionId === 'm03' && story.flags.includes('m02_complete') && /sleep/i.test(story.objective), story.objective);
   check('trust earned along the way: Kojo shares his number', story.flags.includes('kojo_number') && story.relationships.kojo >= 10, `kojo ${story.relationships.kojo}`);
   check('Kojo has gone home', (await waitForFocus(page, 'npc:kojo', 1200)) !== 'npc:kojo');
+
+  // ------------------------------------------------------------ M03
+  /** Stands at `at` facing `yaw`, waits for `id` to be in focus, presses E. */
+  const use = async (at, yaw, id) => {
+    await debug(({ x, z, yaw }) => window.__campusDebug.teleport(x, z, yaw), { x: at[0], z: at[1], yaw });
+    const focus = await waitForFocus(page, id);
+    await page.keyboard.press('e');
+    return focus === id;
+  };
+  const readCard = async () => {
+    if (!(await waitForPhase(page, 'reading'))) {
+      return '(no card)';
+    }
+    const title = (await page.textContent('#info-title')) ?? '';
+    await page.click('#info-close');
+    await waitForPhase(page, 'playing');
+    return title;
+  };
+  await debug(({ x, z }) => window.__campusDebug.teleport(x, z, 0), { x: sx, z: sz });
+  await goThrough(page, 'entrance:hostel-a', 'hostel-a-2f');
+  await use([10.4, 4.6], -90, 'place:bed-a214');
+  await waitForPhase(page, 'reading');
+  check('M03: the night after M02 the buzzing comes back', /three in the morning/i.test((await page.textContent('#info-body')) ?? ''));
+  await page.click('#info-close');
+  await waitForPhase(page, 'playing');
+
+  check('M03: Nii lends a screwdriver', await use([17.0, 2.6], -90, 'npc:nii'));
+  await converse(page, ['1']);
+  check('M03: lifting the tile finds the hidden phone', (await use([10.55, 3.45], 180, 'place:loose-tile')) && /under the floor/i.test(await readCard()));
+  {
+    const focused = await use([9.35, 3.75], 180, 'place:desk-socket');
+    const title = await readCard();
+    check("M03: Kojo's charger from M02 fits it", focused && /fits/i.test(title), `focused ${focused}, card "${title}"`);
+  }
+  await page.keyboard.press('Tab');
+  await waitForPhase(page, 'phone');
+  await page.click('.phone-thread.is-unread');
+  await page.keyboard.press('Tab');
+  await waitForPhase(page, 'playing');
+  story = await debug(() => window.__campusDebug.getStory());
+  check('M03: the timetable sends you to Lecture Hall 2', story.step === 6 && /Lecture Hall 2/.test(story.objective), story.objective);
+
+  await debug(() => window.__campusDebug.teleport(-14, -1.8, 0));
+  await goThrough(page, 'exit:hostel-a-2f:hostel-a', 'campus');
+  const [hx, hz] = plan(788, 594);
+  await debug(({ x, z }) => window.__campusDebug.teleport(x, z, 90), { x: hx, z: hz });
+  check('M03: Lecture Hall 2 can be entered', await goThrough(page, 'entrance:lecture-hall-2', 'lecture-hall-2'));
+  const hall = await debug(() => window.__campusDebug.getStats());
+  check('M03: the lecture room is built and batched', hall.interiorBatches > 6 && hall.interiorBatches < 40, `${hall.interiorBatches} batches`);
+  check('M03: Dr. Sarpong is at the front', await use([-4.0, -0.4], 90, 'npc:sarpong'));
+  await converse(page, ['1']);
+  story = await debug(() => window.__campusDebug.getStory());
+  check('M03: answering "report it" earns her respect', story.flags.includes('attended_lecture') && story.relationships.sarpong === 5, `sarpong ${story.relationships.sarpong}`);
+  await debug(() => window.__campusDebug.teleport(5.6, 0, -90));
+  await goThrough(page, 'exit:lecture-hall-2:lecture-hall-2', 'campus');
+
+  const at = (px, py) => plan(px, py);
+  check('M03: Abiba waits on the Library steps', await use(at(526, 570), 90, 'npc:abiba'));
+  await converse(page, ['1', '1']);
+  check('M03: KB hosts the party at the Student Centre', await use(at(1222, 570), -90, 'npc:kb'));
+  await converse(page, ['1', '1']);
+  check('M03: Selasi is recruiting outside', await use(at(1216, 606), -90, 'npc:selasi'));
+  await converse(page, ['1', '1']);
+  check('M03: meeting Selasi shows the completion card', (await waitForPhase(page, 'reading')) && /First Lecture/.test((await page.textContent('#info-title')) ?? ''));
+  await page.click('#info-close');
+  await waitForPhase(page, 'playing');
+  story = await debug(() => window.__campusDebug.getStory());
+  check(
+    'M03 completes into free roam, with Abiba, KB and Selasi met',
+    story.missionId === null && ['m03_complete', 'met_abiba', 'met_kb', 'met_selasi', 'found_kojo_phone'].every((flag) => story.flags.includes(flag)),
+    story.objective,
+  );
 
   await page.keyboard.press('Escape');
   await waitForPhase(page, 'paused');
@@ -472,6 +555,46 @@ async function converse(target, picks) {
     `${story?.missionId}: ${story?.objective}`,
   );
   await legacy.close();
+}
+
+// A save from the M02 release: M02 finished, free roam, the phone returned
+// without Nii's charging question settled. It must continue into M03, and
+// Nii must not offer to charge a phone the player gave back.
+{
+  const m02Save = await browser.newContext({ viewport: { width: 960, height: 540 } });
+  await m02Save.addInitScript(() => {
+    if (!sessionStorage.getItem('seeded')) {
+      localStorage.setItem(
+        'gcls.story.v1',
+        JSON.stringify({
+          version: 1,
+          profile: { name: 'Yaw', address: 'he', programme: 'business', home: 'ashanti' },
+          flags: ['signed_in', 'has_student_id', 'met_nii', 'joined_group_chat', 'read_group_chat', 'slept_day_1', 'm01_complete', 'read_bright_message', 'm02_met_kojo', 'found_charger', 'knows_lost_property', 'bright_opened_drawer', 'has_kojo_handset', 'returned_kojo_phone', 'm02_complete'],
+          relationships: { 'uncle-bright': 15, 'registry-clerk': 5, nii: 35, kojo: 20, narh: 0 },
+          reputation: { integrity: 55, popularity: 10, academic: 50 },
+          day: 2,
+          minutes: 700,
+          missionId: null,
+          position: { location: 'hostel-a-2f', x: 17, z: 2.6, yawDegrees: -90 },
+        }),
+      );
+      sessionStorage.setItem('seeded', '1');
+    }
+  });
+  const mpg = await m02Save.newPage();
+  const m02Errors = [];
+  mpg.on('pageerror', (e) => m02Errors.push(e.message));
+  await mpg.goto(BASE + '?debug=1', { waitUntil: 'load' });
+  await mpg.waitForSelector('#start-screen:not([hidden])', { timeout: 90000 });
+  await mpg.click('#start-button');
+  await waitForPhase(mpg, 'playing');
+  const story = await mpg.evaluate(() => window.__campusDebug.getStory());
+  check('a save from the M02 release continues into M03', story?.missionId === 'm03' && story.step === 1 && m02Errors.length === 0, `${story?.missionId}: ${story?.objective}`);
+  await waitForFocus(mpg, 'npc:nii');
+  await mpg.keyboard.press('e');
+  await waitForPhase(mpg, 'dialogue');
+  check("and Nii no longer offers to charge Kojo's returned phone", !/Old Tecno/.test((await mpg.textContent('#dialogue-text')) ?? ''), (await mpg.textContent('#dialogue-text')) ?? '');
+  await m02Save.close();
 }
 
 // ======================================================= missing models

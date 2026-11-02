@@ -83,7 +83,18 @@ Also at the owner's request.
 - **M02 "Kojo's Missing Phone"**, using both interiors, with choices that
   change Kojo's, Uncle Bright's and Nii's standing.
 
-Still open: Mission 3 onwards, more interiors, and the rigged characters of
+### Mission 3 — built
+At the owner's request ("move up to the next").
+- **M03 "First Lecture"** (STORYLINE.md §2): the phone under A-214's floor,
+  charged with Kojo's own charger or by Nii; the first lecture; Abiba, KB and
+  Selasi met; side stories S03 (Abiba's study circle) and S04 unlocked by
+  flag but not yet playable.
+- **A third interior:** Room 104 of Lecture Hall 2, with benches, a lectern
+  and a whiteboard, and Dr. Sarpong with three classmates.
+- **New cast:** Dr. Afua Sarpong, Abiba Fuseini, KB, Selasi Kumah, and three
+  background classmates who move from the lecture to KB's party.
+
+Still open: Mission 4 onwards, more interiors, and the rigged characters of
 stage D.
 
 ### Free model trial — built, awaiting the owner's verdict

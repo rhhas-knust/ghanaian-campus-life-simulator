@@ -1,0 +1,31 @@
+{
+  "id": "m03-nii-screwdriver",
+  "start": "open",
+  "nodes": {
+    "open": {
+      "speaker": "nii",
+      "text": "{name}! You look like you didn't sleep. Was it the mosquitoes?",
+      "choices": [
+        {
+          "text": "The buzzing under the floor again. I need something to lift that tile.",
+          "next": "tool",
+          "effects": [{ "type": "relationship", "who": "nii", "delta": 3 }]
+        },
+        { "text": "Can I borrow a flat screwdriver? Don't ask.", "next": "noask" }
+      ]
+    },
+    "tool": {
+      "speaker": "nii",
+      "text": "Ei. So I wasn't dreaming. Take this one — the flat one. If there's a snake under there, it's your snake.",
+      "effects": [
+        { "type": "flag", "flag": "has_screwdriver" },
+        { "type": "flag", "flag": "told_nii_buzz" }
+      ]
+    },
+    "noask": {
+      "speaker": "nii",
+      "text": "\"Don't ask\" is how every good story starts. Here. Bring it back with all its bits.",
+      "effects": [{ "type": "flag", "flag": "has_screwdriver" }]
+    }
+  }
+}

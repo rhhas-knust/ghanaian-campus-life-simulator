@@ -29,7 +29,7 @@ is a design to build against, not a description of the game today.
 | Rigged, animated CC0 bodies (trial) for the player and the cast, recoloured per character, idling and gesturing at posts set by story state and location; procedural figures as the fallback | Rigged, animated characters (player and NPCs) |
 | Keyboard/mouse and touch controls | — |
 | Dialogue from JSON with choices, conditions (flags, programme, relationship thresholds), silent branches and effects; relationship and reputation values | Portrait art; skill checks; money and item effects |
-| Missions M01 "Akwaaba" and M02 "Kojo's Missing Phone"; objective card, minimap and map markers and a floating beacon that route through doors | M03–M17, side stories, chapters, endings |
+| Missions M01 "Akwaaba", M02 "Kojo's Missing Phone" and M03 "First Lecture"; objective card, minimap and map markers and a floating beacon that route through doors | M04–M17, side stories, chapters, endings |
 | A game clock and days that end by sleeping | Time of day, timetable, energy, money, grades |
 | Phone: objectives, messages, profile; one save slot in local storage | Timetable and wallet in the phone |
 | Collision; readable signs and plaques | — |

@@ -140,7 +140,7 @@ export const MISSIONS: readonly MissionDef[] = [
         target: { at: [1046, 1030] },
       },
     ],
-    next: null,
+    next: 'm03',
     completion: {
       title: "Kojo's Missing Phone",
       body: [
@@ -148,7 +148,71 @@ export const MISSIONS: readonly MissionDef[] = [
         "The tag said Registry, Administration Block. Somebody there had it for two years and never called him.",
       ],
       people: ['kojo', 'uncle-bright', 'nii'],
-      next: 'Free roam. Mission 3 is still being written — explore, or sleep in A-214 to end the day.',
+      next: 'Next: M03 First Lecture. Get some sleep in A-214 tonight — the floor has more to say.',
+    },
+  },
+  {
+    // "First Lecture" — STORYLINE.md §8, M03. Day 3: the phone under the
+    // floor, the first lecture, and three people who will matter later.
+    id: 'm03',
+    code: 'M03',
+    title: 'First Lecture',
+    steps: [
+      {
+        objective: 'Get some sleep in A-214',
+        doneWhen: 'heard_buzz_again',
+        target: { location: 'hostel-a-2f', at: [11.2, 4.9] },
+      },
+      {
+        objective: 'Find something to lift the loose tile — Nii fixes phones, so he has tools',
+        doneWhen: 'has_screwdriver',
+        target: { location: 'hostel-a-2f', at: [18.4, 2.6] },
+      },
+      {
+        objective: 'Lift the loose tile beside your bed',
+        doneWhen: 'found_kojo_phone',
+        target: { location: 'hostel-a-2f', at: [10.55, 4.25] },
+      },
+      {
+        objective: 'Get the old phone charging',
+        doneWhen: 'kojo_phone_charging',
+        target: { location: 'hostel-a-2f', at: [9.5, 4.7] },
+      },
+      {
+        objective: 'Check your phone for your timetable',
+        doneWhen: 'read_timetable',
+        target: null,
+      },
+      {
+        objective: 'Get to your first lecture: UCIS 101, Lecture Hall 2, Room 104',
+        doneWhen: 'attended_lecture',
+        target: { location: 'lecture-hall-2', at: [-5.3, -0.4] },
+      },
+      {
+        objective: 'Find Abiba Fuseini on the Library steps',
+        doneWhen: 'met_abiba',
+        target: { at: [518, 570] },
+      },
+      {
+        objective: "Go to KB's welcome party at the Student Centre",
+        doneWhen: 'met_kb',
+        target: { at: [1232, 570] },
+      },
+      {
+        objective: 'Talk to Selasi, who is handing out flyers outside the party',
+        doneWhen: 'met_selasi',
+        target: { at: [1226, 606] },
+      },
+    ],
+    next: null,
+    completion: {
+      title: 'First Lecture',
+      body: [
+        'Day three: a phone under the floor, a lecture about honesty, and three people who each wanted something from you.',
+        'The old phone is charging in A-214. Its lock screen keeps showing Kojo with his arm round a man with a gold stud in one ear.',
+      ],
+      people: ['abiba', 'kb', 'selasi', 'sarpong', 'nii'],
+      next: 'Free roam. Mission 4 is still being written — explore, or sleep in A-214 to end the day.',
     },
   },
 ];

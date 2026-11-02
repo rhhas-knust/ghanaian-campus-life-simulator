@@ -4,10 +4,20 @@
   "nodes": {
     "fork": {
       "branch": [
+        { "if": { "flag": "m03_complete" }, "next": "m03" },
+        { "if": { "flag": "took_nii_screwdriver" }, "next": "took" },
         { "if": { "flag": "m02_complete" }, "next": "done" },
         { "if": { "flag": "m01_complete" }, "next": "day" }
       ],
       "next": "rest"
+    },
+    "m03": {
+      "speaker": "nii",
+      "text": "KB's party, Selasi's clipboard and Sarpong's ethics, all in one day? You're doing campus life on hard mode, {name}."
+    },
+    "took": {
+      "speaker": "nii",
+      "text": "Somebody borrowed my flat screwdriver without asking. Somebody who sleeps in this room. I'm just saying."
     },
     "done": {
       "speaker": "nii",

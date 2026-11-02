@@ -19,15 +19,17 @@ the courtyard, lecture halls, library, student centre, cafeteria, hostels and
 sports fields, in first or third person, and read the signs.
 
 **Phase 2 has started with the story.** **New Story** plays a skippable
-arrival cinematic, then character creation, then two missions:
+arrival cinematic, then character creation, then three missions:
 **M01 "Akwaaba"** — sign in at the gate, collect your student ID, meet your
 roommate Nii, and climb to room A-214 to sleep — and **M02 "Kojo's Missing
 Phone"**, in which the room's previous occupant asks you to find something he
-left behind. You can **walk into buildings**: the Block A second floor (with
-your room and the common room) and the Porter's Lodge. Conversations have
-choices that people remember, the phone holds your objectives and messages,
-and progress is saved on the device. After M02 the campus is free roam;
-Mission 3 is not built yet.
+left behind — and **M03 "First Lecture"**, in which something under your
+floor turns up, Dr. Sarpong asks the class an awkward question, and you meet
+Abiba, KB and Selasi. You can **walk into buildings**: the Block A second
+floor (with your room and the common room), the Porter's Lodge and a lecture
+room in Lecture Hall 2. Conversations have choices that people remember, the
+phone holds your objectives and messages, and progress is saved on the
+device. After M03 the campus is free roam; Mission 4 is not built yet.
 
 **Design documents** for the full game — systems, cast and story; most of it
 not built yet: [GAME_DESIGN.md](GAME_DESIGN.md),
@@ -206,11 +208,22 @@ Story text follows [STORYLINE.md](STORYLINE.md) §2.
   opening the lost-property cabinet in the Porter's Lodge → take the phone
   back to Kojo. How you treat Kojo, Bright and Nii changes their standing,
   what they say later, and whether Kojo gives you his number. The mystery
-  under the floor stays unsolved.
+  under the floor stays unsolved — for now.
+- **M03 "First Lecture"**, day three: the buzzing comes back in the night →
+  get a screwdriver (ask Nii, or take one from his table) → lift the loose
+  tile: a hidden phone with "K.B." scratched on the back → charge it (Kojo's
+  own charger from M02 fits, or Nii's drawer of chargers) → read your
+  timetable → UCIS 101 with **Dr. Sarpong** in Lecture Hall 2, where she asks
+  what you would do with a leaked exam paper → meet **Abiba** on the Library
+  steps → KB's welcome party at the Student Centre: **KB** (who goes quiet
+  when he hears "A-214") and **Selasi** with her clipboard. The phone's lock
+  screen shows Kojo with someone wearing a gold stud. Who that is stays for
+  later.
 - **Buildings you can enter**: the stairs in the Block A court lead to the
   second floor — a corridor of numbered doors (knock on them), room A-214
   with its beds, desks, wardrobe and loose tile, and the common room. The
-  Porter's Lodge by the gate opens from day two. Going in or out fades
+  Porter's Lodge by the gate opens from day two, and Room 104 in Lecture
+  Hall 2 once you have your timetable. Going in or out fades
   through black; inside, the minimap becomes a floor plan, the location pill
   names the room, and objective markers point at the door you need.
 - **Conversations** are data — one JSON file each in
@@ -221,7 +234,8 @@ Story text follows [STORYLINE.md](STORYLINE.md) §2.
   minimap and the campus map, and as a gold diamond floating over the target —
   or over the door to it, when the target is inside a building or a room.
 - **The phone**: the mission checklist, message threads (admissions, Mum, the
-  Block A group chat, the Porter's Lodge, and Kojo if he trusts you) and a
+  Block A group chat, the Porter's Lodge, Kojo if he trusts you, and your
+  timetable from Academic Affairs) and a
   profile with your reputation and the people you have met.
 - **Saving**: automatic, in the browser's local storage, after every
   conversation, mission step, sleep, building transition and pause — and it
@@ -535,7 +549,7 @@ CI runs the same checks, and the Pages deploy does not publish if any fail.
 ### Browser smoke test
 
 `scripts/smoke-test.mjs` drives the real production build in headless
-Chromium and asserts on game state — **93 checks**: world generation, the
+Chromium and asserts on game state — **109 checks**: world generation, the
 character and furniture models loading (and the game still loading, with
 placeholders, when the model files are blocked), the
 arrival cinematic and Skip, character creation, walking, collision at the
@@ -545,7 +559,10 @@ Library, reading the campus sign, a full conversation with Uncle Bright
 campus map, the quality rebuild; going into Block A, corridor collision, the
 A-214 doorway, sleeping and waking inside, leaving, and geometry being freed;
 M02 from the message to the completion card, including a reload inside the
-Porter's Lodge halfway through; a save from the previous release; and on a
+Porter's Lodge halfway through; M03 from the second night to the completion
+card (the tile, Kojo's charger, the timetable, Lecture Hall 2, Dr. Sarpong's
+question, Abiba, KB and Selasi); saves from the two previous releases (one
+continues into M02, one into M03); and on a
 phone-sized touch screen the story start, the joystick, the swipe fix,
 vertical look, the camera button and entering Block A with INTERACT.
 
@@ -632,9 +649,11 @@ Deliberate Phase 1 boundaries:
   commissioned art: two bodies recoloured for everyone, no faces to speak of,
   no appearance picker, and the man's body wears shorts. Nii's bed is no longer
   orange — the kit's two beds have the same blue bedding.
-- **M01 and M02 are playable.** After them the campus is free roam until
-  Mission 3 is built.
-- **Two interiors**: the Block A second floor and the Porter's Lodge. The
+- **M01, M02 and M03 are playable.** After them the campus is free roam
+  until Mission 4 is built. Abiba's study circle and Selasi's volunteers are
+  mentioned but not playable yet (they are side stories S03 and later).
+- **Three interiors**: the Block A second floor, the Porter's Lodge and one
+  room of Lecture Hall 2. The
   other doors in Block A are closed; the other buildings cannot be entered
   yet. The night in A-214 is still told on a card.
 - **The campus map is the master plan**: inside a building it marks the

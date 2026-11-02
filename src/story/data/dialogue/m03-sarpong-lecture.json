@@ -1,0 +1,88 @@
+{
+  "id": "m03-sarpong-lecture",
+  "start": "open",
+  "nodes": {
+    "open": {
+      "speaker": "sarpong",
+      "text": "Good morning. Sit — anywhere. This is UCIS 101, Critical Thinking and Ethics. Every first-year takes it, whether you came here for bridges or for balance sheets.",
+      "effects": [
+        { "type": "flag", "flag": "attended_lecture" },
+        { "type": "flag", "flag": "met_sarpong" }
+      ],
+      "next": "question"
+    },
+    "question": {
+      "speaker": "sarpong",
+      "text": "One question before the syllabus. The night before an exam, someone sends you the questions. You did not ask for them. What do you do? You — yes, you. {name}, is it?",
+      "choices": [
+        {
+          "text": "Report it to the exams office.",
+          "next": "report",
+          "major": true,
+          "effects": [
+            { "type": "relationship", "who": "sarpong", "delta": 5 },
+            { "type": "reputation", "axis": "integrity", "delta": 5 },
+            { "type": "reputation", "axis": "academic", "delta": 2 },
+            { "type": "flag", "flag": "lecture_said_report" }
+          ]
+        },
+        {
+          "text": "Delete it and tell no one.",
+          "next": "delete",
+          "major": true,
+          "effects": [
+            { "type": "relationship", "who": "sarpong", "delta": 2 },
+            { "type": "reputation", "axis": "integrity", "delta": 2 },
+            { "type": "flag", "flag": "lecture_said_delete" }
+          ]
+        },
+        {
+          "text": "Read it. Everybody else will.",
+          "next": "read",
+          "major": true,
+          "effects": [
+            { "type": "relationship", "who": "sarpong", "delta": -5 },
+            { "type": "reputation", "axis": "integrity", "delta": -5 },
+            { "type": "reputation", "axis": "popularity", "delta": 3 },
+            { "type": "flag", "flag": "lecture_said_read" }
+          ]
+        },
+        {
+          "text": "Find out who sent it before doing anything.",
+          "next": "trace",
+          "major": true,
+          "if": { "programme": "computer-science" },
+          "effects": [
+            { "type": "relationship", "who": "sarpong", "delta": 3 },
+            { "type": "reputation", "axis": "academic", "delta": 3 },
+            { "type": "flag", "flag": "lecture_said_trace" }
+          ]
+        }
+      ]
+    },
+    "report": {
+      "speaker": "sarpong",
+      "text": "…That is the right answer. It is not always the easy one — the exams office is a very small room. Write that down, all of you.",
+      "next": "close"
+    },
+    "delete": {
+      "speaker": "sarpong",
+      "text": "Tidy. Honest, even. But think about who your silence protects. The person who sent it is grateful for it.",
+      "next": "close"
+    },
+    "read": {
+      "speaker": "sarpong",
+      "text": "The back row laughs. I don't. \"Everybody else will\" is how every scandal I have ever seen began.",
+      "next": "close"
+    },
+    "trace": {
+      "speaker": "sarpong",
+      "text": "A computer scientist. Follow the file to the hand that sent it. Careful — sometimes the hand is attached to someone with more power than you.",
+      "next": "close"
+    },
+    "close": {
+      "speaker": "sarpong",
+      "text": "Readings are on the portal. And {name} — if you need help keeping up, Abiba Fuseini runs a study circle. She'll be on the Library steps after this. Tell her I sent you."
+    }
+  }
+}
